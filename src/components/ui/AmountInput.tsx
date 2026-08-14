@@ -30,7 +30,7 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
           {label}
         </label>
       )}
-      <div className={`flex items-baseline gap-1 ${large ? "text-5xl" : "text-3xl"} font-bold tabular-nums`}>
+      <div className={`flex items-baseline justify-center gap-1 ${large ? "text-5xl" : "text-3xl"} font-bold tabular-nums`}>
         <span className="text-neutral-400 dark:text-neutral-500">{CURRENCY_SYMBOL[currency]}</span>
         <input
           id={id}
@@ -39,7 +39,9 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
           placeholder="0"
           value={value}
           onChange={(e) => handleChange(e.target.value)}
-          className="w-40 bg-transparent text-center outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-600"
+          size={1}
+          style={{ width: `${Math.max((value || "0").length, 1) + 0.75}ch` }}
+          className="min-w-0 shrink-0 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-600"
         />
       </div>
     </div>

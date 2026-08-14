@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { X } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -43,7 +44,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
               aria-label="Cerrar"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 active:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400"
             >
-              ✕
+              <X size={18} strokeWidth={2.25} />
             </button>
           </div>
         )}

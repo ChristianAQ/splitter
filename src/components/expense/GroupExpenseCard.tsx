@@ -1,3 +1,4 @@
+import { Lock } from "lucide-react";
 import { categoryById } from "../../lib/categories";
 import { formatCurrency, formatDate } from "../../lib/format";
 import type { GroupExpense, GroupMember } from "../../types";
@@ -33,7 +34,7 @@ export function GroupExpenseCard({ expense, members, currentUid, onClick }: Prop
           {!isCreator && (
             <>
               <span aria-hidden>·</span>
-              <span aria-label="Solo puede editarlo quien lo creó">🔒</span>
+              <Lock size={11} strokeWidth={2.25} aria-label="Solo puede editarlo quien lo creó" />
             </>
           )}
         </div>

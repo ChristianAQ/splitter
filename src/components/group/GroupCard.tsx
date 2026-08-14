@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import { formatSignedCurrency } from "../../lib/format";
 import type { Currency } from "../../types";
 
@@ -32,9 +33,7 @@ export function GroupCard({ groupId, name, icon, color, balance, currency }: Pro
           {settled ? "Todo saldado" : owed ? `Te deben ${formatSignedCurrency(balance, currency).replace("+", "")}` : `Debes ${formatSignedCurrency(-balance, currency).replace("+", "")}`}
         </p>
       </div>
-      <span className="text-neutral-300 dark:text-neutral-600" aria-hidden>
-        →
-      </span>
+      <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-neutral-300 dark:text-neutral-600" aria-hidden />
     </Link>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link2, Plus } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { GroupCard } from "../components/group/GroupCard";
@@ -25,10 +26,10 @@ export function Groups() {
         right={
           <div className="flex gap-2">
             <Button size="icon" variant="secondary" onClick={() => setJoining(true)} aria-label="Unirse a un grupo">
-              🔗
+              <Link2 size={19} strokeWidth={2.1} />
             </Button>
             <Button size="icon" onClick={() => setCreating(true)} aria-label="Crear grupo">
-              +
+              <Plus size={20} strokeWidth={2.25} />
             </Button>
           </div>
         }

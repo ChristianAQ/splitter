@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 interface Props {
   title: string;
@@ -19,9 +20,9 @@ export function TopBar({ title, subtitle, onBack, right }: Props) {
         <button
           onClick={() => navigate(-1)}
           aria-label="Volver"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg text-neutral-600 shadow-card active:scale-95 dark:bg-neutral-800 dark:text-neutral-300"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-neutral-600 shadow-card active:scale-95 dark:bg-neutral-800 dark:text-neutral-300"
         >
-          ←
+          <ArrowLeft size={19} strokeWidth={2.25} />
         </button>
       )}
       <div className="min-w-0 flex-1">

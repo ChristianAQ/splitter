@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
+import { Home, WalletMinimal, Users, ChartColumn, Settings, type LucideIcon } from "lucide-react";
 
-const ITEMS = [
-  { to: "/", label: "Inicio", icon: "🏠", end: true },
-  { to: "/gastos", label: "Gastos", icon: "💳", end: false },
-  { to: "/grupos", label: "Grupos", icon: "👥", end: false },
-  { to: "/estadisticas", label: "Estadísticas", icon: "📊", end: false },
-  { to: "/perfil", label: "Perfil", icon: "⚙️", end: false },
+const ITEMS: { to: string; label: string; icon: LucideIcon; end: boolean }[] = [
+  { to: "/", label: "Inicio", icon: Home, end: true },
+  { to: "/gastos", label: "Gastos", icon: WalletMinimal, end: false },
+  { to: "/grupos", label: "Grupos", icon: Users, end: false },
+  { to: "/estadisticas", label: "Estadísticas", icon: ChartColumn, end: false },
+  { to: "/perfil", label: "Perfil", icon: Settings, end: false },
 ];
 
 export function BottomNav() {
@@ -21,13 +22,17 @@ export function BottomNav() {
           to={item.to}
           end={item.end}
           className={({ isActive }) =>
-            `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors ${
+            `flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
               isActive ? "text-accent" : "text-neutral-400 dark:text-neutral-500"
             }`
           }
         >
-          <span className="text-[22px] leading-none">{item.icon}</span>
-          {item.label}
+          {({ isActive }) => (
+            <>
+              <item.icon size={23} strokeWidth={isActive ? 2.3 : 1.8} />
+              {item.label}
+            </>
+          )}
         </NavLink>
       ))}
     </nav>

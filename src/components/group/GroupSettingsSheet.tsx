@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Copy, Share2 } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/Modal";
@@ -135,10 +136,10 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
             <div className="flex items-center gap-2 rounded-2xl bg-neutral-50 p-3.5 dark:bg-neutral-800/60">
               <span className="flex-1 text-xl font-bold tracking-[0.2em]">{group.inviteCode}</span>
               <Button size="icon" variant="secondary" onClick={handleCopyCode} aria-label="Copiar código">
-                📋
+                <Copy size={17} strokeWidth={2.1} />
               </Button>
               <Button size="icon" variant="secondary" onClick={handleShare} aria-label="Compartir código">
-                📤
+                <Share2 size={17} strokeWidth={2.1} />
               </Button>
             </div>
             {isAdmin && (

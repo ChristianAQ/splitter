@@ -30,6 +30,13 @@ sensible vive en `firestore.rules`; ver §4.
 - Registro de pagos, reversión de pagos, historial de grupo append-only.
 - Estadísticas personales y de grupo (gráficos ligeros sin dependencias).
 - Dashboard con resumen personal + tarjetas de grupo.
+- Cambiar nombre/color en Ajustes se propaga automáticamente a tu ficha en
+  todos los grupos donde estás (`services/profileSync.service.ts`).
+- Pull-to-refresh nativo (arrastrar hacia abajo recarga sin salir de la
+  pantalla actual — `components/layout/PullToRefresh.tsx`).
+- Iconografía consistente con [lucide-react](https://lucide.dev) en toda la
+  navegación y los controles de UI; los emoji se reservan para elecciones
+  del usuario (icono de grupo, categorías) donde aportan color/personalidad.
 - PWA instalable en iOS/Android/escritorio, dark mode, safe areas, offline
   con persistencia de Firestore.
 

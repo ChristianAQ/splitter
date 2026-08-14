@@ -15,7 +15,13 @@ export function BarChart({ bars, formatValue = String }: Props) {
   const max = Math.max(1, ...bars.map((b) => b.value));
 
   return (
-    <div className="flex items-end gap-2.5" style={{ height: 140 }}>
+    // `items-stretch` (the default) is required here, not `items-end`: each
+    // column below relies on actually being stretched to this container's
+    // fixed height so its `flex-1` middle div has a real height to resolve
+    // the bar's percentage height against — with `items-end` every column
+    // shrinks to its own content height instead, and the bar's height ends
+    // up computed against ~0px, rendering no visible bar at all.
+    <div className="flex items-stretch gap-2.5" style={{ height: 140 }}>
       {bars.map((bar) => (
         <div key={bar.label} className="flex flex-1 flex-col items-center gap-1.5">
           <span className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500">

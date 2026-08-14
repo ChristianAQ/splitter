@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { UserColorIndicator } from "../ui/Avatar";
 import type { GroupMember } from "../../types";
 
@@ -22,12 +23,12 @@ export function MemberSelector({ members, selected, onToggle }: Props) {
             >
               <UserColorIndicator name={m.name} color={m.color} size="sm" />
               <span
-                className={`flex h-6 w-6 items-center justify-center rounded-full border-2 text-sm text-white transition-colors ${
+                className={`flex h-6 w-6 items-center justify-center rounded-full border-2 text-white transition-colors ${
                   checked ? "border-accent bg-accent" : "border-neutral-300 dark:border-neutral-600"
                 }`}
                 aria-hidden
               >
-                {checked && "✓"}
+                {checked && <Check size={14} strokeWidth={3} />}
               </span>
             </button>
           </li>

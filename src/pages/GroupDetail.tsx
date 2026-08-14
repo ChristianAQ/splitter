@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
+import { Settings as SettingsIcon } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -110,7 +111,7 @@ export function GroupDetail() {
         onBack
         right={
           <Button size="icon" variant="secondary" onClick={() => setSettingsOpen(true)} aria-label="Ajustes del grupo">
-            ⚙️
+            <SettingsIcon size={19} strokeWidth={2.1} />
           </Button>
         }
       />
