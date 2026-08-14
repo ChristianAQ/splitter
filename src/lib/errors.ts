@@ -32,6 +32,13 @@ export class AppError extends Error {
 export function toFriendlyError(error: unknown): AppError {
   if (error instanceof AppError) return error;
 
+  // The user-facing message is always the short, friendly one below — but
+  // the raw Firebase error (e.g. a Firestore "this query requires an
+  // index" message, which includes a direct link to create it) is only
+  // useful in the console, never in the UI.
+  // eslint-disable-next-line no-console
+  console.error(error);
+
   const code = extractCode(error);
   if (code && MESSAGES[code]) return new AppError(MESSAGES[code], code);
 

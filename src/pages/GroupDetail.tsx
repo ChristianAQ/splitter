@@ -35,7 +35,7 @@ export function GroupDetail() {
   const { groupId } = useParams<{ groupId: string }>();
   const { user } = useAuth();
   const { show } = useToast();
-  const { group, members, activeMembers, expenses, payments, history, balances, settlement, loading, notFound } = useGroupDetail(groupId);
+  const { group, members, activeMembers, expenses, payments, history, balances, settlement, loading, notFound, error } = useGroupDetail(groupId);
   const [tab, setTab] = useState<Tab>("resumen");
   const [editingExpense, setEditingExpense] = useState<GroupExpense | null>(null);
   const [addingExpense, setAddingExpense] = useState(false);
@@ -116,6 +116,16 @@ export function GroupDetail() {
         }
       />
       <PageContainer>
+        {error && (
+          <div className="mb-4 rounded-2xl bg-negative-light p-3.5 text-sm text-negative dark:bg-negative/15">
+            No se han podido cargar todos los datos del grupo: {error}
+            <p className="mt-1 text-xs opacity-70">
+              Si esto persiste, abre la consola del navegador (F12) — si el error menciona un índice de Firestore,
+              sigue el enlace que ofrece para crearlo, o despliega los de <code>firestore.indexes.json</code> con{" "}
+              <code>firebase deploy --only firestore:indexes</code>.
+            </p>
+          </div>
+        )}
         <div className="mb-4 flex gap-2 overflow-x-auto no-scrollbar">
           {TABS.map(([key, label]) => (
             <button

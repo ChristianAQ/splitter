@@ -18,11 +18,20 @@ export function useGroupDetail(groupId: string | undefined) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  // Surfaced instead of silently leaving a list empty forever — this is
+  // what a missing Firestore composite index (or any other read failure)
+  // looked like before: no error, just expenses/payments/history that
+  // never populate for anyone. Any of the four subscriptions below can set
+  // this; whichever fails first wins, which is enough to point at the
+  // actual problem (usually console-visible too, e.g. a Firestore
+  // "the query requires an index" link).
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!groupId) return;
     setLoading(true);
     setNotFound(false);
+    setError(null);
     const unsubs = [
       subscribeGroup(
         groupId,
@@ -40,10 +49,10 @@ export function useGroupDetail(groupId: string | undefined) {
           setLoading(false);
         }
       ),
-      subscribeMembers(groupId, setMembers),
-      subscribeGroupExpenses(groupId, setExpenses),
-      subscribeGroupPayments(groupId, setPayments),
-      subscribeGroupHistory(groupId, setHistory),
+      subscribeMembers(groupId, setMembers, (err) => setError(err.message)),
+      subscribeGroupExpenses(groupId, setExpenses, (err) => setError(err.message)),
+      subscribeGroupPayments(groupId, setPayments, (err) => setError(err.message)),
+      subscribeGroupHistory(groupId, setHistory, (err) => setError(err.message)),
     ];
     return () => unsubs.forEach((u) => u());
   }, [groupId]);
@@ -65,5 +74,5 @@ export function useGroupDetail(groupId: string | undefined) {
     return optimizeSettlement(balances, group.currency);
   }, [group, balances]);
 
-  return { group, members, activeMembers, expenses, payments, history, balances, settlement, loading, notFound };
+  return { group, members, activeMembers, expenses, payments, history, balances, settlement, loading, notFound, error };
 }
