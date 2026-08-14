@@ -114,7 +114,8 @@ export interface GroupMember {
   uid: string;
   name: string;
   color: UserColor;
-  role: "admin" | "member";
+  // No stored role: "is admin" is always derived from `group.createdBy === uid`,
+  // live — never a field a client write could forge (see firestore.rules).
   joinedAt: EpochMillis;
   active: boolean; // false once a member leaves; kept for historical expense attribution
 }

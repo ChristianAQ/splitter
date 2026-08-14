@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { joinGroupByCode, previewInviteCode, type InvitePreview } from "../../services/groups.service";
 
@@ -13,6 +14,7 @@ interface Props {
 
 export function JoinGroupSheet({ open, onClose }: Props) {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const { show } = useToast();
   const [code, setCode] = useState("");
   const [preview, setPreview] = useState<InvitePreview | null>(null);
@@ -46,10 +48,10 @@ export function JoinGroupSheet({ open, onClose }: Props) {
   }
 
   async function handleJoin() {
-    if (!preview) return;
+    if (!preview || !user || !profile) return;
     setJoining(true);
     try {
-      const result = await joinGroupByCode(code);
+      const result = await joinGroupByCode(code, user.uid, profile.name);
       show(result.alreadyMember ? "Ya eras miembro de este grupo" : "Te has unido al grupo", "success");
       reset();
       onClose();

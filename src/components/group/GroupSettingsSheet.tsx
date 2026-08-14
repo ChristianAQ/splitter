@@ -57,9 +57,10 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
   }
 
   async function handleRegenerate() {
+    if (!user) return;
     setBusy(true);
     try {
-      await regenerateInviteCode(group.id);
+      await regenerateInviteCode(group.id, user.uid, members.find((m) => m.uid === user.uid)?.name ?? "Alguien");
       show("Código regenerado", "success");
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo regenerar.", "error");
@@ -81,10 +82,10 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
   }
 
   async function handleRemove() {
-    if (!confirmRemove) return;
+    if (!confirmRemove || !user) return;
     setBusy(true);
     try {
-      await removeMember(group.id, confirmRemove.uid);
+      await removeMember(group.id, confirmRemove.uid, user.uid);
       show(`${confirmRemove.name} fue eliminado del grupo`, "success");
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo eliminar al miembro.", "error");
@@ -95,9 +96,10 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
   }
 
   async function handleLeave() {
+    if (!user) return;
     setBusy(true);
     try {
-      await leaveGroup(group.id);
+      await leaveGroup(group.id, user.uid, members.find((m) => m.uid === user.uid)?.name ?? "Alguien");
       show("Has salido del grupo", "success");
       onClose();
       navigate("/grupos");
@@ -164,7 +166,7 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
                   ) : (
                     <span className="flex-1 truncate text-sm font-medium">
                       {m.name}
-                      {m.role === "admin" && <span className="ml-1.5 text-xs text-neutral-400">Admin</span>}
+                      {m.uid === group.createdBy && <span className="ml-1.5 text-xs text-neutral-400">Admin</span>}
                       {!m.active && <span className="ml-1.5 text-xs text-neutral-400">(salió)</span>}
                     </span>
                   )}

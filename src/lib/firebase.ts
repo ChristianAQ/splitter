@@ -1,7 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { connectFirestoreEmulator, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
-import { connectFunctionsEmulator, getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -29,12 +28,14 @@ export const db = initializeFirestore(app, {
 });
 
 export const auth = getAuth(app);
-export const functions = getFunctions(app);
 
-// `npm run dev:emulators` (see README) sets this so local development never
-// touches a real Firebase project by accident.
+// No Cloud Functions in this app on purpose — everything is a client write
+// validated by firestore.rules, so the whole app runs on the free Spark
+// plan (Cloud Functions requires Blaze). See firestore.rules' top comment.
+
+// `VITE_USE_FIREBASE_EMULATORS=true npm run dev` (see README) sets this so
+// local development never touches a real Firebase project by accident.
 if (import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true") {
   connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
   connectFirestoreEmulator(db, "127.0.0.1", 8080);
-  connectFunctionsEmulator(functions, "127.0.0.1", 5001);
 }

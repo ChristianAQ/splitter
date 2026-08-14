@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { httpsCallable } from "firebase/functions";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -12,7 +11,7 @@ import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
 import { updateUserProfile } from "../services/users.service";
 import { signOutUser } from "../services/auth.service";
-import { functions } from "../lib/firebase";
+import { deleteAccount as deleteAccountCascade } from "../services/account.service";
 import { USER_COLOR_PALETTE } from "../lib/userColors";
 import { CURRENCIES } from "../types";
 
@@ -60,8 +59,7 @@ export function Settings() {
   async function handleDeleteAccount() {
     setDeleting(true);
     try {
-      const call = httpsCallable(functions, "deleteAccount");
-      await call();
+      await deleteAccountCascade(user!.uid, profile!.name);
       show("Cuenta eliminada", "success");
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo eliminar la cuenta.", "error");

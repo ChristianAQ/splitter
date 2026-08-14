@@ -45,7 +45,7 @@ export function toFriendlyError(error: unknown): AppError {
 function extractCode(error: unknown): string | undefined {
   if (typeof error === "object" && error !== null && "code" in error) {
     const code = (error as { code: unknown }).code;
-    if (typeof code === "string") return code.replace(/^functions\//, "");
+    if (typeof code === "string") return code;
   }
   return undefined;
 }

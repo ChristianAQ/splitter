@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { createGroup } from "../../services/groups.service";
 import { USER_COLOR_PALETTE } from "../../lib/userColors";
@@ -17,6 +18,7 @@ interface Props {
 
 export function CreateGroupSheet({ open, onClose }: Props) {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const { show } = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -28,10 +30,15 @@ export function CreateGroupSheet({ open, onClose }: Props) {
   const valid = name.trim().length > 0;
 
   async function handleCreate() {
-    if (!valid) return;
+    if (!valid || !user || !profile) return;
     setSaving(true);
     try {
-      const { groupId } = await createGroup({ name: name.trim(), description: description.trim() || undefined, icon, color, currency });
+      const { groupId } = await createGroup(
+        { name: name.trim(), description: description.trim() || undefined, icon, color, currency },
+        user.uid,
+        profile.name,
+        profile.color
+      );
       show("Grupo creado", "success");
       onClose();
       navigate(`/grupos/${groupId}`);
