@@ -1,0 +1,74 @@
+import { useState } from "react";
+import { TopBar } from "../components/layout/TopBar";
+import { PageContainer } from "../components/layout/PageContainer";
+import { GroupCard } from "../components/group/GroupCard";
+import { CardListSkeleton } from "../components/ui/Skeleton";
+import { EmptyState } from "../components/ui/EmptyState";
+import { Button } from "../components/ui/Button";
+import { CreateGroupSheet } from "../components/group/CreateGroupSheet";
+import { JoinGroupSheet } from "../components/group/JoinGroupSheet";
+import { useAuth } from "../context/AuthContext";
+import { useGroups } from "../hooks/useGroups";
+import { useGroupsSummary } from "../hooks/useGroupsSummary";
+
+export function Groups() {
+  const { profile } = useAuth();
+  const { groups, loading } = useGroups();
+  const summaries = useGroupsSummary(groups, profile?.uid);
+  const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
+
+  return (
+    <>
+      <TopBar
+        title="Grupos"
+        right={
+          <div className="flex gap-2">
+            <Button size="icon" variant="secondary" onClick={() => setJoining(true)} aria-label="Unirse a un grupo">
+              🔗
+            </Button>
+            <Button size="icon" onClick={() => setCreating(true)} aria-label="Crear grupo">
+              +
+            </Button>
+          </div>
+        }
+      />
+      <PageContainer>
+        {loading ? (
+          <CardListSkeleton />
+        ) : groups.length === 0 ? (
+          <EmptyState
+            icon="👥"
+            title="Crea un grupo para compartir gastos"
+            description="Viajes, pisos compartidos, cenas con amigos... comparte los gastos sin complicaciones."
+            action={
+              <div className="flex gap-2">
+                <Button onClick={() => setCreating(true)}>Crear grupo</Button>
+                <Button variant="secondary" onClick={() => setJoining(true)}>
+                  Unirme con código
+                </Button>
+              </div>
+            }
+          />
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            {groups.map((g) => (
+              <GroupCard
+                key={g.id}
+                groupId={g.id}
+                name={g.name}
+                icon={g.icon}
+                color={g.color}
+                balance={summaries[g.id]?.balance ?? 0}
+                currency={g.currency}
+              />
+            ))}
+          </div>
+        )}
+      </PageContainer>
+
+      <CreateGroupSheet open={creating} onClose={() => setCreating(false)} />
+      <JoinGroupSheet open={joining} onClose={() => setJoining(false)} />
+    </>
+  );
+}
