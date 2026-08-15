@@ -1,5 +1,14 @@
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import type { Currency } from "../../types";
+
+// BottomSheet's slide-up animation runs for 0.22s (see index.css). Focusing
+// natively (via the `autoFocus` HTML attribute) fires the instant the input
+// mounts, i.e. mid-animation — iOS then opens the keyboard and computes the
+// scroll-into-view position against the sheet's still-animating layout,
+// landing the viewport at an arbitrary mid-scroll position instead of the
+// top. Delaying the focus call until just after the animation settles fixes
+// this without touching the animation itself.
+const AUTOFOCUS_DELAY_MS = 300;
 
 const CURRENCY_SYMBOL: Record<Currency, string> = { EUR: "€", USD: "$", GBP: "£" };
 
@@ -17,6 +26,13 @@ interface Props {
  * parseable number string. */
 export function AmountInput({ value, onChange, currency = "EUR", label, autoFocus, large }: Props) {
   const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    const timer = setTimeout(() => inputRef.current?.focus(), AUTOFOCUS_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [autoFocus]);
 
   function handleChange(raw: string) {
     const normalized = raw.replace(",", ".");
@@ -34,7 +50,7 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
         <span className="text-neutral-400 dark:text-neutral-500">{CURRENCY_SYMBOL[currency]}</span>
         <input
           id={id}
-          autoFocus={autoFocus}
+          ref={inputRef}
           inputMode="decimal"
           placeholder="0"
           value={value}
