@@ -12,7 +12,12 @@ export const DEFAULT_CATEGORY_LIST: Category[] = [
   { id: "otros", label: "Otros", icon: "📦" },
 ];
 
-const byId = new Map(DEFAULT_CATEGORY_LIST.map((c) => [c.id, c]));
+// Synthetic category shown only in personal stats, for the "spent across all
+// groups this month" slice — deliberately not part of DEFAULT_CATEGORY_LIST
+// so it never appears as a selectable option when adding a personal expense.
+export const GROUPS_CATEGORY: Category = { id: "grupos", label: "Grupos", icon: "👥" };
+
+const byId = new Map([...DEFAULT_CATEGORY_LIST, GROUPS_CATEGORY].map((c) => [c.id, c]));
 
 export function categoryById(id: string, custom?: Category[]): Category {
   return (

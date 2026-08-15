@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { RefreshCw } from "lucide-react";
+import { Check, RefreshCw } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
@@ -8,9 +8,14 @@ import { RecurringExpenseSheet } from "../components/expense/RecurringExpenseShe
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Button } from "../components/ui/Button";
+import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
 import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
+import { markExpenseDone } from "../services/personalExpenses.service";
+import { setRecurringCompletedThisMonth } from "../services/recurringExpenses.service";
 import { formatCurrency, formatMonth } from "../lib/format";
+import { todayISO } from "../domain/date";
 import type { PersonalExpense, RecurringExpense } from "../types";
 
 type Tab = "pasados" | "proximos" | "recurrentes";
@@ -18,11 +23,34 @@ type Tab = "pasados" | "proximos" | "recurrentes";
 const PERIODICITY_LABEL: Record<string, string> = { weekly: "Semanal", monthly: "Mensual", yearly: "Anual" };
 
 export function Expenses() {
+  const { user } = useAuth();
+  const { show } = useToast();
   const { expenses, loading } = usePersonalExpenses();
   const { items: recurring, loading: recurringLoading } = useRecurringExpenses();
   const [tab, setTab] = useState<Tab>("pasados");
   const [editingExpense, setEditingExpense] = useState<PersonalExpense | null>(null);
   const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null | undefined>(undefined);
+  const currentMonth = todayISO().slice(0, 7);
+
+  async function handleMarkDone(expense: PersonalExpense) {
+    if (!user) return;
+    try {
+      await markExpenseDone(user.uid, expense.id);
+      show("Gasto marcado como realizado", "success");
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo marcar el gasto.", "error");
+    }
+  }
+
+  async function handleToggleRecurringDone(r: RecurringExpense) {
+    if (!user) return;
+    const done = r.lastCompletedMonth !== currentMonth;
+    try {
+      await setRecurringCompletedThisMonth(user.uid, r.id, currentMonth, done);
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo actualizar.", "error");
+    }
+  }
 
   const grouped = useMemo(() => {
     const past = expenses.filter((e) => e.status !== "future").sort((a, b) => b.date.localeCompare(a.date));
@@ -88,7 +116,12 @@ export function Expenses() {
           ) : (
             <div className="flex flex-col gap-2.5">
               {grouped.future.map((e) => (
-                <PersonalExpenseCard key={e.id} expense={e} onClick={() => setEditingExpense(e)} />
+                <PersonalExpenseCard
+                  key={e.id}
+                  expense={e}
+                  onClick={() => setEditingExpense(e)}
+                  onMarkDone={() => handleMarkDone(e)}
+                />
               ))}
             </div>
           ))}
@@ -106,22 +139,40 @@ export function Expenses() {
             ) : recurring.length === 0 ? (
               <EmptyState icon="🔁" title="Sin gastos recurrentes" description="Netflix, alquiler, gimnasio... configúralos una vez." />
             ) : (
-              recurring.map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => setEditingRecurring(r)}
-                  className="flex items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card dark:bg-surface-dark-subtle"
-                >
-                  <span className="text-xl">🔁</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{r.description}</p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {PERIODICITY_LABEL[r.periodicity]} · día {r.dayOfMonth}
-                    </p>
+              recurring.map((r) => {
+                const doneThisMonth = r.lastCompletedMonth === currentMonth;
+                return (
+                  <div key={r.id} className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleRecurringDone(r)}
+                      aria-label={doneThisMonth ? "Marcar como no hecho este mes" : "Marcar como hecho este mes"}
+                      aria-pressed={doneThisMonth}
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 active:scale-95 ${
+                        doneThisMonth
+                          ? "border-positive bg-positive text-white"
+                          : "border-neutral-300 text-transparent dark:border-neutral-600"
+                      }`}
+                    >
+                      <Check size={15} strokeWidth={3} />
+                    </button>
+                    <button
+                      onClick={() => setEditingRecurring(r)}
+                      className="flex w-full min-w-0 flex-1 items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card dark:bg-surface-dark-subtle"
+                    >
+                      <span className="text-xl">🔁</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold">{r.description}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {PERIODICITY_LABEL[r.periodicity]} · día {r.dayOfMonth}
+                          {doneThisMonth && " · Hecho este mes"}
+                        </p>
+                      </div>
+                      <span className="font-semibold tabular-nums">{formatCurrency(r.amount, r.currency)}</span>
+                    </button>
                   </div>
-                  <span className="font-semibold tabular-nums">{formatCurrency(r.amount, r.currency)}</span>
-                </button>
-              ))
+                );
+              })
             )}
           </div>
         )}

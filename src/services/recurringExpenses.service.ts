@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
@@ -33,6 +34,7 @@ function fromSnap(id: string, data: Record<string, unknown>): RecurringExpense {
     endDate: data.endDate as string | undefined,
     active: data.active as boolean,
     notes: data.notes as string | undefined,
+    lastCompletedMonth: data.lastCompletedMonth as string | undefined,
     createdAt: tsToMillis(data.createdAt),
     updatedAt: tsToMillis(data.updatedAt),
   };
@@ -83,6 +85,20 @@ export async function updateRecurringExpense(uid: string, id: string, input: Par
 export async function deleteRecurringExpense(uid: string, id: string) {
   try {
     await deleteDoc(doc(col(uid), id));
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
+/** Toggles "done for `month`" ("YYYY-MM") as a lightweight checkbox — this
+ * only tracks whether the user has taken care of that month's occurrence
+ * (Netflix paid, rent paid...), it does not create a PersonalExpense. */
+export async function setRecurringCompletedThisMonth(uid: string, id: string, month: string, done: boolean) {
+  try {
+    await updateDoc(doc(col(uid), id), {
+      lastCompletedMonth: done ? month : deleteField(),
+      updatedAt: serverTimestamp(),
+    });
   } catch (error) {
     throw toFriendlyError(error);
   }

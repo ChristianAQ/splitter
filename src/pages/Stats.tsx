@@ -9,8 +9,11 @@ import { useAuth } from "../context/AuthContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
 import { useGroups } from "../hooks/useGroups";
 import { useGroupDetail } from "../hooks/useGroupDetail";
+import { useGroupsMonthlySpend } from "../hooks/useGroupsMonthlySpend";
+import { GROUPS_CATEGORY } from "../lib/categories";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { todayISO } from "../domain/date";
+import type { Group } from "../types";
 
 type Scope = "personal" | string;
 
@@ -55,14 +58,28 @@ export function Stats() {
           ))}
         </div>
 
-        {scope === "personal" ? <PersonalStats currency={profile?.currency ?? "EUR"} /> : <GroupStats groupId={scope} />}
+        {scope === "personal" ? (
+          <PersonalStats currency={profile?.currency ?? "EUR"} groups={groups} uid={profile?.uid} />
+        ) : (
+          <GroupStats groupId={scope} />
+        )}
       </PageContainer>
     </>
   );
 }
 
-function PersonalStats({ currency }: { currency: "EUR" | "USD" | "GBP" }) {
+function PersonalStats({
+  currency,
+  groups,
+  uid,
+}: {
+  currency: "EUR" | "USD" | "GBP";
+  groups: Group[];
+  uid: string | undefined;
+}) {
   const { expenses, loading } = usePersonalExpenses();
+  const groupsSpendByCurrency = useGroupsMonthlySpend(groups, uid);
+  const groupsSpendThisMonth = groupsSpendByCurrency[currency] ?? 0;
 
   const { bars, categorySlices, average, thisMonthTotal } = useMemo(() => {
     const months = lastNMonths(6);
@@ -93,7 +110,13 @@ function PersonalStats({ currency }: { currency: "EUR" | "USD" | "GBP" }) {
     };
   }, [expenses]);
 
-  if (!loading && expenses.length === 0) {
+  const allCategorySlices = useMemo(() => {
+    const slices = [...categorySlices];
+    if (groupsSpendThisMonth > 0) slices.push({ categoryId: GROUPS_CATEGORY.id, amount: groupsSpendThisMonth });
+    return slices;
+  }, [categorySlices, groupsSpendThisMonth]);
+
+  if (!loading && expenses.length === 0 && groupsSpendThisMonth === 0) {
     return <EmptyState icon="📊" title="Sin datos todavía" description="Añade gastos para ver tus estadísticas." />;
   }
 
@@ -113,10 +136,10 @@ function PersonalStats({ currency }: { currency: "EUR" | "USD" | "GBP" }) {
           <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(average, currency)}</p>
         </Card>
       </div>
-      {categorySlices.length > 0 && (
+      {allCategorySlices.length > 0 && (
         <Card>
           <p className="mb-3 text-sm font-bold text-neutral-500 dark:text-neutral-400">Por categoría (este mes)</p>
-          <CategoryBreakdown slices={categorySlices} currency={currency} />
+          <CategoryBreakdown slices={allCategorySlices} currency={currency} />
         </Card>
       )}
     </div>

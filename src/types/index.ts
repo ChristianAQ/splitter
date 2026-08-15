@@ -88,6 +88,7 @@ export interface RecurringExpense {
   endDate?: ISODate;
   active: boolean;
   notes?: string;
+  lastCompletedMonth?: string; // "YYYY-MM" of the most recent month checked off
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
 }
