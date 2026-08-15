@@ -16,25 +16,36 @@
     height: 100%;
   }
 
-  html {
-    /* Safety net against sideways scroll — native form controls (date
-       pickers especially) can render with an intrinsic width that ignores
-       `width: 100%` on some mobile browsers, which would otherwise widen
-       the whole page instead of just clipping inside its own container. */
-    overflow-x: hidden;
-  }
-
   body {
     @apply bg-surface-light-subtle text-neutral-900 antialiased;
     @apply dark:bg-surface-dark dark:text-neutral-50;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
-    overflow-x: hidden;
   }
 
+  /* Normalizes native date-input rendering, which is otherwise the most
+   * inconsistent form control across browsers — iOS Safari in particular
+   * gives its internal value box its own intrinsic sizing that can ignore
+   * the input's own width/padding and render misaligned or wider than the
+   * field itself. `max-width: 100%` alone doesn't reach inside that
+   * internal box, so it's reset directly via the WebKit pseudo-elements.
+   * (Deliberately not touching html/body `overflow` to fix stray overflow
+   * — that previously broke position:fixed viewport behavior in iOS
+   * Safari, shifting the bottom nav bar up from the screen edge.)
+   */
   input[type="date"] {
     max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
+    margin: 0;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    margin-left: 4px;
+    padding: 0;
   }
 
   /* Respect the notch / home indicator on iPhone. */
