@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
@@ -6,6 +7,7 @@ import { PersonalExpenseSheet } from "../components/expense/PersonalExpenseSheet
 import { RecurringExpenseSheet } from "../components/expense/RecurringExpenseSheet";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
+import { Button } from "../components/ui/Button";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
 import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
 import { formatCurrency, formatMonth } from "../lib/format";
@@ -39,7 +41,15 @@ export function Expenses() {
 
   return (
     <>
-      <TopBar title="Gastos" subtitle="Tu zona personal" />
+      <TopBar
+        title="Gastos"
+        subtitle="Tu zona personal"
+        right={
+          <Button size="icon" variant="secondary" onClick={() => window.location.reload()} aria-label="Refrescar">
+            <RefreshCw size={18} strokeWidth={2.1} />
+          </Button>
+        }
+      />
       <PageContainer>
         <div className="mb-4 flex gap-2 overflow-x-auto no-scrollbar">
           {(
