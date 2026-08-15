@@ -41,7 +41,17 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
           onChange={(e) => handleChange(e.target.value)}
           size={1}
           style={{ width: `${Math.max((value || "0").length, 1) + 0.75}ch` }}
-          className="min-w-0 shrink-0 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-600"
+          // Global `input { font-size: 16px }` (index.css, prevents iOS
+          // Safari zooming on focus for normal-sized fields) otherwise
+          // overrides this element's inherited text-5xl/text-3xl — an
+          // element selector still beats an ancestor's class for
+          // inheritance purposes, so the number renders at a fixed 16px
+          // while the currency symbol next to it renders at full size.
+          // Repeating the same size class directly on the input (higher
+          // specificity than a bare element selector) restores it; both
+          // sizes stay well above 16px, so the zoom-prevention rule's own
+          // purpose isn't undermined here.
+          className={`min-w-0 shrink-0 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-600 ${large ? "text-5xl" : "text-3xl"}`}
         />
       </div>
     </div>

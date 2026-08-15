@@ -16,12 +16,25 @@
     height: 100%;
   }
 
+  html {
+    /* Safety net against sideways scroll — native form controls (date
+       pickers especially) can render with an intrinsic width that ignores
+       `width: 100%` on some mobile browsers, which would otherwise widen
+       the whole page instead of just clipping inside its own container. */
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-surface-light-subtle text-neutral-900 antialiased;
     @apply dark:bg-surface-dark dark:text-neutral-50;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
     overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+
+  input[type="date"] {
+    max-width: 100%;
   }
 
   /* Respect the notch / home indicator on iPhone. */
