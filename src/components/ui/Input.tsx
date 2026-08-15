@@ -1,4 +1,13 @@
-import { forwardRef, useId, type InputHTMLAttributes } from "react";
+import { forwardRef, useEffect, useId, useRef, type InputHTMLAttributes } from "react";
+
+// Sheets using this field mount as soon as they open (see BottomSheet),
+// while the slide-up animation is still running (0.22s, index.css). Native
+// `autoFocus` fires the instant the input mounts, so the keyboard opens and
+// iOS computes scroll-into-view against a layout that's still animating,
+// leaving the sheet scrolled to an arbitrary position instead of the top
+// (same root cause fixed in AmountInput.tsx). Delaying the focus past the
+// animation avoids it here too.
+const AUTOFOCUS_DELAY_MS = 300;
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -7,9 +16,17 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, Props>(
-  ({ label, error, hint, id, className = "", ...rest }, ref) => {
+  ({ label, error, hint, id, className = "", autoFocus, ...rest }, forwardedRef) => {
     const autoId = useId();
     const inputId = id ?? autoId;
+    const inputRef = useRef<HTMLInputElement | null>(null);
+
+    useEffect(() => {
+      if (!autoFocus) return;
+      const timer = setTimeout(() => inputRef.current?.focus(), AUTOFOCUS_DELAY_MS);
+      return () => clearTimeout(timer);
+    }, [autoFocus]);
+
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
@@ -18,7 +35,11 @@ export const Input = forwardRef<HTMLInputElement, Props>(
           </label>
         )}
         <input
-          ref={ref}
+          ref={(node) => {
+            inputRef.current = node;
+            if (typeof forwardedRef === "function") forwardedRef(node);
+            else if (forwardedRef) forwardedRef.current = node;
+          }}
           id={inputId}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
