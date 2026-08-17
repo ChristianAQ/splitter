@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Settings as SettingsIcon } from "lucide-react";
+import { Settings as SettingsIcon, Share2 } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -93,6 +93,45 @@ export function GroupDetail() {
     }
   }
 
+  async function handleShareSummary() {
+    if (!group) return;
+    const lines = [
+      `Resumen de "${group.name}" (${group.icon})`,
+      `Total gastado: ${formatCurrency(totalSpent, group.currency)}`,
+      "",
+      "Saldos:",
+      ...activeMembers.map((m) => {
+        const b = balances.find((x) => x.uid === m.uid);
+        const net = b?.net ?? 0;
+        return `- ${m.name}: ${formatSignedCurrency(net, group.currency)}`;
+      }),
+    ];
+    if (settlement.length > 0) {
+      lines.push("", "Liquidación recomendada:");
+      for (const t of settlement) {
+        const from = membersById.get(t.fromUid)?.name ?? "Alguien";
+        const to = membersById.get(t.toUid)?.name ?? "Alguien";
+        lines.push(`- ${from} → ${to}: ${formatCurrency(t.amount, group.currency)}`);
+      }
+    }
+    const text = lines.join("\n");
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Resumen de ${group.name}`, text });
+      } catch {
+        /* user cancelled — no-op */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      show("Resumen copiado al portapapeles", "success");
+    } catch {
+      show("No se pudo compartir el resumen.", "error");
+    }
+  }
+
   async function handleRevert(paymentId: string) {
     if (!group) return;
     try {
@@ -109,9 +148,14 @@ export function GroupDetail() {
         title={`${group.icon} ${group.name}`}
         onBack
         right={
-          <Button size="icon" variant="secondary" onClick={() => setSettingsOpen(true)} aria-label="Ajustes del grupo">
-            <SettingsIcon size={19} strokeWidth={2.1} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="icon" variant="secondary" onClick={handleShareSummary} aria-label="Compartir resumen">
+              <Share2 size={18} strokeWidth={2.1} />
+            </Button>
+            <Button size="icon" variant="secondary" onClick={() => setSettingsOpen(true)} aria-label="Ajustes del grupo">
+              <SettingsIcon size={19} strokeWidth={2.1} />
+            </Button>
+          </div>
         }
       />
       <PageContainer>
@@ -160,6 +204,9 @@ export function GroupDetail() {
               </Button>
               <Button variant="secondary" className="flex-1" onClick={() => setTab("balance")}>
                 Liquidar
+              </Button>
+              <Button size="icon" variant="secondary" onClick={handleShareSummary} aria-label="Compartir resumen">
+                <Share2 size={18} strokeWidth={2.1} />
               </Button>
             </div>
 
