@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
+import { Avatar } from "../components/ui/Avatar";
 import { GroupCard } from "../components/group/GroupCard";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -17,6 +18,19 @@ import { todayISO } from "../domain/date";
 
 function monthKey(iso: string) {
   return iso.slice(0, 7);
+}
+
+function greeting(hour: number) {
+  if (hour < 6) return "Buenas noches";
+  if (hour < 13) return "Buenos días";
+  if (hour < 20) return "Buenas tardes";
+  return "Buenas noches";
+}
+
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("es-ES", { weekday: "long", day: "numeric", month: "long" });
+
+function capitalize(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export function Home() {
@@ -55,26 +69,39 @@ export function Home() {
   }, [expenses, thisMonth, lastMonth]);
 
   const delta = lastMonthTotal > 0 ? ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : null;
+  const firstName = profile?.name.split(" ")[0];
+  const dateLabel = capitalize(WEEKDAY_FORMATTER.format(new Date(today)));
 
   return (
     <>
       {!online && <OfflineBanner />}
       <PageContainer>
-        <header className="pb-4 pt-[calc(env(safe-area-inset-top)+18px)]">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Hola{profile ? `, ${profile.name.split(" ")[0]}` : ""} 👋</p>
-          <h1 className="text-2xl font-bold tracking-tight">Resumen</h1>
+        <header className="pb-5 pt-[calc(env(safe-area-inset-top)+18px)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm text-neutral-500 dark:text-neutral-400">{dateLabel}</p>
+              <h1 className="mt-0.5 truncate text-2xl font-bold tracking-tight">
+                {greeting(new Date().getHours())}
+                {firstName ? `, ${firstName}` : ""} 👋
+              </h1>
+            </div>
+            {profile && <Avatar name={profile.name} color={profile.color} size="lg" />}
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-xl2 bg-gradient-to-br from-accent to-accent-700 p-4 text-white shadow-card">
+            <p className="text-xs font-medium text-accent-100">Gastado este mes</p>
+            <p className="mt-1 text-3xl font-bold tabular-nums">{formatCurrency(thisMonthTotal, currency)}</p>
+            {delta !== null ? (
+              <p className="mt-1 text-xs font-medium text-accent-100">
+                {delta <= 0 ? "▼" : "▲"} {Math.abs(Math.round(delta))}% vs. {formatMonth(`${lastMonth}-01`)}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs font-medium text-accent-100">Sin datos del mes anterior</p>
+            )}
+          </div>
         </header>
 
         <section className="grid grid-cols-2 gap-3">
-          <Card>
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Este mes</p>
-            <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(thisMonthTotal, currency)}</p>
-            {delta !== null && (
-              <p className={`mt-0.5 text-xs font-medium ${delta <= 0 ? "text-positive" : "text-negative"}`}>
-                {delta <= 0 ? "▼" : "▲"} {Math.abs(Math.round(delta))}% vs. mes anterior
-              </p>
-            )}
-          </Card>
           <Card>
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Mes anterior</p>
             <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(lastMonthTotal, currency)}</p>
@@ -95,6 +122,11 @@ export function Home() {
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Próximos gastos</p>
             <p className="mt-1 text-xl font-bold tabular-nums">{upcoming.length}</p>
             <p className="mt-0.5 text-xs text-neutral-400">pendientes</p>
+          </Card>
+          <Card>
+            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Grupos activos</p>
+            <p className="mt-1 text-xl font-bold tabular-nums">{groups.length}</p>
+            <p className="mt-0.5 text-xs text-neutral-400">{groups.length === 1 ? "grupo" : "grupos"}</p>
           </Card>
         </section>
 

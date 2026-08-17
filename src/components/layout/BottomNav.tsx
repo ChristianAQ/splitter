@@ -28,25 +28,28 @@ export function BottomNav() {
                 isActive
                   ? "text-accent"
                   : isGroups
-                    ? "text-accent/70 dark:text-accent/80"
+                    ? "text-accent/80 dark:text-accent/90"
                     : "text-neutral-400 dark:text-neutral-500"
               }`
             }
           >
             {({ isActive }) => (
               <>
+                {/* Active page: solid accent pill — the single, unambiguous "you are here" cue.
+                 * Grupos when inactive: outlined ring only, so it reads as "the main feature"
+                 * without ever being mistaken for the active-page indicator above. */}
                 <span
                   className={
-                    isGroups
-                      ? `flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-                          isActive ? "bg-accent text-white" : "bg-accent/15 text-accent"
-                        }`
-                      : "flex h-8 w-8 items-center justify-center"
+                    isActive
+                      ? "flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white"
+                      : isGroups
+                        ? "flex h-8 w-8 items-center justify-center rounded-full ring-2 ring-accent/40 text-accent/80"
+                        : "flex h-8 w-8 items-center justify-center"
                   }
                 >
-                  <item.icon size={isGroups ? 20 : 23} strokeWidth={isActive ? 2.3 : 1.8} />
+                  <item.icon size={isActive || isGroups ? 20 : 23} strokeWidth={isActive ? 2.3 : 1.8} />
                 </span>
-                <span className={isGroups ? "font-bold" : undefined}>{item.label}</span>
+                <span className={isGroups && !isActive ? "font-bold" : undefined}>{item.label}</span>
               </>
             )}
           </NavLink>
