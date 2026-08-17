@@ -21,13 +21,12 @@ import { recordPayment, revertPayment } from "../services/payments.service";
 import { logHistory } from "../services/history.service";
 import type { GroupExpense, SettlementTransfer } from "../types";
 
-type Tab = "resumen" | "gastos" | "saldos" | "liquidar" | "historial";
+type Tab = "resumen" | "gastos" | "balance" | "historial";
 
 const TABS: [Tab, string][] = [
   ["resumen", "Resumen"],
   ["gastos", "Gastos"],
-  ["saldos", "Saldos"],
-  ["liquidar", "Liquidar"],
+  ["balance", "Balance"],
   ["historial", "Historial"],
 ];
 
@@ -159,7 +158,7 @@ export function GroupDetail() {
               <Button className="flex-1" onClick={() => setAddingExpense(true)}>
                 Añadir gasto
               </Button>
-              <Button variant="secondary" className="flex-1" onClick={() => setTab("liquidar")}>
+              <Button variant="secondary" className="flex-1" onClick={() => setTab("balance")}>
                 Liquidar
               </Button>
             </div>
@@ -193,47 +192,50 @@ export function GroupDetail() {
             </div>
           ))}
 
-        {tab === "saldos" && (
-          <Card>
-            <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
-              {activeMembers.map((m) => {
-                const b = balances.find((x) => x.uid === m.uid);
-                return b ? <BalanceRow key={m.uid} member={m} balance={b} currency={group.currency} /> : null;
-              })}
+        {tab === "balance" && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Saldos</p>
+              <Card>
+                <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {activeMembers.map((m) => {
+                    const b = balances.find((x) => x.uid === m.uid);
+                    return b ? <BalanceRow key={m.uid} member={m} balance={b} currency={group.currency} /> : null;
+                  })}
+                </div>
+              </Card>
             </div>
-          </Card>
-        )}
 
-        {tab === "liquidar" && (
-          <div className="flex flex-col gap-4">
-            {settlement.length === 0 ? (
-              <EmptyState icon="🎉" title="Todo está saldado" />
-            ) : (
-              <div className="flex flex-col gap-2.5">
-                <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Liquidación recomendada</p>
-                {settlement.map((t, i) => {
-                  const from = membersById.get(t.fromUid);
-                  const to = membersById.get(t.toUid);
-                  return (
-                    <Card key={i} className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold">
-                          {from?.name} → {to?.name}
-                        </p>
-                        <p className="text-lg font-bold tabular-nums">{formatCurrency(t.amount, group.currency)}</p>
-                      </div>
-                      <Button
-                        size="md"
-                        loading={settlingUp === t}
-                        onClick={() => handleMarkPaid(t)}
-                      >
-                        Marcar pagado
-                      </Button>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
+            <div>
+              <p className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Liquidar</p>
+              {settlement.length === 0 ? (
+                <EmptyState icon="🎉" title="Todo está saldado" />
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {settlement.map((t, i) => {
+                    const from = membersById.get(t.fromUid);
+                    const to = membersById.get(t.toUid);
+                    return (
+                      <Card key={i} className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {from?.name} → {to?.name}
+                          </p>
+                          <p className="text-lg font-bold tabular-nums">{formatCurrency(t.amount, group.currency)}</p>
+                        </div>
+                        <Button
+                          size="md"
+                          loading={settlingUp === t}
+                          onClick={() => handleMarkPaid(t)}
+                        >
+                          Marcar pagado
+                        </Button>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {payments.length > 0 && (
               <div>
