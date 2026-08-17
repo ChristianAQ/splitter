@@ -16,25 +16,42 @@ export function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Navegación principal"
     >
-      {ITEMS.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.end}
-          className={({ isActive }) =>
-            `flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
-              isActive ? "text-accent" : "text-neutral-400 dark:text-neutral-500"
-            }`
-          }
-        >
-          {({ isActive }) => (
-            <>
-              <item.icon size={23} strokeWidth={isActive ? 2.3 : 1.8} />
-              {item.label}
-            </>
-          )}
-        </NavLink>
-      ))}
+      {ITEMS.map((item) => {
+        const isGroups = item.to === "/grupos";
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.end}
+            className={({ isActive }) =>
+              `flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                isActive
+                  ? "text-accent"
+                  : isGroups
+                    ? "text-accent/70 dark:text-accent/80"
+                    : "text-neutral-400 dark:text-neutral-500"
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <span
+                  className={
+                    isGroups
+                      ? `flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+                          isActive ? "bg-accent text-white" : "bg-accent/15 text-accent"
+                        }`
+                      : "flex h-8 w-8 items-center justify-center"
+                  }
+                >
+                  <item.icon size={isGroups ? 20 : 23} strokeWidth={isActive ? 2.3 : 1.8} />
+                </span>
+                <span className={isGroups ? "font-bold" : undefined}>{item.label}</span>
+              </>
+            )}
+          </NavLink>
+        );
+      })}
     </nav>
   );
 }
