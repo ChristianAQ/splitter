@@ -59,11 +59,6 @@
     padding: 0;
   }
 
-  /* Respect the notch / home indicator on iPhone. */
-  #root {
-    padding-top: env(safe-area-inset-top);
-  }
-
   input,
   textarea,
   select,
