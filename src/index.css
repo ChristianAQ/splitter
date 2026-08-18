@@ -16,6 +16,17 @@
     height: 100%;
   }
 
+  /* iOS standalone PWA (added-to-home-screen) rubber-bands past the end of
+   * the document and, unlike in Safari-with-chrome, has no browser UI whose
+   * own reflow forces the page back to rest — it can get stuck a few tens of
+   * pixels short of its real position until the next scroll gesture.
+   * `overscroll-behavior` must be set on `html` (the actual document
+   * scroller) to suppress that; setting it only on `body` does not reliably
+   * take effect in WKWebView standalone mode. */
+  html {
+    overscroll-behavior-y: none;
+  }
+
   body {
     @apply bg-surface-light-subtle text-neutral-900 antialiased;
     @apply dark:bg-surface-dark dark:text-neutral-50;
