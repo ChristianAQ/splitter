@@ -45,6 +45,15 @@ export function useSuppressStandaloneBounce() {
 
       const scroller = document.scrollingElement;
       if (!scroller) return;
+
+      // Page shorter than the viewport: there's nothing to scroll, so it
+      // must never move at all — not even a partial drag before snapping
+      // back, which is exactly the motion that gets stuck in this mode.
+      if (scroller.scrollHeight <= scroller.clientHeight + 1) {
+        e.preventDefault();
+        return;
+      }
+
       const atTop = scroller.scrollTop <= 0;
       const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
       const draggingDown = e.touches[0].clientY > startY;

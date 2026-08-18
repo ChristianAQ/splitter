@@ -18,3 +18,12 @@ export function ErrorState({ message, onRetry }: Props) {
     </div>
   );
 }
+
+export function OfflineBanner() {
+  return (
+    <div className="flex items-center justify-center gap-2 bg-neutral-900 px-4 py-2 text-xs font-medium text-white dark:bg-neutral-100 dark:text-neutral-900">
+      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+      Sin conexión — los cambios se sincronizarán al reconectar
+    </div>
+  );
+}
