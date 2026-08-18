@@ -1,17 +1,17 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
+import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
 import { Avatar } from "../components/ui/Avatar";
 import { GroupCard } from "../components/group/GroupCard";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
-import { OfflineBanner } from "../components/ui/ErrorState";
 import { useAuth } from "../context/AuthContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
 import { useGroups } from "../hooks/useGroups";
 import { useGroupsSummary } from "../hooks/useGroupsSummary";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { categoryById } from "../lib/categories";
 import { todayISO } from "../domain/date";
@@ -35,7 +35,6 @@ function capitalize(s: string) {
 
 export function Home() {
   const { profile } = useAuth();
-  const online = useOnlineStatus();
   const { expenses, loading } = usePersonalExpenses();
   const { groups, loading: groupsLoading } = useGroups();
   const summaries = useGroupsSummary(groups, profile?.uid);
@@ -74,21 +73,28 @@ export function Home() {
 
   return (
     <>
-      {!online && <OfflineBanner />}
+      <TopBar
+        title={`${greeting(new Date().getHours())}${firstName ? `, ${firstName}` : ""} 👋`}
+        subtitle={dateLabel}
+        right={
+          profile && (
+            <Link
+              to="/perfil"
+              aria-label="Ir a mi perfil"
+              className="shrink-0 rounded-full transition-transform duration-150 ease-out active:scale-90"
+            >
+              <Avatar name={profile.name} color={profile.color} size="lg" />
+            </Link>
+          )
+        }
+      />
       <PageContainer>
-        <header className="pb-5 pt-[calc(env(safe-area-inset-top)+18px)]">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm text-neutral-500 dark:text-neutral-400">{dateLabel}</p>
-              <h1 className="mt-0.5 truncate text-2xl font-bold tracking-tight">
-                {greeting(new Date().getHours())}
-                {firstName ? `, ${firstName}` : ""} 👋
-              </h1>
-            </div>
-            {profile && <Avatar name={profile.name} color={profile.color} size="lg" />}
-          </div>
-
-          <div className="mt-4 overflow-hidden rounded-xl2 bg-gradient-to-br from-accent to-accent-700 p-4 text-white shadow-card">
+        <Link
+          to="/estadisticas"
+          aria-label="Ver estadísticas del mes"
+          className="group mb-4 flex items-center justify-between overflow-hidden rounded-xl2 bg-gradient-to-br from-accent to-accent-700 p-4 text-white shadow-card transition-all duration-150 ease-out active:scale-[0.98] active:shadow-none"
+        >
+          <div className="min-w-0">
             <p className="text-xs font-medium text-accent-100">Gastado este mes</p>
             <p className="mt-1 text-3xl font-bold tabular-nums">{formatCurrency(thisMonthTotal, currency)}</p>
             {delta !== null ? (
@@ -99,7 +105,13 @@ export function Home() {
               <p className="mt-1 text-xs font-medium text-accent-100">Sin datos del mes anterior</p>
             )}
           </div>
-        </header>
+          <ChevronRight
+            size={20}
+            strokeWidth={2.25}
+            className="shrink-0 text-accent-100 transition-transform duration-150 ease-out group-active:translate-x-0.5"
+            aria-hidden
+          />
+        </Link>
 
         <section className="grid grid-cols-2 gap-3">
           <Card>

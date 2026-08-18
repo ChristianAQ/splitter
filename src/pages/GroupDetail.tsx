@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Settings as SettingsIcon, Share2 } from "lucide-react";
+import { Settings as SettingsIcon, Share2, UserPlus } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -93,6 +93,27 @@ export function GroupDetail() {
     }
   }
 
+  async function handleShareInvite() {
+    if (!group) return;
+    const link = `${window.location.origin}${window.location.pathname}`;
+    const text = `Únete a mi grupo "${group.name}" en Splitter:\n1. Regístrate en ${link}\n2. En "Grupos", pulsa "Unirse a un grupo" e introduce el código ${group.inviteCode}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `Únete a ${group.name}`, text });
+      } catch {
+        /* user cancelled — no-op */
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      show("Invitación copiada al portapapeles", "success");
+    } catch {
+      show("No se pudo compartir la invitación.", "error");
+    }
+  }
+
   async function handleShareSummary() {
     if (!group) return;
     const lines = [
@@ -149,7 +170,22 @@ export function GroupDetail() {
         onBack
         right={
           <div className="flex items-center gap-2">
-            <Button size="icon" variant="secondary" onClick={handleShareSummary} aria-label="Compartir resumen">
+            <Button
+              size="icon"
+              variant="secondary"
+              onClick={handleShareInvite}
+              aria-label="Compartir invitación al grupo"
+              title="Invitar al grupo"
+            >
+              <UserPlus size={18} strokeWidth={2.1} className="text-accent" />
+            </Button>
+            <Button
+              size="icon"
+              variant="secondary"
+              onClick={handleShareSummary}
+              aria-label="Compartir resumen del grupo"
+              title="Compartir resumen"
+            >
               <Share2 size={18} strokeWidth={2.1} />
             </Button>
             <Button size="icon" variant="secondary" onClick={() => setSettingsOpen(true)} aria-label="Ajustes del grupo">
@@ -204,9 +240,6 @@ export function GroupDetail() {
               </Button>
               <Button variant="secondary" className="flex-1" onClick={() => setTab("balance")}>
                 Liquidar
-              </Button>
-              <Button size="icon" variant="secondary" onClick={handleShareSummary} aria-label="Compartir resumen">
-                <Share2 size={18} strokeWidth={2.1} />
               </Button>
             </div>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Copy, Share2 } from "lucide-react";
+import { Copy } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Button } from "../ui/Button";
 import { ConfirmDialog } from "../ui/Modal";
@@ -41,19 +41,6 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
       show("Código copiado", "success");
     } catch {
       show(group.inviteCode);
-    }
-  }
-
-  async function handleShare() {
-    const text = `Únete a mi grupo "${group.name}" en Splitter con el código ${group.inviteCode}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ text });
-      } catch {
-        /* user cancelled — no-op */
-      }
-    } else {
-      await handleCopyCode();
     }
   }
 
@@ -138,10 +125,10 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
               <Button size="icon" variant="secondary" onClick={handleCopyCode} aria-label="Copiar código">
                 <Copy size={17} strokeWidth={2.1} />
               </Button>
-              <Button size="icon" variant="secondary" onClick={handleShare} aria-label="Compartir código">
-                <Share2 size={17} strokeWidth={2.1} />
-              </Button>
             </div>
+            <p className="mt-1.5 text-xs text-neutral-400">
+              Para invitar a alguien, usa el icono de invitación en la cabecera del grupo.
+            </p>
             {isAdmin && (
               <button onClick={handleRegenerate} disabled={busy} className="mt-2 text-sm font-medium text-accent">
                 Regenerar código
