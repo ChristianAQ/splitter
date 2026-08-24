@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Check, RefreshCw } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
+import { Card } from "../components/ui/Card";
 import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
 import { PersonalExpenseSheet } from "../components/expense/PersonalExpenseSheet";
 import { RecurringExpenseSheet } from "../components/expense/RecurringExpenseSheet";
@@ -14,13 +15,25 @@ import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
 import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
 import { markExpenseDone } from "../services/personalExpenses.service";
 import { setRecurringCompletedThisMonth } from "../services/recurringExpenses.service";
-import { formatCurrency, formatMonth } from "../lib/format";
+import { formatCurrency, formatMonth, formatSignedCurrency } from "../lib/format";
 import { todayISO } from "../domain/date";
 import type { PersonalExpense, RecurringExpense } from "../types";
 
 type Tab = "pasados" | "proximos" | "recurrentes";
 
 const PERIODICITY_LABEL: Record<string, string> = { weekly: "Semanal", monthly: "Mensual", yearly: "Anual" };
+
+// Normalizes any periodicity to its monthly-equivalent cost so recurring
+// items with different cadences can be summed meaningfully.
+const MONTHLY_FACTOR: Record<string, number> = { weekly: 52 / 12, monthly: 1, yearly: 1 / 12 };
+
+function monthlyEquivalent(r: RecurringExpense): number {
+  return r.amount * (MONTHLY_FACTOR[r.periodicity] ?? 1);
+}
+
+function incomeStorageKey(uid: string) {
+  return `splitter:monthlyIncome:${uid}`;
+}
 
 export function Expenses() {
   const { user } = useAuth();
@@ -30,7 +43,26 @@ export function Expenses() {
   const [tab, setTab] = useState<Tab>("pasados");
   const [editingExpense, setEditingExpense] = useState<PersonalExpense | null>(null);
   const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null | undefined>(undefined);
+  const [monthlyIncome, setMonthlyIncome] = useState<string>("");
   const currentMonth = todayISO().slice(0, 7);
+
+  useEffect(() => {
+    if (!user) return;
+    setMonthlyIncome(localStorage.getItem(incomeStorageKey(user.uid)) ?? "");
+  }, [user]);
+
+  function handleIncomeChange(value: string) {
+    setMonthlyIncome(value);
+    if (user) localStorage.setItem(incomeStorageKey(user.uid), value);
+  }
+
+  const recurringCurrency = recurring[0]?.currency ?? "EUR";
+  const totalRecurringMonthly = useMemo(
+    () => recurring.filter((r) => r.active).reduce((sum, r) => sum + monthlyEquivalent(r), 0),
+    [recurring]
+  );
+  const incomeValue = Number(monthlyIncome.replace(",", ".")) || 0;
+  const remaining = incomeValue - totalRecurringMonthly;
 
   async function handleMarkDone(expense: PersonalExpense) {
     if (!user) return;
@@ -128,6 +160,37 @@ export function Expenses() {
 
         {tab === "recurrentes" && (
           <div className="flex flex-col gap-2.5">
+            {recurring.length > 0 && (
+              <Card>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Total gastos recurrentes</p>
+                  <span className="text-xs text-neutral-400">al mes</span>
+                </div>
+                <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(totalRecurringMonthly, recurringCurrency)}</p>
+
+                <label className="mt-4 block text-xs font-medium text-neutral-500 dark:text-neutral-400" htmlFor="monthly-income">
+                  ¿Cuánto cobras al mes?
+                </label>
+                <input
+                  id="monthly-income"
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={monthlyIncome}
+                  onChange={(e) => handleIncomeChange(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-neutral-200 bg-transparent px-3 py-2 text-base tabular-nums outline-none focus:border-accent dark:border-neutral-700"
+                />
+
+                {monthlyIncome !== "" && (
+                  <div className="mt-3 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                    <p className="text-sm font-semibold">Te quedaría al mes</p>
+                    <span className={`text-lg font-bold tabular-nums ${remaining >= 0 ? "text-positive" : "text-negative"}`}>
+                      {formatSignedCurrency(remaining, recurringCurrency)}
+                    </span>
+                  </div>
+                )}
+              </Card>
+            )}
             <button
               onClick={() => setEditingRecurring(null)}
               className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 py-4 text-sm font-semibold text-neutral-500 dark:border-neutral-700 dark:text-neutral-400"
