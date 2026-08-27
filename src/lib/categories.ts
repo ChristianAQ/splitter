@@ -5,10 +5,15 @@ export const DEFAULT_CATEGORY_LIST: Category[] = [
   { id: "transporte", label: "Transporte", icon: "🚗" },
   { id: "vivienda", label: "Vivienda", icon: "🏠" },
   { id: "ocio", label: "Ocio", icon: "🎉" },
+  { id: "comidas", label: "Comidas", icon: "🌮" },
+  { id: "fiesta", label: "Fiesta", icon: "🥳" },
   { id: "compras", label: "Compras", icon: "🛍️" },
   { id: "viajes", label: "Viajes", icon: "✈️" },
   { id: "salud", label: "Salud", icon: "💊" },
   { id: "suscripciones", label: "Suscripciones", icon: "🔁" },
+  { id: "mascotas", label: "Mascotas", icon: "🐾" },
+  { id: "ahorros", label: "Ahorros", icon: "🐷" },
+  { id: "multas", label: "Multas", icon: "🚨" },
   { id: "otros", label: "Otros", icon: "📦" },
 ];
 
