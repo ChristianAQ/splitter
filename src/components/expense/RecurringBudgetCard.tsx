@@ -59,7 +59,7 @@ export function RecurringBudgetCard({ recurring, month, uid, currency }: Props) 
             {formatSignedCurrency(summary.projectedLeftover, currency)}
           </p>
           <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-            Tras pagar {formatCurrency(summary.totalRecurring, currency)} en recurrentes · ahora mismo te quedan{" "}
+            Ahora mismo te quedan{" "}
             <span className={summary.remainingNow >= 0 ? "font-semibold" : "font-semibold text-negative"}>
               {formatSignedCurrency(summary.remainingNow, currency)}
             </span>
