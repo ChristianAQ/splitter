@@ -1,19 +1,17 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, WalletMinimal, Users, ChartColumn, Settings, type LucideIcon } from "lucide-react";
+import { Home } from "../../pages/Home";
+import { Expenses } from "../../pages/Expenses";
+import { Groups } from "../../pages/Groups";
+import { Stats } from "../../pages/Stats";
+import { Settings } from "../../pages/Settings";
 
-interface Tab {
-  path: string;
-  label: string;
-  icon: LucideIcon;
-}
-
-const TABS: Tab[] = [
-  { path: "/", label: "Inicio", icon: Home },
-  { path: "/gastos", label: "Gastos", icon: WalletMinimal },
-  { path: "/grupos", label: "Grupos", icon: Users },
-  { path: "/estadisticas", label: "Estadísticas", icon: ChartColumn },
-  { path: "/perfil", label: "Perfil", icon: Settings },
+const TABS: { path: string; Component: ComponentType }[] = [
+  { path: "/", Component: Home },
+  { path: "/gastos", Component: Expenses },
+  { path: "/grupos", Component: Groups },
+  { path: "/estadisticas", Component: Stats },
+  { path: "/perfil", Component: Settings },
 ];
 
 const RECOGNIZE_THRESHOLD = 10;
@@ -43,15 +41,23 @@ interface DragState {
   settling: boolean;
 }
 
-/** Lets the user drag between tabs and see the destination live, instead of
- * jumping straight there on release — dragging short of the commit
- * threshold snaps back to the current page with no navigation at all. Only
- * ever mounts one real page at a time (the transform lives on a wrapper
- * around `children`, never on a page itself) so each page's own `fixed`
- * TopBar stays scoped to sliding with its page; the "next" page is faked
- * with a static icon+label panel revealed underneath as the current one
- * slides away, avoiding the cost/complexity of mounting two real pages
- * side by side. */
+const SLIDE_BG = "bg-surface-light-subtle dark:bg-surface-dark";
+
+/** Instagram-style paging: dragging horizontally slides the current page
+ * out while the real destination page (mounted live, not a placeholder)
+ * slides in from the edge in lock-step with the finger, and releasing
+ * short of a one-third-of-screen commit threshold slides both back to
+ * where they started instead of navigating.
+ *
+ * The current page stays in normal document flow (unchanged scroll
+ * architecture) and only ever gets a transform while the drag is at
+ * scrollY 0 — otherwise its `fixed` TopBar would re-anchor to the
+ * wrapper's scrolled-off position and visibly jump. The neighboring page
+ * shown mid-drag is instead pinned full-screen (`fixed; inset: 0`) so its
+ * own TopBar is always correctly placed regardless of the current page's
+ * scroll position, and it's non-interactive (`pointer-events: none`) and
+ * clipped since it only exists to be peeked at, not scrolled or tapped,
+ * during the split second before a real navigation replaces it. */
 export function SwipeableTabTransition({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -70,9 +76,6 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
       const touch = e.touches[0];
       gesture.active = true;
       gesture.recognized = false;
-      // A page scrolled away from the top can't safely become the transform's
-      // containing block (its `fixed` TopBar would re-anchor to the wrapper's
-      // scrolled-off position and jump) — so swiping only engages at the top.
       gesture.excluded = isExcluded(e.target) || window.scrollY !== 0;
       gesture.startX = touch.clientX;
       gesture.startY = touch.clientY;
@@ -146,26 +149,44 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const previewTab = drag && drag.targetIndex !== null ? TABS[drag.targetIndex] : null;
+  const previewTarget = drag && drag.targetIndex !== null ? TABS[drag.targetIndex] : null;
+  const width = typeof window !== "undefined" ? window.innerWidth : 0;
+  const previewX = drag && previewTarget ? (drag.dx < 0 ? width + drag.dx : -width + drag.dx) : 0;
 
   return (
-    <div className="relative">
-      {previewTab && (
-        <div className="fixed inset-0 z-0 flex flex-col items-center justify-center gap-3 bg-surface-light-subtle text-neutral-300 dark:bg-surface-dark dark:text-neutral-700">
-          <previewTab.icon size={40} strokeWidth={1.5} />
-          <span className="text-sm font-medium">{previewTab.label}</span>
-        </div>
-      )}
+    <>
       <div
-        className="relative z-10 bg-surface-light-subtle dark:bg-surface-dark"
+        className={SLIDE_BG}
         style={
           drag
-            ? { transform: `translateX(${drag.dx}px)`, transition: drag.settling ? `transform ${SETTLE_MS}ms ease-out` : "none" }
+            ? {
+                position: "relative",
+                zIndex: 10,
+                transform: `translateX(${drag.dx}px)`,
+                transition: drag.settling ? `transform ${SETTLE_MS}ms ease-out` : "none",
+              }
             : undefined
         }
       >
         {children}
       </div>
-    </div>
+      {previewTarget && (
+        <div
+          aria-hidden
+          className={SLIDE_BG}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 5,
+            overflow: "hidden",
+            pointerEvents: "none",
+            transform: `translateX(${previewX}px)`,
+            transition: drag?.settling ? `transform ${SETTLE_MS}ms ease-out` : "none",
+          }}
+        >
+          <previewTarget.Component />
+        </div>
+      )}
+    </>
   );
 }
