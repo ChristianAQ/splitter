@@ -7,6 +7,7 @@ import { Login } from "./pages/Login";
 import { Home } from "./pages/Home";
 import { Expenses } from "./pages/Expenses";
 import { Groups } from "./pages/Groups";
+import { Friends } from "./pages/Friends";
 import { GroupDetail } from "./pages/GroupDetail";
 import { Stats } from "./pages/Stats";
 import { Settings } from "./pages/Settings";
@@ -26,6 +27,7 @@ function PrivateArea() {
         <Route path="/gastos" element={<Expenses />} />
         <Route path="/grupos" element={<Groups />} />
         <Route path="/grupos/:groupId" element={<GroupDetail />} />
+        <Route path="/amigos" element={<Friends />} />
         <Route path="/estadisticas" element={<Stats />} />
         <Route path="/perfil" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />

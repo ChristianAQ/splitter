@@ -205,13 +205,15 @@ export function GroupDetail() {
             </p>
           </div>
         )}
-        <div className="mb-4 flex gap-2 overflow-x-auto no-scrollbar">
+        <div className="mb-5 flex gap-1 rounded-2xl bg-white p-1 shadow-card dark:bg-surface-dark-subtle">
           {TABS.map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                tab === key ? "bg-accent text-white" : "bg-white text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors ${
+                tab === key
+                  ? "bg-accent text-white"
+                  : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
               }`}
             >
               {label}

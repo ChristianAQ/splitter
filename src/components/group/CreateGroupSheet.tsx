@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { Check } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
+import { Avatar } from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { createGroup } from "../../services/groups.service";
+import { useFriends } from "../../hooks/useFriends";
+import { addFriendsToGroup, createGroup } from "../../services/groups.service";
 import { USER_COLOR_PALETTE } from "../../lib/userColors";
 import type { Currency } from "../../types";
 
@@ -20,14 +23,25 @@ export function CreateGroupSheet({ open, onClose }: Props) {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { show } = useToast();
+  const { friends } = useFriends();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState(ICONS[0]);
   const [color, setColor] = useState(USER_COLOR_PALETTE[0].value);
   const [currency, setCurrency] = useState<Currency>("EUR");
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
   const valid = name.trim().length > 0;
+
+  function toggleFriend(uid: string) {
+    setSelectedFriends((prev) => {
+      const next = new Set(prev);
+      if (next.has(uid)) next.delete(uid);
+      else next.add(uid);
+      return next;
+    });
+  }
 
   async function handleCreate() {
     if (!valid || !user || !profile) return;
@@ -39,7 +53,11 @@ export function CreateGroupSheet({ open, onClose }: Props) {
         profile.name,
         profile.color
       );
-      show("Grupo creado", "success");
+      const invited = friends.filter((f) => selectedFriends.has(f.uid));
+      if (invited.length > 0) {
+        await addFriendsToGroup(groupId, user.uid, profile.name, invited);
+      }
+      show(invited.length > 0 ? `Grupo creado con ${invited.length} amigo${invited.length > 1 ? "s" : ""}` : "Grupo creado", "success");
       onClose();
       navigate(`/grupos/${groupId}`);
     } catch (err) {
@@ -118,6 +136,47 @@ export function CreateGroupSheet({ open, onClose }: Props) {
               </button>
             ))}
           </div>
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Añadir amigos (opcional)</p>
+          {friends.length === 0 ? (
+            <p className="text-sm text-neutral-400">
+              Aún no tienes amigos añadidos.{" "}
+              <Link to="/amigos" onClick={onClose} className="font-semibold text-accent">
+                Añade alguno
+              </Link>{" "}
+              para incluirlo directamente, o invita después con el código del grupo.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {friends.map((f) => {
+                const selected = selectedFriends.has(f.uid);
+                return (
+                  <button
+                    key={f.uid}
+                    type="button"
+                    onClick={() => toggleFriend(f.uid)}
+                    className={`flex items-center gap-3 rounded-2xl border-2 p-3 text-left ${
+                      selected
+                        ? "border-accent bg-accent-50 dark:bg-accent-900/20"
+                        : "border-transparent bg-neutral-50 dark:bg-neutral-800/60"
+                    }`}
+                  >
+                    <Avatar name={f.name} color={f.color} size="sm" />
+                    <span className="flex-1 truncate text-sm font-medium">{f.name}</span>
+                    <div
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                        selected ? "border-accent bg-accent text-white" : "border-neutral-300 text-transparent dark:border-neutral-600"
+                      }`}
+                    >
+                      <Check size={13} strokeWidth={3} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <Button onClick={handleCreate} loading={saving} disabled={!valid} size="lg">

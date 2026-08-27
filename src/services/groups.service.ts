@@ -323,6 +323,38 @@ export async function removeMember(groupId: string, targetUid: string, adminUid:
   }
 }
 
+/**
+ * Admin adds friends directly as members, no invite code needed — relies on
+ * the same "creator can write any members/{uid} subdoc in their own group"
+ * allowance that removeMember already depends on, just adding instead of
+ * deactivating. Sequential per friend (like createGroup's own writes) so
+ * pickFreeColor sees each previous member before assigning the next color.
+ */
+export async function addFriendsToGroup(
+  groupId: string,
+  adminUid: string,
+  adminName: string,
+  friends: { uid: string; name: string }[]
+) {
+  try {
+    const groupRef = doc(db, "groups", groupId);
+    for (const friend of friends) {
+      const color = await pickFreeColor(groupId);
+      await setDoc(doc(groupRef, "members", friend.uid), {
+        uid: friend.uid,
+        name: friend.name,
+        color,
+        joinedAt: serverTimestamp(),
+        active: true,
+      });
+      await updateDoc(groupRef, { memberIds: arrayUnion(friend.uid) });
+      await logHistory(groupId, "member_joined", adminUid, adminName, `${friend.name} fue añadido al grupo por ${adminName}`);
+    }
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
 export async function updateMemberColor(groupId: string, uid: string, color: string) {
   try {
     await updateDoc(doc(db, "groups", groupId, "members", uid), { color });
