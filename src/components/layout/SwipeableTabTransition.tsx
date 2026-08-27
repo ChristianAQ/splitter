@@ -16,8 +16,14 @@ const TABS: { path: string; Component: ComponentType }[] = [
 
 const RECOGNIZE_THRESHOLD = 10;
 const DIRECTION_RATIO = 1.5;
-const COMMIT_FRACTION = 0.33;
+const COMMIT_FRACTION = 0.2;
 const SETTLE_MS = 220;
+// Extra hold after navigating, with the already-loaded preview still covering
+// the screen, before handing off to the freshly-mounted real page — that
+// fresh mount re-subscribes to its data from scratch and briefly shows its
+// own loading state, which otherwise flashes on screen as a spurious reload
+// right as the swipe finishes.
+const REVEAL_GRACE_MS = 160;
 
 function isExcluded(target: EventTarget | null): boolean {
   let node = target instanceof Node ? target : null;
@@ -46,8 +52,8 @@ const SLIDE_BG = "bg-surface-light-subtle dark:bg-surface-dark";
 /** Instagram-style paging: dragging horizontally slides the current page
  * out while the real destination page (mounted live, not a placeholder)
  * slides in from the edge in lock-step with the finger, and releasing
- * short of a one-third-of-screen commit threshold slides both back to
- * where they started instead of navigating.
+ * short of the commit threshold (COMMIT_FRACTION of the screen width)
+ * slides both back to where they started instead of navigating.
  *
  * The current page stays in normal document flow (unchanged scroll
  * architecture) and only ever gets a transform while the drag is at
@@ -122,9 +128,18 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
         const finalDx = committed ? (prev.dx < 0 ? -width : width) : 0;
 
         settleTimeoutRef.current = setTimeout(() => {
-          settleTimeoutRef.current = null;
-          setDrag(null);
-          if (targetIndex !== null) navigate(TABS[targetIndex].path);
+          if (targetIndex === null) {
+            settleTimeoutRef.current = null;
+            setDrag(null);
+            return;
+          }
+          // Commit the route now, but keep the (already-loaded) preview
+          // covering the screen a little longer — see REVEAL_GRACE_MS.
+          navigate(TABS[targetIndex].path);
+          settleTimeoutRef.current = setTimeout(() => {
+            settleTimeoutRef.current = null;
+            setDrag(null);
+          }, REVEAL_GRACE_MS);
         }, SETTLE_MS);
 
         return { dx: finalDx, targetIndex, settling: true };
