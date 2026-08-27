@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User } from "firebase/auth";
-import { onAuthChange } from "../services/auth.service";
+import { completeGoogleRedirectSignIn, onAuthChange } from "../services/auth.service";
 import { subscribeUserProfile } from "../services/users.service";
 import type { UserProfile } from "../types";
 
@@ -22,6 +22,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u);
     setAuthLoading(false);
   }), []);
+
+  // No-op unless the app is returning from a Google sign-in that fell back
+  // to a redirect (see auth.service.ts's signInWithGoogle) — completes it
+  // and creates the profile doc for a first-time Google user. Errors here
+  // aren't shown anywhere in particular; the user just stays signed out and
+  // can retry from the login screen.
+  useEffect(() => {
+    completeGoogleRedirectSignIn().catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!user) {

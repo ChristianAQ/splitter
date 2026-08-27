@@ -9,6 +9,11 @@ const MESSAGES: Record<string, string> = {
   "auth/invalid-credential": "Correo o contraseña incorrectos.",
   "auth/email-already-in-use": "Ya existe una cuenta con ese correo.",
   "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+  "auth/password-does-not-meet-requirements":
+    "La contraseña no cumple los requisitos: entre 6 y 20 caracteres, con mayúsculas y minúsculas.",
+  "auth/account-exists-with-different-credential": "Ya existe una cuenta con ese correo usando otro método de acceso.",
+  "auth/popup-blocked": "El navegador bloqueó la ventana emergente. Inténtalo de nuevo.",
+  "auth/cancelled-popup-request": "Se canceló el inicio de sesión.",
   "auth/too-many-requests": "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
   "auth/network-request-failed": "Sin conexión. Comprueba tu red e inténtalo de nuevo.",
   "auth/popup-closed-by-user": "Se cerró la ventana de inicio de sesión.",
