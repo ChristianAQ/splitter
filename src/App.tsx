@@ -11,12 +11,13 @@ import { Friends } from "./pages/Friends";
 import { GroupDetail } from "./pages/GroupDetail";
 import { Stats } from "./pages/Stats";
 import { Settings } from "./pages/Settings";
+import { AppLoading } from "./components/layout/AppLoading";
 
 function PrivateArea() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center text-3xl">🎫</div>;
+    return <AppLoading />;
   }
   if (!user) return <Navigate to="/login" replace />;
 
