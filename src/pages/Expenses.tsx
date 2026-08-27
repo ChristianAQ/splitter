@@ -5,6 +5,7 @@ import { PageContainer } from "../components/layout/PageContainer";
 import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
 import { PersonalExpenseSheet } from "../components/expense/PersonalExpenseSheet";
 import { RecurringExpenseSheet } from "../components/expense/RecurringExpenseSheet";
+import { RecurringBudgetCard } from "../components/expense/RecurringBudgetCard";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Button } from "../components/ui/Button";
@@ -23,7 +24,7 @@ type Tab = "pasados" | "proximos" | "recurrentes";
 const PERIODICITY_LABEL: Record<string, string> = { weekly: "Semanal", monthly: "Mensual", yearly: "Anual" };
 
 export function Expenses() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { show } = useToast();
   const { expenses, loading } = usePersonalExpenses();
   const { items: recurring, loading: recurringLoading } = useRecurringExpenses();
@@ -128,6 +129,12 @@ export function Expenses() {
 
         {tab === "recurrentes" && (
           <div className="flex flex-col gap-2.5">
+            <RecurringBudgetCard
+              recurring={recurring}
+              month={currentMonth}
+              uid={user?.uid}
+              currency={recurring[0]?.currency ?? profile?.currency ?? "EUR"}
+            />
             <button
               onClick={() => setEditingRecurring(null)}
               className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 py-4 text-sm font-semibold text-neutral-500 dark:border-neutral-700 dark:text-neutral-400"
