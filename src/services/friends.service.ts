@@ -1,4 +1,4 @@
-import { deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, collection, type Unsubscribe } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, collection, type Unsubscribe } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError, AppError } from "../lib/errors";
@@ -112,6 +112,27 @@ export async function addFriendByCode(
   } catch (error) {
     throw toFriendlyError(error);
   }
+}
+
+/**
+ * Fans a name/color change out to every friend's copy of me — same idea as
+ * profileSync.service.ts's propagateProfileToGroups, but there's no
+ * `friends`-wide collection to query the way `groups` can be queried by
+ * `memberIds array-contains`. Instead this reads my OWN friends
+ * subcollection (friendship here is always mutual — addFriendByCode never
+ * creates a one-sided link) and writes my updated copy into each of
+ * theirs. Deliberately not a single writeBatch: removeFriend lets someone
+ * delete their side of a friendship unilaterally, so one stale/missing
+ * target must not abort updating everyone else — each write is
+ * independent and failures are swallowed (best-effort sync; the profile
+ * save itself already succeeded by the time this runs).
+ */
+export async function propagateProfileToFriends(uid: string, changes: { name?: string; color?: string }) {
+  if (!changes.name && !changes.color) return;
+  const friendsSnap = await getDocs(collection(db, "users", uid, "friends"));
+  await Promise.allSettled(
+    friendsSnap.docs.map((friendDoc) => updateDoc(doc(db, "users", friendDoc.id, "friends", uid), changes))
+  );
 }
 
 /** Removes a friend from my own list only — the other side keeps me in

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Settings as SettingsIcon, Share2, UserPlus } from "lucide-react";
+import { BarChart3, Link2, Settings as SettingsIcon, Share2, UserPlus } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { BottomSheet } from "../components/ui/BottomSheet";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ErrorState } from "../components/ui/ErrorState";
@@ -13,6 +14,7 @@ import { PaymentCard } from "../components/group/PaymentCard";
 import { GroupExpenseCard } from "../components/expense/GroupExpenseCard";
 import { GroupExpenseSheet } from "../components/expense/GroupExpenseSheet";
 import { GroupSettingsSheet } from "../components/group/GroupSettingsSheet";
+import { AddGroupFriendsSheet } from "../components/group/AddGroupFriendsSheet";
 import { useAuth } from "../context/AuthContext";
 import { useGroupDetail } from "../hooks/useGroupDetail";
 import { useToast } from "../context/ToastContext";
@@ -39,9 +41,12 @@ export function GroupDetail() {
   const [editingExpense, setEditingExpense] = useState<GroupExpense | null>(null);
   const [addingExpense, setAddingExpense] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [addingFriends, setAddingFriends] = useState(false);
   const [settlingUp, setSettlingUp] = useState<SettlementTransfer | null>(null);
 
   const membersById = new Map(activeMembers.map((m) => [m.uid, m]));
+  const isAdmin = group?.createdBy === user?.uid;
 
   if (notFound) {
     return (
@@ -95,6 +100,7 @@ export function GroupDetail() {
 
   async function handleShareInvite() {
     if (!group) return;
+    setShareOpen(false);
     const link = `${window.location.origin}${window.location.pathname}`;
     const text = `Únete a mi grupo "${group.name}" en Splitter:\n1. Regístrate en ${link}\n2. En "Grupos", pulsa "Unirse a un grupo" e introduce el código ${group.inviteCode}`;
 
@@ -116,6 +122,7 @@ export function GroupDetail() {
 
   async function handleShareSummary() {
     if (!group) return;
+    setShareOpen(false);
     const lines = [
       `Resumen de "${group.name}" (${group.icon})`,
       `Total gastado: ${formatCurrency(totalSpent, group.currency)}`,
@@ -170,22 +177,18 @@ export function GroupDetail() {
         onBack
         right={
           <div className="flex items-center gap-2">
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={handleShareInvite}
-              aria-label="Compartir invitación al grupo"
-              title="Invitar al grupo"
-            >
-              <UserPlus size={18} strokeWidth={2.1} className="text-accent" />
-            </Button>
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={handleShareSummary}
-              aria-label="Compartir resumen del grupo"
-              title="Compartir resumen"
-            >
+            {isAdmin && (
+              <Button
+                size="icon"
+                variant="secondary"
+                onClick={() => setAddingFriends(true)}
+                aria-label="Añadir amigos al grupo"
+                title="Añadir amigos"
+              >
+                <UserPlus size={18} strokeWidth={2.1} className="text-accent" />
+              </Button>
+            )}
+            <Button size="icon" variant="secondary" onClick={() => setShareOpen(true)} aria-label="Compartir" title="Compartir">
               <Share2 size={18} strokeWidth={2.1} />
             </Button>
             <Button size="icon" variant="secondary" onClick={() => setSettingsOpen(true)} aria-label="Ajustes del grupo">
@@ -372,6 +375,41 @@ export function GroupDetail() {
         expense={editingExpense ?? undefined}
       />
       <GroupSettingsSheet open={settingsOpen} onClose={() => setSettingsOpen(false)} group={group} members={members} />
+      <AddGroupFriendsSheet
+        open={addingFriends}
+        onClose={() => setAddingFriends(false)}
+        groupId={group.id}
+        existingMemberIds={group.memberIds}
+      />
+
+      <BottomSheet open={shareOpen} onClose={() => setShareOpen(false)} title="Compartir">
+        <div className="flex flex-col gap-2 pb-2 pt-1">
+          <button
+            onClick={handleShareInvite}
+            className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3.5 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+              <Link2 size={18} strokeWidth={2.1} />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Código de invitación</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Para que alguien se una al grupo</p>
+            </div>
+          </button>
+          <button
+            onClick={handleShareSummary}
+            className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3.5 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+              <BarChart3 size={18} strokeWidth={2.1} />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Resumen del grupo</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Total gastado y saldos de cada uno</p>
+            </div>
+          </button>
+        </div>
+      </BottomSheet>
     </>
   );
 }

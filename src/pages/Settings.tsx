@@ -13,6 +13,7 @@ import { updateUserProfile } from "../services/users.service";
 import { signOutUser } from "../services/auth.service";
 import { deleteAccount as deleteAccountCascade } from "../services/account.service";
 import { propagateProfileToGroups } from "../services/profileSync.service";
+import { propagateProfileToFriends } from "../services/friends.service";
 import { USER_COLOR_PALETTE } from "../lib/userColors";
 import { CURRENCIES } from "../types";
 
@@ -34,6 +35,7 @@ export function Settings() {
     try {
       await updateUserProfile(user!.uid, { name: name.trim() });
       await propagateProfileToGroups(user!.uid, { name: name.trim() });
+      await propagateProfileToFriends(user!.uid, { name: name.trim() });
       show("Nombre actualizado", "success");
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo guardar.", "error");
@@ -46,6 +48,7 @@ export function Settings() {
     try {
       await updateUserProfile(user!.uid, { color });
       await propagateProfileToGroups(user!.uid, { color });
+      await propagateProfileToFriends(user!.uid, { color });
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo cambiar el color.", "error");
     }
