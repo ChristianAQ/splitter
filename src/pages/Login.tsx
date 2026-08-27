@@ -6,6 +6,7 @@ import { auth } from "../lib/firebase";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { useToast } from "../context/ToastContext";
+import logoIcon from "../assets/logo-icon.png";
 
 export function Login() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -87,7 +88,7 @@ export function Login() {
     >
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mb-3 text-5xl">🎫</div>
+          <img src={logoIcon} alt="Splitter" width={80} height={80} className="mx-auto mb-3 rounded-2xl shadow-card" />
           <h1 className="text-2xl font-bold tracking-tight">Splitter</h1>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             Tus gastos personales y los de tus grupos, en un solo sitio.
