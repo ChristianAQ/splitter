@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, RefreshCw } from "lucide-react";
+import { Check, Plus, RefreshCw } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
@@ -80,7 +80,7 @@ export function Expenses() {
         }
       />
       <PageContainer>
-        <div className="mb-4 flex gap-2 overflow-x-auto no-scrollbar">
+        <div className="mb-5 flex gap-1 rounded-2xl bg-white p-1 shadow-card dark:bg-surface-dark-subtle">
           {(
             [
               ["pasados", "Realizados"],
@@ -91,8 +91,10 @@ export function Expenses() {
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                tab === key ? "bg-accent text-white" : "bg-white text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors ${
+                tab === key
+                  ? "bg-accent text-white"
+                  : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
               }`}
             >
               {label}
@@ -128,59 +130,79 @@ export function Expenses() {
           ))}
 
         {tab === "recurrentes" && (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-3">
             <RecurringBudgetCard
               recurring={recurring}
               month={currentMonth}
               uid={user?.uid}
               currency={recurring[0]?.currency ?? profile?.currency ?? "EUR"}
             />
-            <button
-              onClick={() => setEditingRecurring(null)}
-              className="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 py-4 text-sm font-semibold text-neutral-500 dark:border-neutral-700 dark:text-neutral-400"
-            >
-              + Nuevo gasto recurrente
-            </button>
-            {recurringLoading ? (
-              <CardListSkeleton count={2} />
-            ) : recurring.length === 0 ? (
-              <EmptyState icon="🔁" title="Sin gastos recurrentes" description="Netflix, alquiler, gimnasio... configúralos una vez." />
-            ) : (
-              recurring.map((r) => {
-                const doneThisMonth = r.lastCompletedMonth === currentMonth;
-                return (
-                  <div key={r.id} className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleRecurringDone(r)}
-                      aria-label={doneThisMonth ? "Marcar como no hecho este mes" : "Marcar como hecho este mes"}
-                      aria-pressed={doneThisMonth}
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 active:scale-95 ${
-                        doneThisMonth
-                          ? "border-positive bg-positive text-white"
-                          : "border-neutral-300 text-transparent dark:border-neutral-600"
-                      }`}
-                    >
-                      <Check size={15} strokeWidth={3} />
-                    </button>
-                    <button
-                      onClick={() => setEditingRecurring(r)}
-                      className="flex w-full min-w-0 flex-1 items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card dark:bg-surface-dark-subtle"
-                    >
-                      <span className="text-xl">🔁</span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold">{r.description}</p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {PERIODICITY_LABEL[r.periodicity]} · día {r.dayOfMonth}
-                          {doneThisMonth && " · Hecho este mes"}
-                        </p>
-                      </div>
-                      <span className="font-semibold tabular-nums">{formatCurrency(r.amount, r.currency)}</span>
-                    </button>
-                  </div>
-                );
-              })
-            )}
+
+            <div className="mt-1 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Tus gastos recurrentes</h2>
+              {recurring.length > 0 && (
+                <button
+                  onClick={() => setEditingRecurring(null)}
+                  aria-label="Nuevo gasto recurrente"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-50 text-accent active:scale-95 dark:bg-accent-900/30 dark:text-accent-300"
+                >
+                  <Plus size={17} strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              {recurringLoading ? (
+                <CardListSkeleton count={2} />
+              ) : recurring.length === 0 ? (
+                <EmptyState
+                  icon="🔁"
+                  title="Sin gastos recurrentes"
+                  description="Netflix, alquiler, gimnasio... configúralos una vez."
+                  action={
+                    <Button onClick={() => setEditingRecurring(null)}>
+                      <Plus size={17} strokeWidth={2.5} />
+                      Nuevo gasto recurrente
+                    </Button>
+                  }
+                />
+              ) : (
+                recurring.map((r) => {
+                  const doneThisMonth = r.lastCompletedMonth === currentMonth;
+                  return (
+                    <div key={r.id} className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleRecurringDone(r)}
+                        aria-label={doneThisMonth ? "Marcar como no hecho este mes" : "Marcar como hecho este mes"}
+                        aria-pressed={doneThisMonth}
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 active:scale-95 ${
+                          doneThisMonth
+                            ? "border-positive bg-positive text-white"
+                            : "border-neutral-300 text-transparent dark:border-neutral-600"
+                        }`}
+                      >
+                        <Check size={15} strokeWidth={3} />
+                      </button>
+                      <button
+                        onClick={() => setEditingRecurring(r)}
+                        className="flex w-full min-w-0 flex-1 items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card dark:bg-surface-dark-subtle"
+                      >
+                        <span className="text-xl">🔁</span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-semibold">{r.description}</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {PERIODICITY_LABEL[r.periodicity]} · día {r.dayOfMonth}
+                            {doneThisMonth && " · Hecho este mes"}
+                          </p>
+                        </div>
+                        <span className="font-semibold tabular-nums">{formatCurrency(r.amount, r.currency)}</span>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         )}
       </PageContainer>
