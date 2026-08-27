@@ -252,7 +252,12 @@ npm install
 ### 2. Configurar Firebase
 1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com)
    (queda en el plan Spark por defecto, no hace falta cambiar nada).
-2. Activa **Authentication → Email/contraseña**.
+2. Activa **Authentication → Email/contraseña** y **Google** (ambos
+   proveedores de inicio de sesión). Para Email/contraseña, en **Política de
+   contraseñas** puedes exigir mayúsculas/minúsculas y longitud mín./máx. —
+   la app lee esa política en tiempo real (`validatePassword`) y muestra los
+   requisitos según los tengas configurados, así que no hay nada que tocar
+   en el código si la cambias.
 3. Activa **Cloud Firestore** (modo producción; las reglas del repo son
    las que mandan).
 4. Añade una app web y copia la configuración a un `.env` en la raíz
