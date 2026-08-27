@@ -1,19 +1,25 @@
 import type { Category } from "../types";
 
 export const DEFAULT_CATEGORY_LIST: Category[] = [
-  { id: "alimentacion", label: "Alimentación", icon: "🛒" },
-  { id: "transporte", label: "Transporte", icon: "🚗" },
-  { id: "vivienda", label: "Vivienda", icon: "🏠" },
-  { id: "ocio", label: "Ocio", icon: "🎉" },
-  { id: "comidas", label: "Comidas", icon: "🌮" },
-  { id: "fiesta", label: "Fiesta", icon: "🥳" },
+  
+  { id: "casa", label: "Casa", icon: "🏠" },
+  { id: "super", label: "Comida super", icon: "🛒" },
   { id: "compras", label: "Compras", icon: "🛍️" },
+
   { id: "viajes", label: "Viajes", icon: "✈️" },
+  { id: "transporte", label: "Transporte", icon: "🚗" },
+  { id: "multas", label: "Multas", icon: "🚨" },
+  
+  { id: "ocio", label: "Ocio", icon: "🎉" },
+  { id: "fiesta", label: "Fiesta", icon: "🥳" },
+  { id: "comida", label: "Comida", icon: "🌮" },
+  
   { id: "salud", label: "Salud", icon: "💊" },
+  { id: "ahorros", label: "Ahorros", icon: "🐷" },
+  { id: "salida", label: "Salida", icon: "🤑" },
+  
   { id: "suscripciones", label: "Suscripciones", icon: "🔁" },
   { id: "mascotas", label: "Mascotas", icon: "🐾" },
-  { id: "ahorros", label: "Ahorros", icon: "🐷" },
-  { id: "multas", label: "Multas", icon: "🚨" },
   { id: "otros", label: "Otros", icon: "📦" },
 ];
 
