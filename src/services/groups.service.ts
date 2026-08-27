@@ -324,10 +324,12 @@ export async function removeMember(groupId: string, targetUid: string, adminUid:
 }
 
 /**
- * Admin adds friends directly as members, no invite code needed — relies on
- * the same "creator can write any members/{uid} subdoc in their own group"
- * allowance that removeMember already depends on, just adding instead of
- * deactivating. Sequential per friend (like createGroup's own writes) so
+ * Admin adds friends directly as members, no invite code needed. Mirrors
+ * joinGroupByCode's write order exactly (memberIds first, member doc
+ * second) because the members/{uid} create rule requires memberUid to
+ * already be listed in the group's memberIds before that doc can be
+ * created — true for a self-join and, with this same ordering, equally
+ * true here. Sequential per friend (like createGroup's own writes) so
  * pickFreeColor sees each previous member before assigning the next color.
  */
 export async function addFriendsToGroup(
@@ -339,6 +341,7 @@ export async function addFriendsToGroup(
   try {
     const groupRef = doc(db, "groups", groupId);
     for (const friend of friends) {
+      await updateDoc(groupRef, { memberIds: arrayUnion(friend.uid) });
       const color = await pickFreeColor(groupId);
       await setDoc(doc(groupRef, "members", friend.uid), {
         uid: friend.uid,
@@ -347,7 +350,6 @@ export async function addFriendsToGroup(
         joinedAt: serverTimestamp(),
         active: true,
       });
-      await updateDoc(groupRef, { memberIds: arrayUnion(friend.uid) });
       await logHistory(groupId, "member_joined", adminUid, adminName, `${friend.name} fue añadido al grupo por ${adminName}`);
     }
   } catch (error) {
