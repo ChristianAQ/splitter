@@ -5,6 +5,7 @@ import { signIn, signUp, resetPassword, signInWithGoogle } from "../services/aut
 import { auth } from "../lib/firebase";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
+import { Logo } from "../components/ui/Logo";
 import { useToast } from "../context/ToastContext";
 
 export function Login() {
@@ -87,7 +88,7 @@ export function Login() {
     >
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mb-3 text-5xl">🎫</div>
+          <Logo size={72} className="mx-auto mb-3" />
           <h1 className="text-2xl font-bold tracking-tight">Splitter</h1>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             Tus gastos personales y los de tus grupos, en un solo sitio.
