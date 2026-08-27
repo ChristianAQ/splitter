@@ -53,7 +53,22 @@ export interface UserProfile {
   color: UserColor;
   currency: Currency;
   theme: "light" | "dark" | "system";
+  friendCode?: string; // lazily generated the first time the "Amigos" screen is opened
   createdAt: EpochMillis;
+}
+
+// ---------------------------------------------------------------------------
+// Friends
+// ---------------------------------------------------------------------------
+
+/** A denormalized snapshot of another user, kept in `users/{uid}/friends/`.
+ * Added mutually (both sides get an entry) the moment one of them enters
+ * the other's friend code — see services/friends.service.ts. */
+export interface Friend {
+  uid: string;
+  name: string;
+  color: UserColor;
+  addedAt: EpochMillis;
 }
 
 // ---------------------------------------------------------------------------

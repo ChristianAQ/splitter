@@ -21,6 +21,7 @@ export function subscribeUserProfile(
         color: data.color,
         currency: data.currency,
         theme: data.theme,
+        friendCode: data.friendCode,
         createdAt: tsToMillis(data.createdAt),
       });
     },

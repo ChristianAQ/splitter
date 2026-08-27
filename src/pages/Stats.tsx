@@ -36,11 +36,13 @@ export function Stats() {
     <>
       <TopBar title="Estadísticas" />
       <PageContainer>
-        <div className="mb-4 flex gap-2 overflow-x-auto no-scrollbar">
+        <div className="mb-5 flex gap-1 overflow-x-auto no-scrollbar rounded-2xl bg-white p-1 shadow-card dark:bg-surface-dark-subtle">
           <button
             onClick={() => setScope("personal")}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${
-              scope === "personal" ? "bg-accent text-white" : "bg-white text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+              scope === "personal"
+                ? "bg-accent text-white"
+                : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
             }`}
           >
             Personal
@@ -49,8 +51,10 @@ export function Stats() {
             <button
               key={g.id}
               onClick={() => setScope(g.id)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold ${
-                scope === g.id ? "bg-accent text-white" : "bg-white text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                scope === g.id
+                  ? "bg-accent text-white"
+                  : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
               }`}
             >
               {g.icon} {g.name}
