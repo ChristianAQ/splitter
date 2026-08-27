@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Check } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
-import { Avatar } from "../ui/Avatar";
+import { FriendPickerList } from "./FriendPickerList";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useFriends } from "../../hooks/useFriends";
@@ -149,33 +148,7 @@ export function CreateGroupSheet({ open, onClose }: Props) {
               para incluirlo directamente, o invita después con el código del grupo.
             </p>
           ) : (
-            <div className="flex flex-col gap-2">
-              {friends.map((f) => {
-                const selected = selectedFriends.has(f.uid);
-                return (
-                  <button
-                    key={f.uid}
-                    type="button"
-                    onClick={() => toggleFriend(f.uid)}
-                    className={`flex items-center gap-3 rounded-2xl border-2 p-3 text-left ${
-                      selected
-                        ? "border-accent bg-accent-50 dark:bg-accent-900/20"
-                        : "border-transparent bg-neutral-50 dark:bg-neutral-800/60"
-                    }`}
-                  >
-                    <Avatar name={f.name} color={f.color} size="sm" />
-                    <span className="flex-1 truncate text-sm font-medium">{f.name}</span>
-                    <div
-                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                        selected ? "border-accent bg-accent text-white" : "border-neutral-300 text-transparent dark:border-neutral-600"
-                      }`}
-                    >
-                      <Check size={13} strokeWidth={3} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <FriendPickerList friends={friends} selected={selectedFriends} onToggle={toggleFriend} />
           )}
         </div>
 
