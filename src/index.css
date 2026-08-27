@@ -27,11 +27,11 @@
    * `overscroll-behavior: auto`) is left on everywhere, including iOS
    * standalone PWA (added-to-home-screen) — it's the characteristic feel
    * users expect from a native-feeling app, not just a regular browser tab.
-   * Standalone has one known WKWebView quirk though: without browser chrome
-   * to force a reflow after the bounce settles, the page can occasionally
-   * finish visually offset by a few pixels even though its real scroll
-   * position is correct. That's corrected — without ever preventing the
-   * bounce itself — by useFixStandaloneBounceGlitch (see AppLayout). */
+   * No JS correction on top of it: an earlier attempt at nudging the scroll
+   * position after a boundary touch (to paper over a rare WKWebView paint
+   * quirk in standalone mode) ended up firing on perfectly ordinary
+   * scrolls that merely started or ended at the top, producing a visible
+   * unwanted jump — worse than the glitch it was meant to fix. */
 
   /* Normalizes native date-input rendering, which is otherwise the most
    * inconsistent form control across browsers — iOS Safari in particular
