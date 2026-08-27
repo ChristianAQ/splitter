@@ -23,25 +23,15 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Regular mobile browser tabs keep the native rubber-band bounce at the
-   * top/bottom of the page (the default `overscroll-behavior: auto`) — it's
-   * the characteristic feel users expect. iOS standalone PWA
-   * (added-to-home-screen) is the one exception: there it rubber-bands past
-   * the end of the document and, unlike in Safari-with-chrome, has no
-   * browser UI whose own reflow forces the page back to rest, so it can get
-   * stuck a few tens of pixels short of its real position until the next
-   * scroll gesture. `overscroll-behavior` must be set on `html` (the actual
-   * document scroller) to suppress that there; setting it only on `body`
-   * does not reliably take effect in WKWebView standalone mode. This is
-   * belt-and-braces with useSuppressStandaloneBounce, which handles the
-   * same case at the touch-event level for WKWebView builds that don't
-   * honor `overscroll-behavior` at all. */
-  @media (display-mode: standalone) {
-    html,
-    body {
-      overscroll-behavior-y: none;
-    }
-  }
+  /* Native rubber-band bounce at the top/bottom of the page (the default
+   * `overscroll-behavior: auto`) is left on everywhere, including iOS
+   * standalone PWA (added-to-home-screen) — it's the characteristic feel
+   * users expect from a native-feeling app, not just a regular browser tab.
+   * Standalone has one known WKWebView quirk though: without browser chrome
+   * to force a reflow after the bounce settles, the page can occasionally
+   * finish visually offset by a few pixels even though its real scroll
+   * position is correct. That's corrected — without ever preventing the
+   * bounce itself — by useFixStandaloneBounceGlitch (see AppLayout). */
 
   /* Normalizes native date-input rendering, which is otherwise the most
    * inconsistent form control across browsers — iOS Safari in particular
