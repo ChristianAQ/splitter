@@ -3,7 +3,7 @@ import type { Category } from "../types";
 export const DEFAULT_CATEGORY_LIST: Category[] = [
   
   { id: "casa", label: "Casa", icon: "🏠" },
-  { id: "super", label: "Comida super", icon: "🛒" },
+  { id: "super", label: "Super", icon: "🛒" },
   { id: "compras", label: "Compras", icon: "🛍️" },
 
   { id: "viajes", label: "Viajes", icon: "✈️" },
@@ -14,7 +14,7 @@ export const DEFAULT_CATEGORY_LIST: Category[] = [
   { id: "fiesta", label: "Fiesta", icon: "🥳" },
   { id: "comida", label: "Comida", icon: "🌮" },
   
-  { id: "salud", label: "Salud", icon: "💊" },
+  { id: "barbe", label: "Barbe", icon: "💈" },
   { id: "ahorros", label: "Ahorros", icon: "🐷" },
   { id: "salida", label: "Salida", icon: "🤑" },
   
