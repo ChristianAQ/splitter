@@ -5,6 +5,7 @@ import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Avatar } from "../components/ui/Avatar";
+import { ColorPicker } from "../components/ui/ColorPicker";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -14,7 +15,6 @@ import { signOutUser } from "../services/auth.service";
 import { deleteAccount as deleteAccountCascade } from "../services/account.service";
 import { propagateProfileToGroups } from "../services/profileSync.service";
 import { propagateProfileToFriends } from "../services/friends.service";
-import { USER_COLOR_PALETTE } from "../lib/userColors";
 import { CURRENCIES } from "../types";
 
 export function Settings() {
@@ -120,19 +120,7 @@ export function Settings() {
               <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
                 <div className="pb-4">
                   <SettingLabel icon={Palette}>Color identificativo</SettingLabel>
-                  <div className="flex flex-wrap gap-2.5">
-                    {USER_COLOR_PALETTE.map((c) => (
-                      <button
-                        key={c.value}
-                        aria-label={c.name}
-                        onClick={() => handleColorChange(c.value)}
-                        className={`h-9 w-9 rounded-full border-2 transition-transform active:scale-90 ${
-                          profile.color === c.value ? "border-neutral-900 dark:border-white" : "border-transparent"
-                        }`}
-                        style={{ backgroundColor: c.value }}
-                      />
-                    ))}
-                  </div>
+                  <ColorPicker value={profile.color} onChange={handleColorChange} />
                   <p className="mt-2 text-xs text-neutral-400">Este color se usará en todos tus grupos.</p>
                 </div>
 

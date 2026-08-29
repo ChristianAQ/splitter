@@ -1,6 +1,7 @@
-// Fixed palette so every user color guarantees readable contrast for white
-// text on top of it (checked against WCAG AA for large/bold text) — never
-// let a user pick an arbitrary color that could wash out next to their name.
+// Quick-pick presets, each already checked against WCAG AA contrast for
+// white bold text on top of it (avatars, badges). A custom color is also
+// allowed (see ColorPicker) — ensureReadableColor() keeps those in the same
+// safe range instead of restricting users to only these ten.
 export const USER_COLOR_PALETTE = [
   { value: "#6366F1", name: "Índigo" },
   { value: "#EC4899", name: "Rosa" },
@@ -15,5 +16,5 @@ export const USER_COLOR_PALETTE = [
 ];
 
 export function isValidUserColor(color: string): boolean {
-  return USER_COLOR_PALETTE.some((c) => c.value === color);
+  return /^#[0-9a-fA-F]{6}$/.test(color);
 }

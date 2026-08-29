@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
+import { ColorPicker } from "../ui/ColorPicker";
 import { FriendPickerList } from "./FriendPickerList";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
@@ -107,18 +108,7 @@ export function CreateGroupSheet({ open, onClose }: Props) {
 
         <div>
           <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Color</p>
-          <div className="flex flex-wrap gap-2">
-            {USER_COLOR_PALETTE.map((c) => (
-              <button
-                key={c.value}
-                type="button"
-                aria-label={c.name}
-                onClick={() => setColor(c.value)}
-                className={`h-9 w-9 rounded-full border-2 ${color === c.value ? "border-neutral-900 dark:border-white" : "border-transparent"}`}
-                style={{ backgroundColor: c.value }}
-              />
-            ))}
-          </div>
+          <ColorPicker value={color} onChange={setColor} />
         </div>
 
         <div>
