@@ -5,7 +5,7 @@ import { OfflineBanner } from "../ui/ErrorState";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 
 interface Props {
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   onBack?: boolean;
   right?: ReactNode;

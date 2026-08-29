@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Link2, Plus, UserPlus } from "lucide-react";
+import { Link2, Plus, UserPlus, Users } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { GroupCard } from "../components/group/GroupCard";
@@ -47,7 +47,7 @@ export function Groups() {
           <CardListSkeleton />
         ) : groups.length === 0 ? (
           <EmptyState
-            icon="👥"
+            icon={Users}
             title="Crea un grupo para compartir gastos"
             description="Viajes, pisos compartidos, cenas con amigos... comparte los gastos sin complicaciones."
             action={

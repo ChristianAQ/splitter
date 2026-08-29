@@ -9,9 +9,8 @@ import { useToast } from "../../context/ToastContext";
 import { useFriends } from "../../hooks/useFriends";
 import { addFriendsToGroup, createGroup } from "../../services/groups.service";
 import { USER_COLOR_PALETTE } from "../../lib/userColors";
+import { GROUP_ICON_OPTIONS, DEFAULT_GROUP_ICON_KEY, groupIconComponent } from "../../lib/groupIcons";
 import type { Currency } from "../../types";
-
-const ICONS = ["💰", "🏖️", "🏠", "🍽️", "✈️", "🎉", "🚗", "🎓", "⚽️", "🎁"];
 
 interface Props {
   open: boolean;
@@ -25,13 +24,14 @@ export function CreateGroupSheet({ open, onClose }: Props) {
   const { friends } = useFriends();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [icon, setIcon] = useState(ICONS[0]);
+  const [icon, setIcon] = useState(DEFAULT_GROUP_ICON_KEY);
   const [color, setColor] = useState(USER_COLOR_PALETTE[0].value);
   const [currency, setCurrency] = useState<Currency>("EUR");
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
 
   const valid = name.trim().length > 0;
+  const PreviewIcon = groupIconComponent(icon);
 
   function toggleFriend(uid: string) {
     setSelectedFriends((prev) => {
@@ -71,10 +71,10 @@ export function CreateGroupSheet({ open, onClose }: Props) {
       <div className="flex flex-col gap-5 pb-2 pt-1">
         <div className="flex justify-center">
           <div
-            className="flex h-16 w-16 items-center justify-center rounded-3xl text-3xl"
-            style={{ backgroundColor: `${color}22` }}
+            className="flex h-16 w-16 items-center justify-center rounded-3xl"
+            style={{ backgroundColor: `${color}22`, color }}
           >
-            {icon}
+            <PreviewIcon size={28} strokeWidth={1.8} />
           </div>
         </div>
 
@@ -88,16 +88,18 @@ export function CreateGroupSheet({ open, onClose }: Props) {
         <div>
           <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Icono</p>
           <div className="flex flex-wrap gap-2">
-            {ICONS.map((i) => (
+            {GROUP_ICON_OPTIONS.map(({ key, Icon }) => (
               <button
-                key={i}
+                key={key}
                 type="button"
-                onClick={() => setIcon(i)}
-                className={`flex h-11 w-11 items-center justify-center rounded-2xl text-xl border-2 ${
-                  icon === i ? "border-accent" : "border-transparent bg-neutral-100 dark:bg-neutral-800"
+                onClick={() => setIcon(key)}
+                className={`flex h-11 w-11 items-center justify-center rounded-2xl border-2 ${
+                  icon === key
+                    ? "border-accent text-accent"
+                    : "border-transparent bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
                 }`}
               >
-                {i}
+                <Icon size={20} strokeWidth={1.8} />
               </button>
             ))}
           </div>

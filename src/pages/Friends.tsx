@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Copy, Share2, UserX } from "lucide-react";
+import { Copy, Share2, UserPlus, UserX } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -185,7 +185,7 @@ export function Friends() {
             {loading ? (
               <CardListSkeleton count={2} />
             ) : friends.length === 0 ? (
-              <EmptyState icon="🧑‍🤝‍🧑" title="Sin amigos todavía" description="Añade a alguien con su código para poder incluirlo en tus grupos sin invitación." />
+              <EmptyState icon={UserPlus} title="Sin amigos todavía" description="Añade a alguien con su código para poder incluirlo en tus grupos sin invitación." />
             ) : (
               <Card>
                 <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">

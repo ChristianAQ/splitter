@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { BarChart3, Trophy } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -11,6 +12,7 @@ import { useGroups } from "../hooks/useGroups";
 import { useGroupDetail } from "../hooks/useGroupDetail";
 import { useGroupsMonthlySpend } from "../hooks/useGroupsMonthlySpend";
 import { GROUPS_CATEGORY } from "../lib/categories";
+import { groupIconComponent } from "../lib/groupIcons";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { todayISO } from "../domain/date";
 import type { Group } from "../types";
@@ -47,19 +49,23 @@ export function Stats() {
           >
             Personal
           </button>
-          {groups.map((g) => (
-            <button
-              key={g.id}
-              onClick={() => setScope(g.id)}
-              className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                scope === g.id
-                  ? "bg-accent text-white"
-                  : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
-              }`}
-            >
-              {g.icon} {g.name}
-            </button>
-          ))}
+          {groups.map((g) => {
+            const GroupIcon = groupIconComponent(g.icon);
+            return (
+              <button
+                key={g.id}
+                onClick={() => setScope(g.id)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                  scope === g.id
+                    ? "bg-accent text-white"
+                    : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
+                }`}
+              >
+                <GroupIcon size={15} strokeWidth={2} />
+                {g.name}
+              </button>
+            );
+          })}
         </div>
 
         {scope === "personal" ? (
@@ -121,7 +127,7 @@ function PersonalStats({
   }, [categorySlices, groupsSpendThisMonth]);
 
   if (!loading && expenses.length === 0 && groupsSpendThisMonth === 0) {
-    return <EmptyState icon="📊" title="Sin datos todavía" description="Añade gastos para ver tus estadísticas." />;
+    return <EmptyState icon={BarChart3} title="Sin datos todavía" description="Añade gastos para ver tus estadísticas." />;
   }
 
   return (
@@ -174,7 +180,7 @@ function GroupStats({ groupId }: { groupId: string }) {
   }, [expenses, activeMembers]);
 
   if (loading || !group) return null;
-  if (expenses.length === 0) return <EmptyState icon="📊" title="Sin gastos todavía" />;
+  if (expenses.length === 0) return <EmptyState icon={BarChart3} title="Sin gastos todavía" />;
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
 
@@ -195,7 +201,9 @@ function GroupStats({ groupId }: { groupId: string }) {
 
       {mostActive && (
         <Card className="flex items-center gap-3">
-          <span className="text-2xl">🏆</span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+            <Trophy size={20} strokeWidth={1.8} />
+          </span>
           <div>
             <p className="text-sm font-semibold">{mostActive.name} ha añadido más gastos</p>
             <p className="text-xs text-neutral-400">Quien más aporta al registro del grupo</p>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Check, Plus, RefreshCw } from "lucide-react";
+import { Calendar, Check, Plus, RefreshCw, Repeat, Wallet } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
@@ -106,7 +106,7 @@ export function Expenses() {
           (loading ? (
             <CardListSkeleton />
           ) : grouped.past.length === 0 ? (
-            <EmptyState icon="💳" title="Aún no tienes gastos" description="Añade tu primer gasto para empezar." />
+            <EmptyState icon={Wallet} title="Aún no tienes gastos" description="Añade tu primer gasto para empezar." />
           ) : (
             <MonthlyList expenses={grouped.past} totals={monthTotals} onSelect={setEditingExpense} currency={expenses[0]?.currency} />
           ))}
@@ -115,7 +115,7 @@ export function Expenses() {
           (loading ? (
             <CardListSkeleton count={2} />
           ) : grouped.future.length === 0 ? (
-            <EmptyState icon="🗓️" title="Sin gastos próximos" description="Los gastos con fecha futura aparecerán aquí." />
+            <EmptyState icon={Calendar} title="Sin gastos próximos" description="Los gastos con fecha futura aparecerán aquí." />
           ) : (
             <div className="flex flex-col gap-2.5">
               {grouped.future.map((e) => (
@@ -156,7 +156,7 @@ export function Expenses() {
                 <CardListSkeleton count={2} />
               ) : recurring.length === 0 ? (
                 <EmptyState
-                  icon="🔁"
+                  icon={Repeat}
                   title="Sin gastos recurrentes"
                   description="Netflix, alquiler, gimnasio... configúralos una vez."
                   action={
@@ -188,7 +188,9 @@ export function Expenses() {
                         onClick={() => setEditingRecurring(r)}
                         className="flex w-full min-w-0 flex-1 items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card dark:bg-surface-dark-subtle"
                       >
-                        <span className="text-xl">🔁</span>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                          <Repeat size={17} strokeWidth={1.8} />
+                        </span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-semibold">{r.description}</p>
                           <p className="text-xs text-neutral-500 dark:text-neutral-400">

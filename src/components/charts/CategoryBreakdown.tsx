@@ -38,7 +38,7 @@ export function CategoryBreakdown({ slices, currency = "EUR" }: Props) {
           return (
             <li key={slice.categoryId} className="flex items-center gap-2.5 text-sm">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-              <span className="shrink-0">{category.icon}</span>
+              <category.icon size={15} strokeWidth={2} className="shrink-0 text-neutral-400 dark:text-neutral-500" />
               <span className="flex-1 truncate text-neutral-700 dark:text-neutral-300">{category.label}</span>
               <span className="font-semibold tabular-nums">{formatCurrency(slice.amount, currency)}</span>
               <span className="w-10 text-right text-xs text-neutral-400">

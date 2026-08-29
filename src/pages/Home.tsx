@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Sparkles, Users } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -70,11 +70,12 @@ export function Home() {
   const delta = lastMonthTotal > 0 ? ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : null;
   const firstName = profile?.name.split(" ")[0];
   const dateLabel = capitalize(WEEKDAY_FORMATTER.format(new Date(today)));
+  const topCategoryInfo = topCategory ? categoryById(topCategory[0]) : null;
 
   return (
     <>
       <TopBar
-        title={`${greeting(new Date().getHours())}${firstName ? `, ${firstName}` : ""} 👋`}
+        title={`${greeting(new Date().getHours())}${firstName ? `, ${firstName}` : ""}`}
         subtitle={dateLabel}
         right={
           profile && (
@@ -121,10 +122,10 @@ export function Home() {
           </Card>
           <Card>
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Categoría top</p>
-            {topCategory ? (
+            {topCategoryInfo ? (
               <>
-                <p className="mt-1 text-xl font-bold">{categoryById(topCategory[0]).icon}</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">{categoryById(topCategory[0]).label}</p>
+                <topCategoryInfo.icon size={22} strokeWidth={1.8} className="mt-1 text-neutral-700 dark:text-neutral-200" />
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{topCategoryInfo.label}</p>
               </>
             ) : (
               <p className="mt-1 text-sm text-neutral-400">Sin datos</p>
@@ -146,18 +147,21 @@ export function Home() {
           <section className="mt-6">
             <h2 className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Próximamente</h2>
             <div className="flex flex-col gap-2">
-              {upcoming.map((e) => (
-                <Card key={e.id} className="flex items-center justify-between py-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="text-lg">{categoryById(e.categoryId).icon}</span>
-                    <div>
-                      <p className="text-sm font-semibold">{e.description}</p>
-                      <p className="text-xs text-neutral-400">{e.date}</p>
+              {upcoming.map((e) => {
+                const ItemIcon = categoryById(e.categoryId).icon;
+                return (
+                  <Card key={e.id} className="flex items-center justify-between py-3">
+                    <div className="flex items-center gap-2.5">
+                      <ItemIcon size={18} strokeWidth={1.8} className="text-neutral-500 dark:text-neutral-400" />
+                      <div>
+                        <p className="text-sm font-semibold">{e.description}</p>
+                        <p className="text-xs text-neutral-400">{e.date}</p>
+                      </div>
                     </div>
-                  </div>
-                  <span className="font-semibold tabular-nums">{formatCurrency(e.amount, e.currency)}</span>
-                </Card>
-              ))}
+                    <span className="font-semibold tabular-nums">{formatCurrency(e.amount, e.currency)}</span>
+                  </Card>
+                );
+              })}
             </div>
           </section>
         )}
@@ -173,7 +177,7 @@ export function Home() {
           {groupsLoading ? (
             <CardListSkeleton count={2} />
           ) : groups.length === 0 ? (
-            <EmptyState icon="👥" title="Sin grupos todavía" description="Crea un grupo para compartir gastos con amigos." />
+            <EmptyState icon={Users} title="Sin grupos todavía" description="Crea un grupo para compartir gastos con amigos." />
           ) : (
             <div className="flex flex-col gap-2.5">
               {groups.slice(0, 4).map((g) => (
@@ -193,7 +197,7 @@ export function Home() {
 
         {!loading && expenses.length === 0 && groups.length === 0 && (
           <div className="mt-4">
-            <EmptyState icon="🎫" title="Bienvenido a Splitter" description="Añade tu primer gasto con el botón + de abajo." />
+            <EmptyState icon={Sparkles} title="Bienvenido a Splitter" description="Añade tu primer gasto con el botón + de abajo." />
           </div>
         )}
       </PageContainer>

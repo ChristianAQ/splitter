@@ -1,3 +1,5 @@
+import type { LucideIcon } from "lucide-react";
+
 // Core domain types, shared between the Firestore data layer, the pure
 // calculation modules in `domain/`, and the UI.
 //
@@ -30,7 +32,7 @@ export type DefaultCategoryId = (typeof DEFAULT_CATEGORIES)[number];
 export interface Category {
   id: string; // one of DEFAULT_CATEGORIES, or a custom id for user-defined categories
   label: string;
-  icon: string; // emoji
+  icon: LucideIcon;
   custom?: boolean;
 }
 
@@ -116,7 +118,8 @@ export interface Group {
   id: string;
   name: string;
   description?: string;
-  icon: string; // emoji
+  icon: string; // key into GROUP_ICON_OPTIONS (lib/groupIcons.ts) — older groups may
+  // still store a literal emoji; groupIconComponent() resolves both.
   color: string;
   currency: Currency; // primary currency for the group
   createdBy: string; // uid of the admin/creator

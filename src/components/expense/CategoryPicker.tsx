@@ -23,7 +23,7 @@ export function CategoryPicker({ value, onChange }: Props) {
                 : "border-neutral-200 bg-white text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
             }`}
           >
-            <span className="text-xl">{cat.icon}</span>
+            <cat.icon size={20} strokeWidth={1.8} />
             {cat.label}
           </button>
         );

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { formatSignedCurrency } from "../../lib/format";
+import { groupIconComponent } from "../../lib/groupIcons";
 import type { Currency } from "../../types";
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 export function GroupCard({ groupId, name, icon, color, balance, currency }: Props) {
   const settled = Math.abs(balance) < 0.005;
   const owed = balance > 0;
+  const Icon = groupIconComponent(icon);
 
   return (
     <Link
@@ -22,10 +24,10 @@ export function GroupCard({ groupId, name, icon, color, balance, currency }: Pro
       className="flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-card active:scale-[0.99] transition-transform dark:bg-surface-dark-subtle"
     >
       <div
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl"
-        style={{ backgroundColor: `${color}22` }}
+        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+        style={{ backgroundColor: `${color}22`, color }}
       >
-        {icon}
+        <Icon size={22} strokeWidth={1.8} />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">{name}</p>

@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { User } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { useGroups } from "../../hooks/useGroups";
+import { groupIconComponent } from "../../lib/groupIcons";
 import { PersonalExpenseSheet } from "./PersonalExpenseSheet";
 import { GroupExpenseSheetLauncher } from "./GroupExpenseSheetLauncher";
 
@@ -35,26 +37,36 @@ export function QuickAddSheet({ open, onClose }: Props) {
           onClick={() => setMode("personal")}
           className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-4 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
         >
-          <span className="text-2xl">👤</span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
+            <User size={19} strokeWidth={1.8} />
+          </span>
           <div>
             <p className="font-semibold">Gasto personal</p>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">Solo tuyo, en tu zona privada</p>
           </div>
         </button>
 
-        {groups.map((g) => (
-          <button
-            key={g.id}
-            onClick={() => setMode(g.id)}
-            className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-4 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
-          >
-            <span className="text-2xl">{g.icon}</span>
-            <div>
-              <p className="font-semibold">{g.name}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Gasto compartido de grupo</p>
-            </div>
-          </button>
-        ))}
+        {groups.map((g) => {
+          const GroupIcon = groupIconComponent(g.icon);
+          return (
+            <button
+              key={g.id}
+              onClick={() => setMode(g.id)}
+              className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-4 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
+            >
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                style={{ backgroundColor: `${g.color}22`, color: g.color }}
+              >
+                <GroupIcon size={19} strokeWidth={1.8} />
+              </span>
+              <div>
+                <p className="font-semibold">{g.name}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Gasto compartido de grupo</p>
+              </div>
+            </button>
+          );
+        })}
 
         {groups.length === 0 && (
           <p className="px-1 py-2 text-sm text-neutral-500 dark:text-neutral-400">

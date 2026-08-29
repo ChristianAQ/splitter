@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Lock } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { AmountInput } from "../ui/AmountInput";
 import { Input } from "../ui/Input";
@@ -181,8 +182,9 @@ export function GroupExpenseSheet({ open, onClose, groupId, currency, members, e
 
         {error && <p className="text-sm font-medium text-negative">{error}</p>}
         {!isCreator && (
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            🔒 Solo quien creó este gasto puede editarlo o eliminarlo.
+          <p className="flex items-center gap-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+            <Lock size={14} strokeWidth={2.1} className="shrink-0" />
+            Solo quien creó este gasto puede editarlo o eliminarlo.
           </p>
         )}
 

@@ -6,6 +6,7 @@ import { Button } from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { joinGroupByCode, previewInviteCode, type InvitePreview } from "../../services/groups.service";
+import { groupIconComponent } from "../../lib/groupIcons";
 
 interface Props {
   open: boolean;
@@ -21,6 +22,7 @@ export function JoinGroupSheet({ open, onClose }: Props) {
   const [checking, setChecking] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const PreviewIcon = groupIconComponent(preview?.icon ?? "");
 
   function reset() {
     setCode("");
@@ -89,10 +91,10 @@ export function JoinGroupSheet({ open, onClose }: Props) {
         {preview && (
           <div className="flex items-center gap-3 rounded-2xl bg-accent-50 p-3.5 dark:bg-accent-900/20">
             <div
-              className="flex h-11 w-11 items-center justify-center rounded-2xl text-xl"
-              style={{ backgroundColor: `${preview.color}33` }}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl"
+              style={{ backgroundColor: `${preview.color}33`, color: preview.color }}
             >
-              {preview.icon}
+              <PreviewIcon size={20} strokeWidth={1.8} />
             </div>
             <p className="text-sm">
               Vas a unirte a <span className="font-semibold">"{preview.groupName}"</span>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { UserPlus } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Button } from "../ui/Button";
 import { EmptyState } from "../ui/EmptyState";
@@ -62,7 +63,7 @@ export function AddGroupFriendsSheet({ open, onClose, groupId, existingMemberIds
       <div className="flex flex-col gap-4 pb-2 pt-1">
         {available.length === 0 ? (
           <EmptyState
-            icon="🧑‍🤝‍🧑"
+            icon={UserPlus}
             title="Nada que añadir"
             description={
               friends.length === 0 ? "Aún no tienes amigos añadidos." : "Todos tus amigos ya están en este grupo."

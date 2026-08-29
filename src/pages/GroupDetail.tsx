@@ -1,6 +1,26 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { BarChart3, Link2, Settings as SettingsIcon, Share2, UserPlus } from "lucide-react";
+import {
+  BarChart3,
+  Circle,
+  Clock,
+  HandCoins,
+  Link2,
+  LogOut,
+  Pencil,
+  PartyPopper,
+  Plus,
+  Receipt,
+  Settings as SettingsIcon,
+  Share2,
+  Sparkles,
+  Trash2,
+  Undo2,
+  UserMinus,
+  UserPlus,
+  type LucideIcon,
+} from "lucide-react";
+import { groupIconComponent } from "../lib/groupIcons";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -47,6 +67,7 @@ export function GroupDetail() {
 
   const membersById = new Map(activeMembers.map((m) => [m.uid, m]));
   const isAdmin = group?.createdBy === user?.uid;
+  const GroupIcon = group ? groupIconComponent(group.icon) : null;
 
   if (notFound) {
     return (
@@ -124,7 +145,7 @@ export function GroupDetail() {
     if (!group) return;
     setShareOpen(false);
     const lines = [
-      `Resumen de "${group.name}" (${group.icon})`,
+      `Resumen de "${group.name}"`,
       `Total gastado: ${formatCurrency(totalSpent, group.currency)}`,
       "",
       "Saldos:",
@@ -173,7 +194,12 @@ export function GroupDetail() {
   return (
     <>
       <TopBar
-        title={`${group.icon} ${group.name}`}
+        title={
+          <span className="inline-flex items-center gap-1.5">
+            {GroupIcon && <GroupIcon size={18} strokeWidth={2} className="shrink-0" style={{ color: group.color }} />}
+            {group.name}
+          </span>
+        }
         onBack
         right={
           <div className="flex items-center gap-2">
@@ -262,7 +288,7 @@ export function GroupDetail() {
 
         {tab === "gastos" &&
           (expenses.length === 0 ? (
-            <EmptyState icon="💸" title="Sin gastos todavía" description="Añade el primer gasto de este grupo." />
+            <EmptyState icon={Receipt} title="Sin gastos todavía" description="Añade el primer gasto de este grupo." />
           ) : (
             <div className="flex flex-col gap-2.5">
               {expenses.map((e) => (
@@ -294,7 +320,7 @@ export function GroupDetail() {
             <div>
               <p className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Liquidar</p>
               {settlement.length === 0 ? (
-                <EmptyState icon="🎉" title="Todo está saldado" />
+                <EmptyState icon={PartyPopper} title="Todo está saldado" />
               ) : (
                 <div className="flex flex-col gap-2.5">
                   {settlement.map((t, i) => {
@@ -343,18 +369,23 @@ export function GroupDetail() {
 
         {tab === "historial" &&
           (history.length === 0 ? (
-            <EmptyState icon="🕓" title="Sin actividad todavía" />
+            <EmptyState icon={Clock} title="Sin actividad todavía" />
           ) : (
             <div className="flex flex-col gap-2">
-              {history.map((h) => (
-                <div key={h.id} className="flex items-start gap-3 rounded-2xl bg-white p-3.5 shadow-card dark:bg-surface-dark-subtle">
-                  <span className="mt-0.5 text-lg">{historyIcon(h.type)}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm">{h.summary}</p>
-                    <p className="text-xs text-neutral-400">{formatDate(new Date(h.createdAt).toISOString().slice(0, 10))}</p>
+              {history.map((h) => {
+                const HistoryIcon = historyIcon(h.type);
+                return (
+                  <div key={h.id} className="flex items-start gap-3 rounded-2xl bg-white p-3.5 shadow-card dark:bg-surface-dark-subtle">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                      <HistoryIcon size={14} strokeWidth={2.2} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm">{h.summary}</p>
+                      <p className="text-xs text-neutral-400">{formatDate(new Date(h.createdAt).toISOString().slice(0, 10))}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ))}
       </PageContainer>
@@ -414,31 +445,31 @@ export function GroupDetail() {
   );
 }
 
-function historyIcon(type: string): string {
+function historyIcon(type: string): LucideIcon {
   switch (type) {
     case "expense_added":
-      return "➕";
+      return Plus;
     case "expense_edited":
-      return "✏️";
+      return Pencil;
     case "expense_deleted":
-      return "🗑️";
+      return Trash2;
     case "member_joined":
-      return "👋";
+      return UserPlus;
     case "member_left":
-      return "🚪";
+      return LogOut;
     case "member_removed":
-      return "⛔️";
+      return UserMinus;
     case "member_renamed":
-      return "✏️";
+      return Pencil;
     case "payment_recorded":
-      return "💸";
+      return HandCoins;
     case "payment_reverted":
-      return "↩️";
+      return Undo2;
     case "group_created":
-      return "✨";
+      return Sparkles;
     case "invite_code_regenerated":
-      return "🔗";
+      return Link2;
     default:
-      return "•";
+      return Circle;
   }
 }

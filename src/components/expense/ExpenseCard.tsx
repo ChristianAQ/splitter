@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Repeat } from "lucide-react";
 import { categoryById } from "../../lib/categories";
 import { formatCurrency, formatDate } from "../../lib/format";
 import { Badge } from "../ui/Card";
@@ -29,8 +29,8 @@ export function PersonalExpenseCard({ expense, onClick, onMarkDone }: Props) {
         onClick={onClick}
         className="flex w-full min-w-0 flex-1 items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card active:scale-[0.99] transition-transform dark:bg-surface-dark-subtle"
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xl dark:bg-neutral-800">
-          {category.icon}
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+          <category.icon size={20} strokeWidth={1.8} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{expense.description}</p>
@@ -41,7 +41,7 @@ export function PersonalExpenseCard({ expense, onClick, onMarkDone }: Props) {
             {expense.recurringSourceId && (
               <>
                 <span aria-hidden>·</span>
-                <span>🔁</span>
+                <Repeat size={12} strokeWidth={2.2} aria-label="Gasto recurrente" />
               </>
             )}
           </div>
