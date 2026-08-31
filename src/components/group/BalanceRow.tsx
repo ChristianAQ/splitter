@@ -12,7 +12,7 @@ export function BalanceRow({ member, balance, currency }: Props) {
   const settled = Math.abs(balance.net) < 0.005;
   return (
     <div className="flex items-center justify-between py-2.5">
-      <UserColorIndicator name={member.name} color={member.color} />
+      <UserColorIndicator name={member.name} color={member.color} badge={member.isGhost ? "Sin cuenta" : undefined} />
       <span className={`font-semibold tabular-nums ${settled ? "text-neutral-400" : balance.net > 0 ? "text-positive" : "text-negative"}`}>
         {settled ? "Saldado" : formatSignedCurrency(balance.net, currency)}
       </span>

@@ -137,6 +137,12 @@ export interface GroupMember {
   // live — never a field a client write could forge (see firestore.rules).
   joinedAt: EpochMillis;
   active: boolean; // false once a member leaves; kept for historical expense attribution
+  // Added by the group's admin for someone without (or who doesn't want) a
+  // Splitter account — no auth uid, no login, can't self-join or leave.
+  // Otherwise a member like any other: can be a payer, a participant, or a
+  // split target; the admin manages their name/color and records their
+  // payments on their behalf.
+  isGhost?: boolean;
 }
 
 export type SplitMethod = "equal" | "amount"; // "percentage" | "shares" reserved for Phase 3

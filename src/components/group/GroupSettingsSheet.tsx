@@ -155,6 +155,7 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
                     <span className="flex-1 truncate text-sm font-medium">
                       {m.name}
                       {m.uid === group.createdBy && <span className="ml-1.5 text-xs text-neutral-400">Admin</span>}
+                      {m.isGhost && <span className="ml-1.5 text-xs text-neutral-400">Sin cuenta</span>}
                       {!m.active && <span className="ml-1.5 text-xs text-neutral-400">(salió)</span>}
                     </span>
                   )}

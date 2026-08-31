@@ -46,6 +46,7 @@ function fromMemberSnap(id: string, data: Record<string, unknown>): GroupMember 
     color: data.color as string,
     joinedAt: tsToMillis(data.joinedAt),
     active: data.active as boolean,
+    isGhost: Boolean(data.isGhost),
   };
 }
 
@@ -88,7 +89,7 @@ export function subscribeMembers(
 }
 
 /** Picks the first palette color not already used by an active member. */
-async function pickFreeColor(groupId: string): Promise<string> {
+export async function pickFreeColor(groupId: string): Promise<string> {
   const snap = await getDocs(collection(db, "groups", groupId, "members"));
   const used = new Set(snap.docs.map((d) => d.data().color as string));
   const free = USER_COLOR_PALETTE.find((c) => !used.has(c.value));
@@ -352,6 +353,34 @@ export async function addFriendsToGroup(
       });
       await logHistory(groupId, "member_joined", adminUid, adminName, `${friend.name} fue añadido al grupo por ${adminName}`);
     }
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
+/**
+ * Admin adds someone without a Splitter account — a name and nothing else,
+ * so they can be a payer/participant/split target like any other member.
+ * Same write order and rule branches as addFriendsToGroup (memberIds first,
+ * then the member doc), just with a locally-generated id standing in for a
+ * real auth uid instead of an existing friend's.
+ */
+export async function addGhostMember(groupId: string, adminUid: string, adminName: string, name: string): Promise<string> {
+  try {
+    const groupRef = doc(db, "groups", groupId);
+    const ghostRef = doc(collection(groupRef, "members"));
+    await updateDoc(groupRef, { memberIds: arrayUnion(ghostRef.id) });
+    const color = await pickFreeColor(groupId);
+    await setDoc(ghostRef, {
+      uid: ghostRef.id,
+      name: name.trim(),
+      color,
+      joinedAt: serverTimestamp(),
+      active: true,
+      isGhost: true,
+    });
+    await logHistory(groupId, "member_joined", adminUid, adminName, `${adminName} añadió a ${name.trim()} (sin cuenta)`);
+    return ghostRef.id;
   } catch (error) {
     throw toFriendlyError(error);
   }
