@@ -6,20 +6,23 @@ import type { Group } from "../types";
 export function useGroups() {
   const { user } = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
+  const [archivedGroups, setArchivedGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
       setGroups([]);
+      setArchivedGroups([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     return subscribeUserGroups(user.uid, (data) => {
       setGroups(data.filter((g) => !g.archivedAt));
+      setArchivedGroups(data.filter((g) => g.archivedAt));
       setLoading(false);
     });
   }, [user]);
 
-  return { groups, loading };
+  return { groups, archivedGroups, loading };
 }

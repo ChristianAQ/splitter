@@ -136,11 +136,15 @@ export function Home() {
             <p className="mt-1 text-xl font-bold tabular-nums">{upcoming.length}</p>
             <p className="mt-0.5 text-xs text-neutral-400">pendientes</p>
           </Card>
-          <Card>
+          <Link
+            to="/grupos"
+            aria-label="Ver grupos"
+            className="rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
+          >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Grupos activos</p>
             <p className="mt-1 text-xl font-bold tabular-nums">{groups.length}</p>
             <p className="mt-0.5 text-xs text-neutral-400">{groups.length === 1 ? "grupo" : "grupos"}</p>
-          </Card>
+          </Link>
         </section>
 
         {upcoming.length > 0 && (

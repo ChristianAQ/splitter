@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Link2, Plus, UserPlus, Users } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
@@ -12,13 +12,25 @@ import { JoinGroupSheet } from "../components/group/JoinGroupSheet";
 import { useAuth } from "../context/AuthContext";
 import { useGroups } from "../hooks/useGroups";
 import { useGroupsSummary } from "../hooks/useGroupsSummary";
+import type { Group } from "../types";
 
 export function Groups() {
   const { profile } = useAuth();
-  const { groups, loading } = useGroups();
-  const summaries = useGroupsSummary(groups, profile?.uid);
+  const { groups, archivedGroups, loading } = useGroups();
+  const allGroups = useMemo(() => [...groups, ...archivedGroups], [groups, archivedGroups]);
+  const summaries = useGroupsSummary(allGroups, profile?.uid);
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
+
+  const { pending, settled } = useMemo(() => {
+    const isSettled = (g: Group) => Math.abs(summaries[g.id]?.balance ?? 0) < 0.005;
+    return {
+      pending: groups.filter((g) => !isSettled(g)),
+      settled: groups.filter((g) => isSettled(g)),
+    };
+  }, [groups, summaries]);
+
+  const hasNoGroupsAtAll = groups.length === 0 && archivedGroups.length === 0;
 
   return (
     <>
@@ -45,7 +57,7 @@ export function Groups() {
       <PageContainer>
         {loading ? (
           <CardListSkeleton />
-        ) : groups.length === 0 ? (
+        ) : hasNoGroupsAtAll ? (
           <EmptyState
             icon={Users}
             title="Crea un grupo para compartir gastos"
@@ -60,18 +72,64 @@ export function Groups() {
             }
           />
         ) : (
-          <div className="flex flex-col gap-2.5">
-            {groups.map((g) => (
-              <GroupCard
-                key={g.id}
-                groupId={g.id}
-                name={g.name}
-                icon={g.icon}
-                color={g.color}
-                balance={summaries[g.id]?.balance ?? 0}
-                currency={g.currency}
-              />
-            ))}
+          <div className="flex flex-col gap-6">
+            {pending.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Pendientes de liquidar ({pending.length})</h2>
+                <div className="flex flex-col gap-2.5">
+                  {pending.map((g) => (
+                    <GroupCard
+                      key={g.id}
+                      groupId={g.id}
+                      name={g.name}
+                      icon={g.icon}
+                      color={g.color}
+                      balance={summaries[g.id]?.balance ?? 0}
+                      currency={g.currency}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {settled.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Saldados ({settled.length})</h2>
+                <div className="flex flex-col gap-2.5">
+                  {settled.map((g) => (
+                    <GroupCard
+                      key={g.id}
+                      groupId={g.id}
+                      name={g.name}
+                      icon={g.icon}
+                      color={g.color}
+                      balance={summaries[g.id]?.balance ?? 0}
+                      currency={g.currency}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {archivedGroups.length > 0 && (
+              <section>
+                <h2 className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Archivados ({archivedGroups.length})</h2>
+                <div className="flex flex-col gap-2.5">
+                  {archivedGroups.map((g) => (
+                    <GroupCard
+                      key={g.id}
+                      groupId={g.id}
+                      name={g.name}
+                      icon={g.icon}
+                      color={g.color}
+                      balance={summaries[g.id]?.balance ?? 0}
+                      currency={g.currency}
+                      archived
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </PageContainer>
