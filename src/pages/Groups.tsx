@@ -7,17 +7,18 @@ import { GroupCard } from "../components/group/GroupCard";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Button } from "../components/ui/Button";
-import { Card } from "../components/ui/Card";
 import { Avatar } from "../components/ui/Avatar";
+import { Badge } from "../components/ui/Card";
+import { Collapsible } from "../components/ui/Collapsible";
+import { BottomSheet } from "../components/ui/BottomSheet";
 import { CreateGroupSheet } from "../components/group/CreateGroupSheet";
 import { JoinGroupSheet } from "../components/group/JoinGroupSheet";
 import { useAuth } from "../context/AuthContext";
 import { useGroups } from "../hooks/useGroups";
 import { useGroupsSummary } from "../hooks/useGroupsSummary";
 import { useFriends } from "../hooks/useFriends";
-import type { Group } from "../types";
-
-const FRIENDS_PREVIEW_COUNT = 5;
+import { groupIconComponent } from "../lib/groupIcons";
+import type { Friend, Group } from "../types";
 
 export function Groups() {
   const { profile } = useAuth();
@@ -27,6 +28,7 @@ export function Groups() {
   const summaries = useGroupsSummary(allGroups, profile?.uid);
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 
   const { pending, settled } = useMemo(() => {
     const isSettled = (g: Group) => Math.abs(summaries[g.id]?.balance ?? 0) < 0.005;
@@ -35,6 +37,11 @@ export function Groups() {
       settled: groups.filter((g) => isSettled(g)),
     };
   }, [groups, summaries]);
+
+  const sharedGroups = useMemo(
+    () => (selectedFriend ? allGroups.filter((g) => g.memberIds.includes(selectedFriend.uid)) : []),
+    [allGroups, selectedFriend]
+  );
 
   const hasNoGroupsAtAll = groups.length === 0 && archivedGroups.length === 0;
 
@@ -79,13 +86,14 @@ export function Groups() {
           />
         ) : (
           <div className="flex flex-col gap-6">
-            <section>
-              <div className="mb-2 flex items-center justify-between">
-                <h2 className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Amigos ({friends.length})</h2>
-                <Link to="/amigos" className="text-sm font-semibold text-accent">
+            <Collapsible
+              title={`Amigos (${friends.length})`}
+              headerRight={
+                <Link to="/amigos" className="shrink-0 text-sm font-semibold text-accent">
                   Ver todos
                 </Link>
-              </div>
+              }
+            >
               {friendsLoading ? (
                 <CardListSkeleton count={1} />
               ) : friends.length === 0 ? (
@@ -102,22 +110,26 @@ export function Groups() {
                   </div>
                 </Link>
               ) : (
-                <Card>
-                  <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
-                    {friends.slice(0, FRIENDS_PREVIEW_COUNT).map((f) => (
-                      <li key={f.uid} className="flex items-center gap-3 py-2.5">
-                        <Avatar name={f.name} color={f.color} size="sm" />
-                        <span className="flex-1 truncate text-sm font-medium">{f.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
+                <div className="flex gap-4 overflow-x-auto no-scrollbar px-0.5 py-1">
+                  {friends.map((f) => (
+                    <button
+                      key={f.uid}
+                      type="button"
+                      onClick={() => setSelectedFriend(f)}
+                      className="flex w-16 shrink-0 flex-col items-center gap-1.5 transition-transform duration-150 active:scale-90"
+                    >
+                      <Avatar name={f.name} color={f.color} size="md" />
+                      <span className="w-full truncate text-center text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                        {f.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               )}
-            </section>
+            </Collapsible>
 
             {(pending.length > 0 || settled.length > 0) && (
-              <section>
-                <h2 className="mb-3 text-sm font-bold text-neutral-500 dark:text-neutral-400">Activo</h2>
+              <Collapsible title="Activo">
                 <div className="flex flex-col gap-4">
                   {pending.length > 0 && (
                     <div>
@@ -159,12 +171,11 @@ export function Groups() {
                     </div>
                   )}
                 </div>
-              </section>
+              </Collapsible>
             )}
 
             {archivedGroups.length > 0 && (
-              <section>
-                <h2 className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Archivado ({archivedGroups.length})</h2>
+              <Collapsible title={`Archivado (${archivedGroups.length})`} defaultOpen={false}>
                 <div className="flex flex-col gap-2.5">
                   {archivedGroups.map((g) => (
                     <GroupCard
@@ -179,7 +190,7 @@ export function Groups() {
                     />
                   ))}
                 </div>
-              </section>
+              </Collapsible>
             )}
           </div>
         )}
@@ -187,6 +198,37 @@ export function Groups() {
 
       <CreateGroupSheet open={creating} onClose={() => setCreating(false)} />
       <JoinGroupSheet open={joining} onClose={() => setJoining(false)} />
+
+      <BottomSheet open={Boolean(selectedFriend)} onClose={() => setSelectedFriend(null)} title={selectedFriend?.name}>
+        {selectedFriend && (
+          <div className="flex flex-col gap-2.5 pb-2">
+            {sharedGroups.length === 0 ? (
+              <p className="py-2 text-sm text-neutral-500 dark:text-neutral-400">Todavía no compartís ningún grupo.</p>
+            ) : (
+              sharedGroups.map((g) => {
+                const GroupIcon = groupIconComponent(g.icon);
+                return (
+                  <Link
+                    key={g.id}
+                    to={`/grupos/${g.id}`}
+                    onClick={() => setSelectedFriend(null)}
+                    className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3.5 transition-transform active:scale-[0.98] dark:bg-neutral-800/60"
+                  >
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
+                      style={{ backgroundColor: `${g.color}22`, color: g.color }}
+                    >
+                      <GroupIcon size={18} strokeWidth={1.8} />
+                    </span>
+                    <p className="flex-1 truncate font-semibold">{g.name}</p>
+                    {g.archivedAt && <Badge>Archivado</Badge>}
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        )}
+      </BottomSheet>
     </>
   );
 }
