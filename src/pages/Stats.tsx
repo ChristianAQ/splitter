@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
-import { BarChart3, Trophy, X } from "lucide-react";
+import { BarChart3, Trophy } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
 import { BarChart } from "../components/charts/BarChart";
 import { CategoryBreakdown } from "../components/charts/CategoryBreakdown";
 import { EmptyState } from "../components/ui/EmptyState";
-import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
-import { PersonalExpenseSheet } from "../components/expense/PersonalExpenseSheet";
 import { useAuth } from "../context/AuthContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
 import { useGroups } from "../hooks/useGroups";
@@ -17,7 +15,7 @@ import { GROUPS_CATEGORY } from "../lib/categories";
 import { groupIconComponent } from "../lib/groupIcons";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { todayISO } from "../domain/date";
-import type { Group, PersonalExpense } from "../types";
+import type { Group } from "../types";
 
 type Scope = "personal" | string;
 
@@ -89,27 +87,23 @@ function PersonalStats({
   groups: Group[];
   uid: string | undefined;
 }) {
+  const currentMonth = todayISO().slice(0, 7);
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const { expenses, loading } = usePersonalExpenses();
-  const groupsSpendByCurrency = useGroupsMonthlySpend(groups, uid);
-  const groupsSpendThisMonth = groupsSpendByCurrency[currency] ?? 0;
-  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
-  const [editingExpense, setEditingExpense] = useState<PersonalExpense | null>(null);
+  const groupsSpendByCurrency = useGroupsMonthlySpend(groups, uid, selectedMonth);
+  const groupsSpendSelectedMonth = groupsSpendByCurrency[currency] ?? 0;
 
-  const { bars, categorySlices, average, thisMonthTotal } = useMemo(() => {
+  const { bars, byCategoryPerMonth, average } = useMemo(() => {
     const months = lastNMonths(6);
     const totals = new Map(months.map((m) => [m, 0]));
-    const byCategory: Record<string, number> = {};
-    const thisMonth = todayISO().slice(0, 7);
-    let thisTotal = 0;
+    const byCategory: Record<string, Record<string, number>> = {};
 
     for (const e of expenses) {
       if (e.status === "future") continue;
       const key = e.date.slice(0, 7);
       if (totals.has(key)) totals.set(key, (totals.get(key) ?? 0) + e.amount);
-      if (key === thisMonth) {
-        thisTotal += e.amount;
-        byCategory[e.categoryId] = (byCategory[e.categoryId] ?? 0) + e.amount;
-      }
+      const monthCategories = (byCategory[key] ??= {});
+      monthCategories[e.categoryId] = (monthCategories[e.categoryId] ?? 0) + e.amount;
     }
 
     const values = Array.from(totals.values());
@@ -118,32 +112,26 @@ function PersonalStats({
 
     return {
       bars: months.map((m) => ({ key: m, label: formatMonth(`${m}-01`).slice(0, 3), value: totals.get(m) ?? 0 })),
-      categorySlices: Object.entries(byCategory).map(([categoryId, amount]) => ({ categoryId, amount })),
+      byCategoryPerMonth: byCategory,
       average: avg,
-      thisMonthTotal: thisTotal,
     };
   }, [expenses]);
 
-  const allCategorySlices = useMemo(() => {
-    const slices = [...categorySlices];
-    if (groupsSpendThisMonth > 0) slices.push({ categoryId: GROUPS_CATEGORY.id, amount: groupsSpendThisMonth });
+  const selectedMonthTotal = bars.find((b) => b.key === selectedMonth)?.value ?? 0;
+
+  const selectedCategorySlices = useMemo(() => {
+    const byCategory = byCategoryPerMonth[selectedMonth] ?? {};
+    const slices = Object.entries(byCategory).map(([categoryId, amount]) => ({ categoryId, amount }));
+    if (groupsSpendSelectedMonth > 0) slices.push({ categoryId: GROUPS_CATEGORY.id, amount: groupsSpendSelectedMonth });
     return slices;
-  }, [categorySlices, groupsSpendThisMonth]);
+  }, [byCategoryPerMonth, selectedMonth, groupsSpendSelectedMonth]);
 
-  const monthExpenses = useMemo(() => {
-    if (!selectedMonth) return [];
-    return expenses
-      .filter((e) => e.status !== "future" && e.date.slice(0, 7) === selectedMonth)
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [expenses, selectedMonth]);
-
-  function handleSelectMonth(key: string) {
-    setSelectedMonth((prev) => (prev === key ? null : key));
-  }
-
-  if (!loading && expenses.length === 0 && groupsSpendThisMonth === 0) {
+  if (!loading && expenses.length === 0 && groupsSpendSelectedMonth === 0) {
     return <EmptyState icon={BarChart3} title="Sin datos todavía" description="Añade gastos para ver tus estadísticas." />;
   }
+
+  const isCurrentMonth = selectedMonth === currentMonth;
+  const selectedMonthLabel = isCurrentMonth ? "Este mes" : formatMonth(`${selectedMonth}-01`);
 
   return (
     <div className="flex flex-col gap-4">
@@ -153,51 +141,29 @@ function PersonalStats({
           bars={bars}
           formatValue={(v) => formatCurrency(v, currency)}
           selectedKey={selectedMonth}
-          onSelect={handleSelectMonth}
+          onSelect={setSelectedMonth}
         />
       </Card>
-      {selectedMonth && (
-        <Card>
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">
-              Gastos de {formatMonth(`${selectedMonth}-01`)}
-            </p>
-            <button
-              onClick={() => setSelectedMonth(null)}
-              aria-label="Cerrar"
-              className="flex h-7 w-7 items-center justify-center rounded-full text-neutral-400 active:bg-neutral-100 dark:active:bg-neutral-800"
-            >
-              <X size={15} strokeWidth={2.2} />
-            </button>
-          </div>
-          {monthExpenses.length === 0 ? (
-            <p className="text-sm text-neutral-400">Sin gastos ese mes.</p>
-          ) : (
-            <div className="flex flex-col gap-2.5">
-              {monthExpenses.map((e) => (
-                <PersonalExpenseCard key={e.id} expense={e} onClick={() => setEditingExpense(e)} />
-              ))}
-            </div>
-          )}
-        </Card>
-      )}
       <div className="grid grid-cols-2 gap-3">
         <Card>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Este mes</p>
-          <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(thisMonthTotal, currency)}</p>
+          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{selectedMonthLabel}</p>
+          <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(selectedMonthTotal, currency)}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Media mensual</p>
           <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(average, currency)}</p>
         </Card>
       </div>
-      {allCategorySlices.length > 0 && (
+      {selectedCategorySlices.length > 0 ? (
         <Card>
-          <p className="mb-3 text-sm font-bold text-neutral-500 dark:text-neutral-400">Por categoría (este mes)</p>
-          <CategoryBreakdown slices={allCategorySlices} currency={currency} />
+          <p className="mb-3 text-sm font-bold text-neutral-500 dark:text-neutral-400">Por categoría ({selectedMonthLabel.toLowerCase()})</p>
+          <CategoryBreakdown slices={selectedCategorySlices} currency={currency} />
+        </Card>
+      ) : (
+        <Card>
+          <p className="text-sm text-neutral-400">Sin gastos en {selectedMonthLabel.toLowerCase()}.</p>
         </Card>
       )}
-      <PersonalExpenseSheet open={Boolean(editingExpense)} onClose={() => setEditingExpense(null)} expense={editingExpense ?? undefined} />
     </div>
   );
 }
