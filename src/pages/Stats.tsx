@@ -173,12 +173,10 @@ function GroupStats({ groupId }: { groupId: string }) {
 
   const { categorySlices, paidByMember, mostActive } = useMemo(() => {
     const byCategory: Record<string, number> = {};
-    const paid = new Map(activeMembers.map((m) => [m.uid, 0]));
     const count = new Map(activeMembers.map((m) => [m.uid, 0]));
 
     for (const e of expenses) {
       byCategory[e.categoryId] = (byCategory[e.categoryId] ?? 0) + e.amount;
-      paid.set(e.paidBy, (paid.get(e.paidBy) ?? 0) + e.amount);
       count.set(e.createdBy, (count.get(e.createdBy) ?? 0) + 1);
     }
 
@@ -186,10 +184,15 @@ function GroupStats({ groupId }: { groupId: string }) {
 
     return {
       categorySlices: Object.entries(byCategory).map(([categoryId, amount]) => ({ categoryId, amount })),
-      paidByMember: activeMembers.map((m) => ({ member: m, amount: paid.get(m.uid) ?? 0 })).sort((a, b) => b.amount - a.amount),
+      paidByMember: activeMembers
+        .map((m) => {
+          const balance = balances.find((b) => b.uid === m.uid);
+          return { member: m, paid: balance?.paid ?? 0, owed: balance?.owed ?? 0 };
+        })
+        .sort((a, b) => b.paid - a.paid),
       mostActive: mostActiveEntry ? activeMembers.find((m) => m.uid === mostActiveEntry[0]) : undefined,
     };
-  }, [expenses, activeMembers]);
+  }, [expenses, activeMembers, balances]);
 
   if (loading || !group) return null;
   if (expenses.length === 0) return <EmptyState icon={BarChart3} title="Sin gastos todavía" />;
@@ -224,12 +227,21 @@ function GroupStats({ groupId }: { groupId: string }) {
       )}
 
       <Card>
-        <p className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Gasto por persona</p>
-        <div className="flex flex-col gap-2">
-          {paidByMember.map(({ member, amount }) => (
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Gasto por persona</p>
+          <div className="flex gap-4 text-xs font-medium text-neutral-400">
+            <span>Pagado</span>
+            <span>Le tocaba</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2.5">
+          {paidByMember.map(({ member, paid, owed }) => (
             <div key={member.uid} className="flex items-center justify-between text-sm">
-              <span className="font-medium">{member.name}</span>
-              <span className="font-semibold tabular-nums">{formatCurrency(amount, group.currency)}</span>
+              <span className="min-w-0 flex-1 truncate font-medium">{member.name}</span>
+              <div className="flex shrink-0 gap-4">
+                <span className="w-16 text-right font-semibold tabular-nums">{formatCurrency(paid, group.currency)}</span>
+                <span className="w-16 text-right tabular-nums text-neutral-400">{formatCurrency(owed, group.currency)}</span>
+              </div>
             </div>
           ))}
         </div>

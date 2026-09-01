@@ -33,6 +33,7 @@ export interface Category {
   id: string; // one of DEFAULT_CATEGORIES, or a custom id for user-defined categories
   label: string;
   icon: LucideIcon;
+  color: string; // identifying color, shown consistently in the category picker, expense lists and stats
   custom?: boolean;
 }
 

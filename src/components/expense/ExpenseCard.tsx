@@ -29,7 +29,10 @@ export function PersonalExpenseCard({ expense, onClick, onMarkDone }: Props) {
         onClick={onClick}
         className="flex w-full min-w-0 flex-1 items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card active:scale-[0.99] transition-transform dark:bg-surface-dark-subtle"
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+        <div
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+          style={{ backgroundColor: `${category.color}22`, color: category.color }}
+        >
           <category.icon size={20} strokeWidth={1.8} />
         </div>
         <div className="min-w-0 flex-1">

@@ -17,13 +17,14 @@ export function CategoryPicker({ value, onChange }: Props) {
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(cat.id)}
+            style={selected ? { borderColor: cat.color, backgroundColor: `${cat.color}1f` } : undefined}
             className={`flex flex-col items-center gap-1 rounded-2xl border py-3 text-xs font-medium transition-colors ${
               selected
-                ? "border-accent bg-accent-50 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300"
+                ? "text-neutral-900 dark:text-white"
                 : "border-neutral-200 bg-white text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
             }`}
           >
-            <cat.icon size={20} strokeWidth={1.8} />
+            <cat.icon size={20} strokeWidth={1.8} style={{ color: cat.color }} />
             {cat.label}
           </button>
         );
