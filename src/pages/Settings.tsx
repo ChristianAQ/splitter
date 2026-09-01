@@ -6,6 +6,7 @@ import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Avatar } from "../components/ui/Avatar";
 import { ColorPicker } from "../components/ui/ColorPicker";
+import { FriendCodeCard } from "../components/ui/FriendCodeCard";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -113,6 +114,12 @@ export function Settings() {
             )}
             <p className="-mt-2 text-sm text-neutral-500 dark:text-neutral-400">{profile.email}</p>
           </Card>
+
+          <section>
+            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Tu código de amigo</h2>
+            <FriendCodeCard />
+            <p className="mt-1.5 px-1 text-xs text-neutral-400">Compártelo para que alguien te añada como amigo.</p>
+          </section>
 
           <section>
             <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Preferencias</h2>

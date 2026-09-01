@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
-import { Copy, Share2, UserPlus, UserX } from "lucide-react";
+import { useState } from "react";
+import { UserPlus, UserX } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Button } from "../components/ui/Button";
 import { Avatar } from "../components/ui/Avatar";
+import { FriendCodeCard } from "../components/ui/FriendCodeCard";
 import { EmptyState } from "../components/ui/EmptyState";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { ConfirmDialog } from "../components/ui/Modal";
@@ -14,7 +15,6 @@ import { useToast } from "../context/ToastContext";
 import { useFriends } from "../hooks/useFriends";
 import {
   addFriendByCode,
-  ensureFriendCode,
   previewFriendCode,
   removeFriend,
   type FriendCodePreview,
@@ -25,7 +25,6 @@ export function Friends() {
   const { user, profile } = useAuth();
   const { show } = useToast();
   const { friends, loading } = useFriends();
-  const [myCode, setMyCode] = useState<string | undefined>(profile?.friendCode);
   const [code, setCode] = useState("");
   const [preview, setPreview] = useState<FriendCodePreview | null>(null);
   const [checking, setChecking] = useState(false);
@@ -33,48 +32,6 @@ export function Friends() {
   const [error, setError] = useState<string | null>(null);
   const [removing, setRemoving] = useState<Friend | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (!user || !profile) return;
-    if (profile.friendCode) {
-      setMyCode(profile.friendCode);
-      return;
-    }
-    ensureFriendCode(user.uid, profile.friendCode, profile.name, profile.color)
-      .then(setMyCode)
-      .catch(() => {
-        /* silently retried next time the screen opens */
-      });
-  }, [user, profile]);
-
-  async function handleCopyCode() {
-    if (!myCode) return;
-    try {
-      await navigator.clipboard.writeText(myCode);
-      show("Código copiado", "success");
-    } catch {
-      show(myCode);
-    }
-  }
-
-  async function handleShareCode() {
-    if (!myCode || !profile) return;
-    const text = `Añádeme como amigo en Splitter con mi código: ${myCode}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: "Mi código de amigo en Splitter", text });
-      } catch {
-        /* user cancelled — no-op */
-      }
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      show("Invitación copiada al portapapeles", "success");
-    } catch {
-      show("No se pudo compartir.", "error");
-    }
-  }
 
   function resetAddForm() {
     setCode("");
@@ -133,15 +90,7 @@ export function Friends() {
         <div className="flex flex-col gap-5">
           <section>
             <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Tu código</p>
-            <Card className="flex items-center gap-2">
-              <span className="flex-1 text-xl font-bold tracking-[0.2em]">{myCode ?? "······"}</span>
-              <Button size="icon" variant="secondary" onClick={handleCopyCode} aria-label="Copiar código" disabled={!myCode}>
-                <Copy size={17} strokeWidth={2.1} />
-              </Button>
-              <Button size="icon" variant="secondary" onClick={handleShareCode} aria-label="Compartir código" disabled={!myCode}>
-                <Share2 size={17} strokeWidth={2.1} />
-              </Button>
-            </Card>
+            <FriendCodeCard />
             <p className="mt-1.5 text-xs text-neutral-400">Compártelo para que alguien te añada como amigo.</p>
           </section>
 

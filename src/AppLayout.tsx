@@ -8,7 +8,7 @@ import { SwipeableTabTransition } from "./components/layout/SwipeableTabTransiti
 export function AppLayout({ children }: { children: ReactNode }) {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const location = useLocation();
-  const hideFab = location.pathname.startsWith("/perfil");
+  const hideFab = location.pathname.startsWith("/perfil") || location.pathname === "/grupos";
 
   return (
     <div className="min-h-screen">
