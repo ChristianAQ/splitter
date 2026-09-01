@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Calendar, Check, Plus, RefreshCw, Repeat, Wallet } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -21,6 +22,8 @@ import type { PersonalExpense, RecurringExpense } from "../types";
 
 type Tab = "pasados" | "proximos" | "recurrentes";
 
+const TABS: Tab[] = ["pasados", "proximos", "recurrentes"];
+
 const PERIODICITY_LABEL: Record<string, string> = { weekly: "Semanal", monthly: "Mensual", yearly: "Anual" };
 
 export function Expenses() {
@@ -28,7 +31,9 @@ export function Expenses() {
   const { show } = useToast();
   const { expenses, loading } = usePersonalExpenses();
   const { items: recurring, loading: recurringLoading } = useRecurringExpenses();
-  const [tab, setTab] = useState<Tab>("pasados");
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState<Tab>(TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : "pasados");
   const [editingExpense, setEditingExpense] = useState<PersonalExpense | null>(null);
   const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null | undefined>(undefined);
   const currentMonth = todayISO().slice(0, 7);

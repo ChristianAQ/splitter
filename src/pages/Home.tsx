@@ -115,12 +115,20 @@ export function Home() {
         </Link>
 
         <section className="grid grid-cols-2 gap-3">
-          <Card>
+          <Link
+            to={`/estadisticas?month=${lastMonth}`}
+            aria-label="Ver estadísticas del mes anterior"
+            className="rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
+          >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Mes anterior</p>
             <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(lastMonthTotal, currency)}</p>
             <p className="mt-0.5 truncate text-xs text-neutral-400">{formatMonth(`${lastMonth}-01`)}</p>
-          </Card>
-          <Card>
+          </Link>
+          <Link
+            to="/estadisticas"
+            aria-label="Ver estadísticas"
+            className="rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
+          >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Categoría top</p>
             {topCategoryInfo ? (
               <>
@@ -130,12 +138,16 @@ export function Home() {
             ) : (
               <p className="mt-1 text-sm text-neutral-400">Sin datos</p>
             )}
-          </Card>
-          <Card>
+          </Link>
+          <Link
+            to="/gastos?tab=proximos"
+            aria-label="Ver gastos pendientes"
+            className="rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
+          >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Próximos gastos</p>
             <p className="mt-1 text-xl font-bold tabular-nums">{upcoming.length}</p>
             <p className="mt-0.5 text-xs text-neutral-400">pendientes</p>
-          </Card>
+          </Link>
           <Link
             to="/grupos"
             aria-label="Ver grupos"

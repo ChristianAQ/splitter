@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { BarChart3, Trophy } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -33,6 +34,8 @@ export function Stats() {
   const { profile } = useAuth();
   const { groups } = useGroups();
   const [scope, setScope] = useState<Scope>("personal");
+  const [searchParams] = useSearchParams();
+  const initialMonth = searchParams.get("month") ?? undefined;
 
   return (
     <>
@@ -69,7 +72,7 @@ export function Stats() {
         </div>
 
         {scope === "personal" ? (
-          <PersonalStats currency={profile?.currency ?? "EUR"} groups={groups} uid={profile?.uid} />
+          <PersonalStats currency={profile?.currency ?? "EUR"} groups={groups} uid={profile?.uid} initialMonth={initialMonth} />
         ) : (
           <GroupStats groupId={scope} />
         )}
@@ -82,13 +85,15 @@ function PersonalStats({
   currency,
   groups,
   uid,
+  initialMonth,
 }: {
   currency: "EUR" | "USD" | "GBP";
   groups: Group[];
   uid: string | undefined;
+  initialMonth?: string;
 }) {
   const currentMonth = todayISO().slice(0, 7);
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth ?? currentMonth);
   const { expenses, loading } = usePersonalExpenses();
   const groupsSpendByCurrency = useGroupsMonthlySpend(groups, uid, selectedMonth);
   const groupsSpendSelectedMonth = groupsSpendByCurrency[currency] ?? 0;
