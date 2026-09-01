@@ -32,8 +32,8 @@ export function TopBar({ title, subtitle, onBack, right }: Props) {
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-bold tracking-tight">{title}</h1>
-          {subtitle && <p className="truncate text-sm text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
+          <h1 className="truncate text-[22px] font-bold tracking-tight">{title}</h1>
+          {subtitle && <p className="mt-0.5 truncate text-sm font-medium text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
         </div>
         {right}
       </div>

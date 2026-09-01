@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
+  Archive,
   BarChart3,
   Circle,
   Clock,
@@ -37,11 +38,13 @@ import { GroupSettingsSheet } from "../components/group/GroupSettingsSheet";
 import { AddGroupFriendsSheet } from "../components/group/AddGroupFriendsSheet";
 import { useAuth } from "../context/AuthContext";
 import { useGroupDetail } from "../hooks/useGroupDetail";
+import { useFriends } from "../hooks/useFriends";
 import { useToast } from "../context/ToastContext";
 import { formatCurrency, formatDate, formatSignedCurrency } from "../lib/format";
 import { recordPayment, revertPayment } from "../services/payments.service";
+import { addFriendByUid } from "../services/friends.service";
 import { logHistory } from "../services/history.service";
-import type { GroupExpense, SettlementTransfer } from "../types";
+import type { GroupExpense, GroupMember, SettlementTransfer } from "../types";
 
 type Tab = "resumen" | "gastos" | "balance" | "historial";
 
@@ -54,9 +57,10 @@ const TABS: [Tab, string][] = [
 
 export function GroupDetail() {
   const { groupId } = useParams<{ groupId: string }>();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { show } = useToast();
   const { group, members, activeMembers, expenses, payments, history, balances, settlement, loading, notFound, error } = useGroupDetail(groupId);
+  const { friends } = useFriends();
   const [tab, setTab] = useState<Tab>("resumen");
   const [editingExpense, setEditingExpense] = useState<GroupExpense | null>(null);
   const [addingExpense, setAddingExpense] = useState(false);
@@ -67,7 +71,35 @@ export function GroupDetail() {
 
   const membersById = new Map(activeMembers.map((m) => [m.uid, m]));
   const isAdmin = group?.createdBy === user?.uid;
+  const isArchived = Boolean(group?.archivedAt);
   const GroupIcon = group ? groupIconComponent(group.icon) : null;
+  const friendUids = useMemo(() => new Set(friends.map((f) => f.uid)), [friends]);
+
+  async function handleAddFriend(member: GroupMember) {
+    if (!user || !profile) return;
+    try {
+      const result = await addFriendByUid(user.uid, profile.name, profile.color, member.uid, member.name, member.color);
+      show(result.alreadyFriend ? `Ya erais amigos con ${result.name}` : `${result.name} añadido a tus amigos`, "success");
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo añadir.", "error");
+    }
+  }
+
+  function addFriendAction(m: GroupMember) {
+    const canAdd = m.uid !== user?.uid && !m.isGhost && !friendUids.has(m.uid);
+    if (!canAdd) return undefined;
+    return (
+      <button
+        type="button"
+        onClick={() => handleAddFriend(m)}
+        aria-label={`Añadir a ${m.name} como amigo`}
+        title="Añadir como amigo"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent active:scale-95 dark:bg-accent-900/30 dark:text-accent-300"
+      >
+        <UserPlus size={13} strokeWidth={2.2} />
+      </button>
+    );
+  }
 
   if (notFound) {
     return (
@@ -203,7 +235,7 @@ export function GroupDetail() {
         onBack
         right={
           <div className="flex items-center gap-2">
-            {isAdmin && (
+            {isAdmin && !isArchived && (
               <Button
                 size="icon"
                 variant="secondary"
@@ -224,6 +256,12 @@ export function GroupDetail() {
         }
       />
       <PageContainer>
+        {isArchived && (
+          <div className="mb-4 flex items-center gap-2.5 rounded-2xl bg-neutral-100 p-3.5 text-sm text-neutral-500 dark:bg-neutral-800/60 dark:text-neutral-400">
+            <Archive size={16} strokeWidth={2} className="shrink-0" />
+            Grupo archivado — solo puedes consultarlo.
+          </div>
+        )}
         {error && (
           <div className="mb-4 rounded-2xl bg-negative-light p-3.5 text-sm text-negative dark:bg-negative/15">
             No se han podido cargar todos los datos del grupo: {error}
@@ -265,21 +303,25 @@ export function GroupDetail() {
               </Card>
             </div>
 
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => setAddingExpense(true)}>
-                Añadir gasto
-              </Button>
-              <Button variant="secondary" className="flex-1" onClick={() => setTab("balance")}>
-                Liquidar
-              </Button>
-            </div>
+            {!isArchived && (
+              <div className="flex gap-2">
+                <Button className="flex-1" onClick={() => setAddingExpense(true)}>
+                  Añadir gasto
+                </Button>
+                <Button variant="secondary" className="flex-1" onClick={() => setTab("balance")}>
+                  Liquidar
+                </Button>
+              </div>
+            )}
 
             <Card>
               <p className="mb-1 text-sm font-bold text-neutral-500 dark:text-neutral-400">Participantes</p>
               <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
                 {activeMembers.map((m) => {
                   const b = balances.find((x) => x.uid === m.uid);
-                  return b ? <BalanceRow key={m.uid} member={m} balance={b} currency={group.currency} /> : null;
+                  return b ? (
+                    <BalanceRow key={m.uid} member={m} balance={b} currency={group.currency} action={addFriendAction(m)} />
+                  ) : null;
                 })}
               </div>
             </Card>
@@ -297,7 +339,7 @@ export function GroupDetail() {
                   expense={e}
                   members={membersById}
                   currentUid={user?.uid ?? ""}
-                  onClick={() => setEditingExpense(e)}
+                  onClick={isArchived ? undefined : () => setEditingExpense(e)}
                 />
               ))}
             </div>
@@ -311,7 +353,9 @@ export function GroupDetail() {
                 <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
                   {activeMembers.map((m) => {
                     const b = balances.find((x) => x.uid === m.uid);
-                    return b ? <BalanceRow key={m.uid} member={m} balance={b} currency={group.currency} /> : null;
+                    return b ? (
+                      <BalanceRow key={m.uid} member={m} balance={b} currency={group.currency} action={addFriendAction(m)} />
+                    ) : null;
                   })}
                 </div>
               </Card>
@@ -334,13 +378,15 @@ export function GroupDetail() {
                           </p>
                           <p className="text-lg font-bold tabular-nums">{formatCurrency(t.amount, group.currency)}</p>
                         </div>
-                        <Button
-                          size="md"
-                          loading={settlingUp === t}
-                          onClick={() => handleMarkPaid(t)}
-                        >
-                          Marcar pagado
-                        </Button>
+                        {!isArchived && (
+                          <Button
+                            size="md"
+                            loading={settlingUp === t}
+                            onClick={() => handleMarkPaid(t)}
+                          >
+                            Marcar pagado
+                          </Button>
+                        )}
                       </Card>
                     );
                   })}
@@ -357,7 +403,7 @@ export function GroupDetail() {
                       key={p.id}
                       payment={p}
                       members={membersById}
-                      canRevert={p.createdBy === user?.uid}
+                      canRevert={!isArchived && p.createdBy === user?.uid}
                       onRevert={() => handleRevert(p.id)}
                     />
                   ))}
@@ -415,18 +461,20 @@ export function GroupDetail() {
 
       <BottomSheet open={shareOpen} onClose={() => setShareOpen(false)} title="Compartir">
         <div className="flex flex-col gap-2 pb-2 pt-1">
-          <button
-            onClick={handleShareInvite}
-            className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3.5 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
-              <Link2 size={18} strokeWidth={2.1} />
-            </span>
-            <div>
-              <p className="text-sm font-semibold">Código de invitación</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Para que alguien se una al grupo</p>
-            </div>
-          </button>
+          {!isArchived && (
+            <button
+              onClick={handleShareInvite}
+              className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3.5 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+                <Link2 size={18} strokeWidth={2.1} />
+              </span>
+              <div>
+                <p className="text-sm font-semibold">Código de invitación</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Para que alguien se una al grupo</p>
+              </div>
+            </button>
+          )}
           <button
             onClick={handleShareSummary}
             className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3.5 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"

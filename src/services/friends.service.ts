@@ -2,7 +2,6 @@ import { deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, serverTime
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError, AppError } from "../lib/errors";
-import { generateInviteCode } from "../lib/inviteCode";
 import type { Friend } from "../types";
 
 function col(uid: string) {
@@ -32,26 +31,18 @@ export function subscribeFriends(
 }
 
 /**
- * Returns the user's existing friend code, or lazily generates one — same
- * random-code-with-collision-retry approach as group invite codes (see
- * generateInviteCode / groups.service.ts), just scoped to its own top-level
- * `friendCodes/` collection. The code's name/color are denormalized onto the
- * `friendCodes/{code}` doc (like `inviteCodes/{code}` denormalizes the group's
- * name/icon/color) so previewing a code never needs to read someone else's
- * profile document.
+ * The "friend code" is just the uid itself — nothing to generate, nothing
+ * that can collide. What still needs a write is a small public projection
+ * (`friendCodes/{uid}`, keyed by uid instead of a random code) so someone
+ * else can preview your name/color before adding you without needing read
+ * access to your actual `users/{uid}` profile document (self-only). An
+ * idempotent merge-set, safe to call every time the "Amigos"/Perfil screen
+ * opens.
  */
-export async function ensureFriendCode(uid: string, currentCode: string | undefined, name: string, color: string): Promise<string> {
-  if (currentCode) return currentCode;
+export async function ensureFriendCode(uid: string, name: string, color: string): Promise<string> {
   try {
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      const code = generateInviteCode();
-      const existing = await getDoc(doc(db, "friendCodes", code));
-      if (existing.exists()) continue;
-      await setDoc(doc(db, "friendCodes", code), { uid, name, color });
-      await updateDoc(doc(db, "users", uid), { friendCode: code });
-      return code;
-    }
-    throw new AppError("No se pudo generar un código único, inténtalo de nuevo.");
+    await setDoc(doc(db, "friendCodes", uid), { uid, name, color }, { merge: true });
+    return uid;
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -63,8 +54,10 @@ export interface FriendCodePreview {
   color: string;
 }
 
-export async function previewFriendCode(code: string): Promise<FriendCodePreview | null> {
-  const snap = await getDoc(doc(db, "friendCodes", code.trim().toUpperCase()));
+export async function previewFriendCode(uid: string): Promise<FriendCodePreview | null> {
+  const trimmed = uid.trim();
+  if (!trimmed) return null;
+  const snap = await getDoc(doc(db, "friendCodes", trimmed));
   if (!snap.exists()) return null;
   const data = snap.data();
   return { uid: data.uid as string, name: data.name as string, color: data.color as string };
@@ -78,6 +71,37 @@ export async function previewFriendCode(code: string): Promise<FriendCodePreview
  * collection" pattern group membership already relies on (see
  * groups.service.ts's joinGroupByCode writing `members/{myUid}`).
  */
+async function addFriendPair(
+  myUid: string,
+  myName: string,
+  myColor: string,
+  theirUid: string,
+  theirName: string,
+  theirColor: string
+): Promise<{ name: string; alreadyFriend: boolean }> {
+  if (theirUid === myUid) throw new AppError("Ese es tu propio código.");
+
+  const existing = await getDoc(doc(db, "users", myUid, "friends", theirUid));
+  if (existing.exists()) return { name: theirName, alreadyFriend: true };
+
+  await setDoc(doc(db, "users", theirUid, "friends", myUid), {
+    uid: myUid,
+    name: myName,
+    color: myColor,
+    addedAt: serverTimestamp(),
+  });
+  await setDoc(doc(db, "users", myUid, "friends", theirUid), {
+    uid: theirUid,
+    name: theirName,
+    color: theirColor,
+    addedAt: serverTimestamp(),
+  });
+
+  return { name: theirName, alreadyFriend: false };
+}
+
+/** Someone typed in a code (their uid) — look up the public projection for
+ * their name/color, then add both sides. */
 export async function addFriendByCode(
   code: string,
   myUid: string,
@@ -85,30 +109,27 @@ export async function addFriendByCode(
   myColor: string
 ): Promise<{ name: string; alreadyFriend: boolean }> {
   try {
-    const normalized = code.trim().toUpperCase();
-    const codeSnap = await getDoc(doc(db, "friendCodes", normalized));
-    if (!codeSnap.exists()) throw new AppError("Ese código de amigo no es válido.");
-    const { uid: theirUid, name: theirName, color: theirColor } = codeSnap.data() as { uid: string; name: string; color: string };
+    const preview = await previewFriendCode(code);
+    if (!preview) throw new AppError("Ese código de amigo no es válido.");
+    return await addFriendPair(myUid, myName, myColor, preview.uid, preview.name, preview.color);
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
 
-    if (theirUid === myUid) throw new AppError("Ese es tu propio código.");
-
-    const existing = await getDoc(doc(db, "users", myUid, "friends", theirUid));
-    if (existing.exists()) return { name: theirName, alreadyFriend: true };
-
-    await setDoc(doc(db, "users", theirUid, "friends", myUid), {
-      uid: myUid,
-      name: myName,
-      color: myColor,
-      addedAt: serverTimestamp(),
-    });
-    await setDoc(doc(db, "users", myUid, "friends", theirUid), {
-      uid: theirUid,
-      name: theirName,
-      color: theirColor,
-      addedAt: serverTimestamp(),
-    });
-
-    return { name: theirName, alreadyFriend: false };
+/** Their uid/name/color are already known firsthand (e.g. from a shared
+ * group's member list), so this skips the friendCodes lookup entirely —
+ * useful for adding a fellow group member as a friend directly. */
+export async function addFriendByUid(
+  myUid: string,
+  myName: string,
+  myColor: string,
+  theirUid: string,
+  theirName: string,
+  theirColor: string
+): Promise<{ name: string; alreadyFriend: boolean }> {
+  try {
+    return await addFriendPair(myUid, myName, myColor, theirUid, theirName, theirColor);
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -133,6 +154,11 @@ export async function propagateProfileToFriends(uid: string, changes: { name?: s
   await Promise.allSettled(
     friendsSnap.docs.map((friendDoc) => updateDoc(doc(db, "users", friendDoc.id, "friends", uid), changes))
   );
+  // Keep the public preview projection in sync too, so a code shared before
+  // a rename/recolor still previews correctly afterward.
+  await updateDoc(doc(db, "friendCodes", uid), changes).catch(() => {
+    /* no projection yet (never opened Amigos/Perfil) — nothing to sync */
+  });
 }
 
 /** Removes a friend from my own list only — the other side keeps me in

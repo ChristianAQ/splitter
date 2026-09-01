@@ -101,10 +101,12 @@ export function Friends() {
                 placeholder="Código de amigo"
                 value={code}
                 onChange={(e) => {
-                  setCode(e.target.value.toUpperCase());
+                  setCode(e.target.value.trim());
                   setPreview(null);
                 }}
-                autoCapitalize="characters"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
               />
               {error && <p className="text-sm font-medium text-negative">{error}</p>}
 

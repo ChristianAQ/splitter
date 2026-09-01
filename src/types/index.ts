@@ -55,7 +55,6 @@ export interface UserProfile {
   color: UserColor;
   currency: Currency;
   theme: "light" | "dark" | "system";
-  friendCode?: string; // lazily generated the first time the "Amigos" screen is opened
   createdAt: EpochMillis;
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Copy, Share2 } from "lucide-react";
 import { Card } from "./Card";
 import { Button } from "./Button";
@@ -8,24 +8,24 @@ import { ensureFriendCode } from "../../services/friends.service";
 
 /** "Tu código" card, shared between Amigos and Perfil so it can be shared
  * from wherever you happen to be — one copy of the ensureFriendCode
- * bootstrap and the copy/share handlers instead of one per page. */
+ * bootstrap and the copy/share handlers instead of one per page.
+ *
+ * The code is just the uid — known synchronously from useAuth(), no
+ * generation or loading state needed for display. The effect below only
+ * keeps the *public preview* projection (friendCodes/{uid}) in sync in the
+ * background, for whoever looks the code up. */
 export function FriendCodeCard() {
   const { user, profile } = useAuth();
   const { show } = useToast();
-  const [myCode, setMyCode] = useState<string | undefined>(profile?.friendCode);
+  const myCode = user?.uid;
 
   useEffect(() => {
     if (!user || !profile) return;
-    if (profile.friendCode) {
-      setMyCode(profile.friendCode);
-      return;
-    }
-    ensureFriendCode(user.uid, profile.friendCode, profile.name, profile.color)
-      .then(setMyCode)
-      .catch(() => {
-        /* silently retried next time this mounts */
-      });
-  }, [user, profile]);
+    ensureFriendCode(user.uid, profile.name, profile.color).catch(() => {
+      /* silently retried next time this mounts */
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, profile?.name, profile?.color]);
 
   async function handleCopyCode() {
     if (!myCode) return;
@@ -58,7 +58,7 @@ export function FriendCodeCard() {
 
   return (
     <Card className="flex items-center gap-2">
-      <span className="flex-1 text-xl font-bold tracking-[0.2em]">{myCode ?? "······"}</span>
+      <span className="flex-1 truncate text-sm font-bold tracking-wide">{myCode ?? "······"}</span>
       <Button size="icon" variant="secondary" onClick={handleCopyCode} aria-label="Copiar código" disabled={!myCode}>
         <Copy size={17} strokeWidth={2.1} />
       </Button>

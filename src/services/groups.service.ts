@@ -185,6 +185,44 @@ export async function archiveGroup(groupId: string) {
   }
 }
 
+/**
+ * Permanently deletes an already-archived group and everything under it.
+ * Rules only allow this once a group is archived (see firestore.rules) —
+ * archiving is the reversible-ish step, this is the irreversible one.
+ *
+ * Subcollection docs are deleted *before* the group doc itself: the delete
+ * rules on members/expenses/payments/history all re-check isGroupAdmin(),
+ * which reads the group doc — deleting it first would make every one of
+ * those checks fail against a group that no longer exists.
+ */
+export async function deleteGroup(groupId: string) {
+  try {
+    const groupRef = doc(db, "groups", groupId);
+    const groupSnap = await getDoc(groupRef);
+    if (!groupSnap.exists()) return;
+    const inviteCode = groupSnap.data().inviteCode as string | undefined;
+
+    const [membersSnap, expensesSnap, paymentsSnap, historySnap] = await Promise.all([
+      getDocs(collection(groupRef, "members")),
+      getDocs(collection(groupRef, "expenses")),
+      getDocs(collection(groupRef, "payments")),
+      getDocs(collection(groupRef, "history")),
+    ]);
+
+    await Promise.all([
+      ...membersSnap.docs.map((d) => deleteDoc(d.ref)),
+      ...expensesSnap.docs.map((d) => deleteDoc(d.ref)),
+      ...paymentsSnap.docs.map((d) => deleteDoc(d.ref)),
+      ...historySnap.docs.map((d) => deleteDoc(d.ref)),
+    ]);
+
+    if (inviteCode) await deleteDoc(doc(db, "inviteCodes", inviteCode)).catch(() => {});
+    await deleteDoc(groupRef);
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
 export interface InvitePreview {
   groupId: string;
   groupName: string;

@@ -9,6 +9,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import {
   archiveGroup,
+  deleteGroup,
   leaveGroup,
   regenerateInviteCode,
   removeMember,
@@ -28,8 +29,10 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
   const { show } = useToast();
   const navigate = useNavigate();
   const isAdmin = group.createdBy === user?.uid;
+  const isArchived = Boolean(group.archivedAt);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<GroupMember | null>(null);
   const [renamingUid, setRenamingUid] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -114,6 +117,20 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
     }
   }
 
+  async function handleDelete() {
+    setBusy(true);
+    try {
+      await deleteGroup(group.id);
+      show("Grupo eliminado", "success");
+      onClose();
+      navigate("/grupos");
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo eliminar el grupo.", "error");
+      setBusy(false);
+      setConfirmDelete(false);
+    }
+  }
+
   return (
     <>
       <BottomSheet open={open} onClose={onClose} title="Ajustes del grupo">
@@ -126,13 +143,19 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
                 <Copy size={17} strokeWidth={2.1} />
               </Button>
             </div>
-            <p className="mt-1.5 text-xs text-neutral-400">
-              Para invitar a alguien, usa el icono de invitación en la cabecera del grupo.
-            </p>
-            {isAdmin && (
-              <button onClick={handleRegenerate} disabled={busy} className="mt-2 text-sm font-medium text-accent">
-                Regenerar código
-              </button>
+            {isArchived ? (
+              <p className="mt-1.5 text-xs text-neutral-400">Grupo archivado — ya no se puede usar para unirse.</p>
+            ) : (
+              <>
+                <p className="mt-1.5 text-xs text-neutral-400">
+                  Para invitar a alguien, usa el icono de invitación en la cabecera del grupo.
+                </p>
+                {isAdmin && (
+                  <button onClick={handleRegenerate} disabled={busy} className="mt-2 text-sm font-medium text-accent">
+                    Regenerar código
+                  </button>
+                )}
+              </>
             )}
           </section>
 
@@ -159,7 +182,7 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
                       {!m.active && <span className="ml-1.5 text-xs text-neutral-400">(salió)</span>}
                     </span>
                   )}
-                  {isAdmin && m.active && renamingUid !== m.uid && (
+                  {!isArchived && isAdmin && m.active && renamingUid !== m.uid && (
                     <button
                       onClick={() => {
                         setRenamingUid(m.uid);
@@ -170,7 +193,7 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
                       Renombrar
                     </button>
                   )}
-                  {isAdmin && m.active && m.uid !== user?.uid && (
+                  {!isArchived && isAdmin && m.active && m.uid !== user?.uid && (
                     <button onClick={() => setConfirmRemove(m)} className="text-xs font-medium text-negative">
                       Expulsar
                     </button>
@@ -181,7 +204,13 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
           </section>
 
           <section className="flex flex-col gap-2">
-            {isAdmin ? (
+            {isArchived ? (
+              isAdmin && (
+                <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+                  Eliminar grupo
+                </Button>
+              )
+            ) : isAdmin ? (
               <Button variant="secondary" onClick={() => setConfirmArchive(true)}>
                 Archivar grupo
               </Button>
@@ -206,12 +235,23 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
       <ConfirmDialog
         open={confirmArchive}
         title="¿Archivar grupo?"
-        description="El grupo dejará de aparecer activo para todos los miembros. Nada se elimina."
+        description="El grupo dejará de aparecer activo para todos los miembros. Nada se elimina — podrás eliminarlo del todo después si quieres."
         confirmLabel="Archivar"
         destructive
         onConfirm={handleArchive}
         onCancel={() => setConfirmArchive(false)}
       />
+      <ConfirmDialog
+        open={confirmDelete}
+        title="¿Eliminar este grupo del todo?"
+        description="Se borrarán sus gastos, pagos e historial para siempre. Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        destructive
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      >
+        {busy && <p className="mt-2 text-sm text-neutral-500">Eliminando…</p>}
+      </ConfirmDialog>
       <ConfirmDialog
         open={Boolean(confirmRemove)}
         title={`¿Expulsar a ${confirmRemove?.name}?`}
