@@ -10,11 +10,13 @@ import { CardListSkeleton } from "../components/ui/Skeleton";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useAuth } from "../context/AuthContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
+import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
 import { useGroups } from "../hooks/useGroups";
 import { useGroupsSummary } from "../hooks/useGroupsSummary";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { categoryById } from "../lib/categories";
 import { todayISO } from "../domain/date";
+import { pendingRecurringCount, recurringSpentForMonth } from "../domain/budget";
 
 function monthKey(iso: string) {
   return iso.slice(0, 7);
@@ -36,6 +38,7 @@ function capitalize(s: string) {
 export function Home() {
   const { profile } = useAuth();
   const { expenses, loading } = usePersonalExpenses();
+  const { items: recurring } = useRecurringExpenses();
   const { groups, loading: groupsLoading } = useGroups();
   const summaries = useGroupsSummary(groups, profile?.uid);
 
@@ -61,11 +64,18 @@ export function Home() {
       }
     }
 
+    // Recurring expenses (Netflix, alquiler...) checked off this month count
+    // towards "Gastado este mes" too — they never show up in `expenses`
+    // (a separate collection, see services/recurringExpenses.service.ts).
+    thisTotal += recurringSpentForMonth(recurring, thisMonth);
+
     const top = Object.entries(byCategory).sort((a, b) => b[1] - a[1])[0];
     const upcomingList = expenses.filter((e) => e.status === "future").sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
 
     return { thisMonthTotal: thisTotal, lastMonthTotal: lastTotal, topCategory: top, upcoming: upcomingList };
-  }, [expenses, thisMonth, lastMonth]);
+  }, [expenses, recurring, thisMonth, lastMonth]);
+
+  const recurringPending = pendingRecurringCount(recurring, thisMonth);
 
   const delta = lastMonthTotal > 0 ? ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100 : null;
   const firstName = profile?.name.split(" ")[0];
@@ -140,13 +150,13 @@ export function Home() {
             )}
           </Link>
           <Link
-            to="/gastos?tab=proximos"
-            aria-label="Ver gastos pendientes"
+            to="/gastos?tab=recurrentes"
+            aria-label="Ver gastos recurrentes pendientes"
             className="rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
           >
-            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Próximos gastos</p>
-            <p className="mt-1 text-xl font-bold tabular-nums">{upcoming.length}</p>
-            <p className="mt-0.5 text-xs text-neutral-400">pendientes</p>
+            <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Recurrentes</p>
+            <p className="mt-1 text-xl font-bold tabular-nums">{recurringPending}</p>
+            <p className="mt-0.5 text-xs text-neutral-400">por pagar este mes</p>
           </Link>
           <Link
             to="/grupos"

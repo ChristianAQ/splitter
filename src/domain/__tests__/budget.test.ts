@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { summarizeRecurringBudget } from "../budget";
+import { pendingRecurringCount, recurringSpentForMonth, summarizeRecurringBudget } from "../budget";
 import type { RecurringExpense } from "../../types";
 
 function mk(partial: Partial<RecurringExpense>): RecurringExpense {
@@ -59,5 +59,35 @@ describe("summarizeRecurringBudget", () => {
   it("returns zeros for an empty list", () => {
     const summary = summarizeRecurringBudget([], "2026-03", 200);
     expect(summary).toEqual({ totalRecurring: 0, spent: 0, pending: 0, remainingNow: 200, projectedLeftover: 200 });
+  });
+});
+
+describe("recurringSpentForMonth", () => {
+  it("sums only items checked off for the given month", () => {
+    const items = [
+      mk({ id: "a", amount: 15, lastCompletedMonth: "2026-03" }),
+      mk({ id: "b", amount: 40, lastCompletedMonth: "2026-02" }),
+      mk({ id: "c", amount: 5 }),
+    ];
+    expect(recurringSpentForMonth(items, "2026-03")).toBe(15);
+  });
+
+  it("returns 0 when nothing is checked off", () => {
+    expect(recurringSpentForMonth([mk({ amount: 15 })], "2026-03")).toBe(0);
+  });
+});
+
+describe("pendingRecurringCount", () => {
+  it("counts items not checked off for the given month", () => {
+    const items = [
+      mk({ id: "a", lastCompletedMonth: "2026-03" }),
+      mk({ id: "b", lastCompletedMonth: "2026-02" }),
+      mk({ id: "c" }),
+    ];
+    expect(pendingRecurringCount(items, "2026-03")).toBe(2);
+  });
+
+  it("returns 0 when everything is checked off", () => {
+    expect(pendingRecurringCount([mk({ lastCompletedMonth: "2026-03" })], "2026-03")).toBe(0);
   });
 });

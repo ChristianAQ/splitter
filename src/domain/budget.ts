@@ -13,6 +13,18 @@ export interface RecurringBudgetSummary {
   projectedLeftover: number;
 }
 
+/** Sum of `recurring` items checked off ("hecho") for `month` — the same
+ * figure the "Recurrentes" tab calls "Pagado", reused by Home's "Gastado
+ * este mes" so a marked-done recurring expense counts there too. */
+export function recurringSpentForMonth(recurring: RecurringExpense[], month: string): number {
+  return recurring.reduce((sum, r) => sum + (r.lastCompletedMonth === month ? r.amount : 0), 0);
+}
+
+/** Count of `recurring` items not yet checked off for `month`. */
+export function pendingRecurringCount(recurring: RecurringExpense[], month: string): number {
+  return recurring.filter((r) => r.lastCompletedMonth !== month).length;
+}
+
 /**
  * Budget preview for the "Recurrentes" tab: given the recurring expenses
  * (whatever the tab lists, checked or not) and the money the user says they
@@ -25,13 +37,8 @@ export function summarizeRecurringBudget(
   month: string,
   available: number
 ): RecurringBudgetSummary {
-  let totalRecurring = 0;
-  let spent = 0;
-
-  for (const r of recurring) {
-    totalRecurring += r.amount;
-    if (r.lastCompletedMonth === month) spent += r.amount;
-  }
+  const totalRecurring = recurring.reduce((sum, r) => sum + r.amount, 0);
+  const spent = recurringSpentForMonth(recurring, month);
 
   return {
     totalRecurring,
