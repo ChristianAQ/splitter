@@ -1,5 +1,6 @@
 import { Card } from "../ui/Card";
 import { Input } from "../ui/Input";
+import { StatTile } from "../ui/StatTile";
 import { summarizeRecurringBudget } from "../../domain/budget";
 import { useAvailableMoney } from "../../hooks/useAvailableMoney";
 import { formatCurrency, formatSignedCurrency } from "../../lib/format";
@@ -77,14 +78,5 @@ export function RecurringBudgetCard({ recurring, month, uid, currency }: Props) 
         <StatTile label="Pendiente" value={formatCurrency(summary.pending, currency)} />
       </div>
     </Card>
-  );
-}
-
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-neutral-50 py-2.5 text-center dark:bg-neutral-800/60">
-      <p className="text-[11px] font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
-      <p className="mt-0.5 truncate px-1 text-sm font-bold tabular-nums">{value}</p>
-    </div>
   );
 }

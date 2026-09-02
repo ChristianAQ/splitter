@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { BarChart3, Trophy } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
+import { StatTile } from "../components/ui/StatTile";
 import { BarChart } from "../components/charts/BarChart";
 import { CategoryBreakdown } from "../components/charts/CategoryBreakdown";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useAuth } from "../context/AuthContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
+import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
 import { useGroups } from "../hooks/useGroups";
 import { useGroupDetail } from "../hooks/useGroupDetail";
 import { useGroupsMonthlySpend } from "../hooks/useGroupsMonthlySpend";
@@ -16,6 +18,7 @@ import { GROUPS_CATEGORY } from "../lib/categories";
 import { groupIconComponent } from "../lib/groupIcons";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { todayISO } from "../domain/date";
+import { summarizeRecurringBudget } from "../domain/budget";
 import type { Group } from "../types";
 
 type Scope = "personal" | string;
@@ -95,8 +98,15 @@ function PersonalStats({
   const currentMonth = todayISO().slice(0, 7);
   const [selectedMonth, setSelectedMonth] = useState(initialMonth ?? currentMonth);
   const { expenses, loading } = usePersonalExpenses();
+  const { items: recurring } = useRecurringExpenses();
   const groupsSpendByCurrency = useGroupsMonthlySpend(groups, uid, selectedMonth);
   const groupsSpendSelectedMonth = groupsSpendByCurrency[currency] ?? 0;
+
+  // Always "this month", regardless of the bar-chart month selector below —
+  // a recurring expense only remembers the single most recent month it was
+  // checked off (see RecurringExpense.lastCompletedMonth), so its paid/
+  // pending split can't be reconstructed for a past month.
+  const recurringSummary = useMemo(() => summarizeRecurringBudget(recurring, currentMonth, 0), [recurring, currentMonth]);
 
   const { bars, byCategoryPerMonth, average } = useMemo(() => {
     const months = lastNMonths(6);
@@ -131,7 +141,7 @@ function PersonalStats({
     return slices;
   }, [byCategoryPerMonth, selectedMonth, groupsSpendSelectedMonth]);
 
-  if (!loading && expenses.length === 0 && groupsSpendSelectedMonth === 0) {
+  if (!loading && expenses.length === 0 && groupsSpendSelectedMonth === 0 && recurring.length === 0) {
     return <EmptyState icon={BarChart3} title="Sin datos todavía" description="Añade gastos para ver tus estadísticas." />;
   }
 
@@ -159,6 +169,26 @@ function PersonalStats({
           <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(average, currency)}</p>
         </Card>
       </div>
+      {recurring.length > 0 && (
+        <Card>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Recurrentes de este mes</p>
+            <Link to="/gastos?tab=recurrentes" className="text-sm font-semibold text-accent">
+              Ver
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <StatTile label="Total" value={formatCurrency(recurringSummary.totalRecurring, currency)} />
+            <StatTile label="Pagado" value={formatCurrency(recurringSummary.spent, currency)} />
+            <StatTile label="Por pagar" value={formatCurrency(recurringSummary.pending, currency)} />
+          </div>
+          {recurringSummary.pending > 0 && (
+            <p className="mt-3 text-xs text-neutral-400">
+              Son gastos fijos que seguro tendrás que pagar este mes.
+            </p>
+          )}
+        </Card>
+      )}
       {selectedCategorySlices.length > 0 ? (
         <Card>
           <p className="mb-3 text-sm font-bold text-neutral-500 dark:text-neutral-400">Por categoría ({selectedMonthLabel.toLowerCase()})</p>
