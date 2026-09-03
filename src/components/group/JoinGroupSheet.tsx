@@ -53,7 +53,7 @@ export function JoinGroupSheet({ open, onClose }: Props) {
     if (!preview || !user || !profile) return;
     setJoining(true);
     try {
-      const result = await joinGroupByCode(code, user.uid, profile.name);
+      const result = await joinGroupByCode(code, user.uid, profile.name, profile.photoUrl);
       show(result.alreadyMember ? "Ya eras miembro de este grupo" : "Te has unido al grupo", "success");
       reset();
       onClose();

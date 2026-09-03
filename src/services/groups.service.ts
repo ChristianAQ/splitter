@@ -3,6 +3,7 @@ import {
   arrayUnion,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -126,7 +127,8 @@ export async function createGroup(
   input: CreateGroupInput,
   creatorUid: string,
   creatorName: string,
-  creatorColor: string
+  creatorColor: string,
+  creatorPhotoUrl?: string
 ): Promise<{ groupId: string; inviteCode: string }> {
   try {
     const inviteCode = await generateUniqueInviteCode();
@@ -148,6 +150,7 @@ export async function createGroup(
       uid: creatorUid,
       name: creatorName,
       color: creatorColor,
+      photoUrl: creatorPhotoUrl,
       joinedAt: serverTimestamp(),
       active: true,
     });
@@ -241,7 +244,8 @@ export async function previewInviteCode(code: string): Promise<InvitePreview | n
 export async function joinGroupByCode(
   code: string,
   uid: string,
-  name: string
+  name: string,
+  photoUrl?: string
 ): Promise<{ groupId: string; groupName: string; alreadyMember: boolean }> {
   try {
     const normalized = code.trim().toUpperCase();
@@ -273,9 +277,13 @@ export async function joinGroupByCode(
     const memberRef = doc(groupRef, "members", uid);
     const [existingMember, color] = await Promise.all([getDoc(memberRef), pickFreeColor(groupId)]);
     if (existingMember.exists()) {
-      await updateDoc(memberRef, { active: true, color });
+      // Refresh the photo to match the current profile on rejoin too — if
+      // it's now unset (removed since they left), clear the stale one
+      // rather than leaving it (a plain `undefined` would just be dropped,
+      // not clear the field — see users.service.ts's updateUserProfile).
+      await updateDoc(memberRef, { active: true, color, photoUrl: photoUrl ?? deleteField() });
     } else {
-      await setDoc(memberRef, { uid, name, color, joinedAt: serverTimestamp(), active: true });
+      await setDoc(memberRef, { uid, name, color, photoUrl, joinedAt: serverTimestamp(), active: true });
     }
     await logHistory(groupId, "member_joined", uid, name, `${name} se unió al grupo`);
 
@@ -376,7 +384,7 @@ export async function addFriendsToGroup(
   groupId: string,
   adminUid: string,
   adminName: string,
-  friends: { uid: string; name: string }[]
+  friends: { uid: string; name: string; photoUrl?: string }[]
 ) {
   try {
     const groupRef = doc(db, "groups", groupId);
@@ -387,6 +395,7 @@ export async function addFriendsToGroup(
         uid: friend.uid,
         name: friend.name,
         color,
+        photoUrl: friend.photoUrl,
         joinedAt: serverTimestamp(),
         active: true,
       });

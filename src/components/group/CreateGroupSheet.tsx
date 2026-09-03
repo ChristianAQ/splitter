@@ -51,7 +51,8 @@ export function CreateGroupSheet({ open, onClose }: Props) {
         { name: name.trim(), description: description.trim() || undefined, icon, color, currency },
         user.uid,
         profile.name,
-        profile.color
+        profile.color,
+        profile.photoUrl
       );
       const invited = friends.filter((f) => selectedFriends.has(f.uid));
       if (invited.length > 0) {
