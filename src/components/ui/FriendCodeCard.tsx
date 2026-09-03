@@ -21,11 +21,11 @@ export function FriendCodeCard() {
 
   useEffect(() => {
     if (!user || !profile) return;
-    ensureFriendCode(user.uid, profile.name, profile.color).catch(() => {
+    ensureFriendCode(user.uid, profile.name, profile.color, profile.photoUrl).catch(() => {
       /* silently retried next time this mounts */
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, profile?.name, profile?.color]);
+  }, [user?.uid, profile?.name, profile?.color, profile?.photoUrl]);
 
   async function handleCopyCode() {
     if (!myCode) return;

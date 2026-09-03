@@ -16,9 +16,9 @@ export function PaymentCard({ payment, members, canRevert, onRevert }: Props) {
 
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-white p-3.5 shadow-card dark:bg-surface-dark-subtle">
-      <Avatar name={from?.name ?? "?"} color={from?.color ?? "#999"} size="sm" />
+      <Avatar name={from?.name ?? "?"} color={from?.color ?? "#999"} photoUrl={from?.photoUrl} size="sm" />
       <ArrowRight size={16} strokeWidth={2} className="shrink-0 text-neutral-300 dark:text-neutral-600" aria-hidden />
-      <Avatar name={to?.name ?? "?"} color={to?.color ?? "#999"} size="sm" />
+      <Avatar name={to?.name ?? "?"} color={to?.color ?? "#999"} photoUrl={to?.photoUrl} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">
           {from?.name} pagó a {to?.name}

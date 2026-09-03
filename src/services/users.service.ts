@@ -1,4 +1,4 @@
-import { doc, onSnapshot, updateDoc, type Unsubscribe } from "firebase/firestore";
+import { deleteField, doc, onSnapshot, updateDoc, type Unsubscribe } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
@@ -22,6 +22,7 @@ export function subscribeUserProfile(
         currency: data.currency,
         theme: data.theme,
         accentColor: data.accentColor,
+        photoUrl: data.photoUrl,
         createdAt: tsToMillis(data.createdAt),
       });
     },
@@ -31,10 +32,19 @@ export function subscribeUserProfile(
 
 export async function updateUserProfile(
   uid: string,
-  changes: Partial<Pick<UserProfile, "name" | "color" | "currency" | "theme" | "accentColor">>
+  changes: Partial<Pick<UserProfile, "name" | "color" | "currency" | "theme" | "accentColor">> & {
+    // `undefined` here means "not part of this update" (the db client already
+    // drops those keys — see lib/firebase.ts's ignoreUndefinedProperties);
+    // `null` means "remove the photo", which needs the deleteField() sentinel
+    // since a plain undefined would otherwise leave the old value in place.
+    photoUrl?: string | null;
+  }
 ) {
   try {
-    await updateDoc(doc(db, "users", uid), changes);
+    const { photoUrl, ...rest } = changes;
+    const payload: Record<string, unknown> = { ...rest };
+    if (photoUrl !== undefined) payload.photoUrl = photoUrl === null ? deleteField() : photoUrl;
+    await updateDoc(doc(db, "users", uid), payload);
   } catch (error) {
     throw toFriendlyError(error);
   }

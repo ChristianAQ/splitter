@@ -94,7 +94,7 @@ export function Home() {
               aria-label="Ir a mi perfil"
               className="shrink-0 rounded-full transition-transform duration-150 ease-out active:scale-90"
             >
-              <Avatar name={profile.name} color={profile.color} size="lg" />
+              <Avatar name={profile.name} color={profile.color} photoUrl={profile.photoUrl} size="lg" />
             </Link>
           )
         }

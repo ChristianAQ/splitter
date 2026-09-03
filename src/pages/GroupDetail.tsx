@@ -78,7 +78,16 @@ export function GroupDetail() {
   async function handleAddFriend(member: GroupMember) {
     if (!user || !profile) return;
     try {
-      const result = await addFriendByUid(user.uid, profile.name, profile.color, member.uid, member.name, member.color);
+      const result = await addFriendByUid(
+        user.uid,
+        profile.name,
+        profile.color,
+        profile.photoUrl,
+        member.uid,
+        member.name,
+        member.color,
+        member.photoUrl
+      );
       show(result.alreadyFriend ? `Ya erais amigos con ${result.name}` : `${result.name} añadido a tus amigos`, "success");
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo añadir.", "error");

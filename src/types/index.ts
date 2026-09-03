@@ -60,6 +60,12 @@ export interface UserProfile {
   // ACCENT_COLOR_PALETTE's hex values (lib/accentColors.ts). Absent for
   // accounts created before this setting existed, which default to Índigo.
   accentColor?: string;
+  // A small square JPEG, uploaded from the device and resized client-side
+  // (see lib/imageResize.ts), stored inline as a data: URL rather than in
+  // Firebase Storage — this app is Spark-plan-only by design (see
+  // firestore.rules' top comment), and Storage now requires Blaze for a new
+  // bucket. Absent means "show initials on the color swatch" (see Avatar).
+  photoUrl?: string;
   createdAt: EpochMillis;
 }
 
@@ -74,6 +80,7 @@ export interface Friend {
   uid: string;
   name: string;
   color: UserColor;
+  photoUrl?: string;
   addedAt: EpochMillis;
 }
 
@@ -137,6 +144,7 @@ export interface GroupMember {
   uid: string;
   name: string;
   color: UserColor;
+  photoUrl?: string;
   // No stored role: "is admin" is always derived from `group.createdBy === uid`,
   // live — never a field a client write could forge (see firestore.rules).
   joinedAt: EpochMillis;

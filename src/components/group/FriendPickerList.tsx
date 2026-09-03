@@ -24,7 +24,7 @@ export function FriendPickerList({ friends, selected, onToggle }: Props) {
               isSelected ? "border-accent bg-accent-50 dark:bg-accent-900/20" : "border-transparent bg-neutral-50 dark:bg-neutral-800/60"
             }`}
           >
-            <Avatar name={f.name} color={f.color} size="sm" />
+            <Avatar name={f.name} color={f.color} photoUrl={f.photoUrl} size="sm" />
             <span className="flex-1 truncate text-sm font-medium">{f.name}</span>
             <div
               className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${

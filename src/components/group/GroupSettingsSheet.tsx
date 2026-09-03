@@ -164,7 +164,7 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
             <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
               {members.map((m) => (
                 <li key={m.uid} className="flex items-center gap-3 py-2.5">
-                  <Avatar name={m.name} color={m.color} size="sm" />
+                  <Avatar name={m.name} color={m.color} photoUrl={m.photoUrl} size="sm" />
                   {renamingUid === m.uid ? (
                     <input
                       autoFocus

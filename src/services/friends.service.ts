@@ -1,4 +1,18 @@
-import { deleteDoc, doc, getDoc, getDocs, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, collection, type Unsubscribe } from "firebase/firestore";
+import {
+  deleteDoc,
+  deleteField,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  collection,
+  type Unsubscribe,
+} from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError, AppError } from "../lib/errors";
@@ -13,6 +27,7 @@ function fromSnap(id: string, data: Record<string, unknown>): Friend {
     uid: id,
     name: data.name as string,
     color: data.color as string,
+    photoUrl: data.photoUrl as string | undefined,
     addedAt: tsToMillis(data.addedAt),
   };
 }
@@ -34,14 +49,14 @@ export function subscribeFriends(
  * The "friend code" is just the uid itself — nothing to generate, nothing
  * that can collide. What still needs a write is a small public projection
  * (`friendCodes/{uid}`, keyed by uid instead of a random code) so someone
- * else can preview your name/color before adding you without needing read
- * access to your actual `users/{uid}` profile document (self-only). An
+ * else can preview your name/color/photo before adding you without needing
+ * read access to your actual `users/{uid}` profile document (self-only). An
  * idempotent merge-set, safe to call every time the "Amigos"/Perfil screen
  * opens.
  */
-export async function ensureFriendCode(uid: string, name: string, color: string): Promise<string> {
+export async function ensureFriendCode(uid: string, name: string, color: string, photoUrl?: string): Promise<string> {
   try {
-    await setDoc(doc(db, "friendCodes", uid), { uid, name, color }, { merge: true });
+    await setDoc(doc(db, "friendCodes", uid), { uid, name, color, photoUrl }, { merge: true });
     return uid;
   } catch (error) {
     throw toFriendlyError(error);
@@ -52,6 +67,7 @@ export interface FriendCodePreview {
   uid: string;
   name: string;
   color: string;
+  photoUrl?: string;
 }
 
 export async function previewFriendCode(uid: string): Promise<FriendCodePreview | null> {
@@ -60,7 +76,12 @@ export async function previewFriendCode(uid: string): Promise<FriendCodePreview 
   const snap = await getDoc(doc(db, "friendCodes", trimmed));
   if (!snap.exists()) return null;
   const data = snap.data();
-  return { uid: data.uid as string, name: data.name as string, color: data.color as string };
+  return {
+    uid: data.uid as string,
+    name: data.name as string,
+    color: data.color as string,
+    photoUrl: data.photoUrl as string | undefined,
+  };
 }
 
 /**
@@ -75,9 +96,11 @@ async function addFriendPair(
   myUid: string,
   myName: string,
   myColor: string,
+  myPhotoUrl: string | undefined,
   theirUid: string,
   theirName: string,
-  theirColor: string
+  theirColor: string,
+  theirPhotoUrl: string | undefined
 ): Promise<{ name: string; alreadyFriend: boolean }> {
   if (theirUid === myUid) throw new AppError("Ese es tu propio código.");
 
@@ -88,12 +111,14 @@ async function addFriendPair(
     uid: myUid,
     name: myName,
     color: myColor,
+    photoUrl: myPhotoUrl,
     addedAt: serverTimestamp(),
   });
   await setDoc(doc(db, "users", myUid, "friends", theirUid), {
     uid: theirUid,
     name: theirName,
     color: theirColor,
+    photoUrl: theirPhotoUrl,
     addedAt: serverTimestamp(),
   });
 
@@ -101,42 +126,51 @@ async function addFriendPair(
 }
 
 /** Someone typed in a code (their uid) — look up the public projection for
- * their name/color, then add both sides. */
+ * their name/color/photo, then add both sides. */
 export async function addFriendByCode(
   code: string,
   myUid: string,
   myName: string,
-  myColor: string
+  myColor: string,
+  myPhotoUrl?: string
 ): Promise<{ name: string; alreadyFriend: boolean }> {
   try {
     const preview = await previewFriendCode(code);
     if (!preview) throw new AppError("Ese código de amigo no es válido.");
-    return await addFriendPair(myUid, myName, myColor, preview.uid, preview.name, preview.color);
+    return await addFriendPair(myUid, myName, myColor, myPhotoUrl, preview.uid, preview.name, preview.color, preview.photoUrl);
   } catch (error) {
     throw toFriendlyError(error);
   }
 }
 
-/** Their uid/name/color are already known firsthand (e.g. from a shared
- * group's member list), so this skips the friendCodes lookup entirely —
- * useful for adding a fellow group member as a friend directly. */
+/** Their uid/name/color/photo are already known firsthand (e.g. from a
+ * shared group's member list), so this skips the friendCodes lookup
+ * entirely — useful for adding a fellow group member as a friend directly. */
 export async function addFriendByUid(
   myUid: string,
   myName: string,
   myColor: string,
+  myPhotoUrl: string | undefined,
   theirUid: string,
   theirName: string,
-  theirColor: string
+  theirColor: string,
+  theirPhotoUrl?: string
 ): Promise<{ name: string; alreadyFriend: boolean }> {
   try {
-    return await addFriendPair(myUid, myName, myColor, theirUid, theirName, theirColor);
+    return await addFriendPair(myUid, myName, myColor, myPhotoUrl, theirUid, theirName, theirColor, theirPhotoUrl);
   } catch (error) {
     throw toFriendlyError(error);
   }
 }
 
+interface ProfileChanges {
+  name?: string;
+  color?: string;
+  photoUrl?: string | null;
+}
+
 /**
- * Fans a name/color change out to every friend's copy of me — same idea as
+ * Fans a profile change out to every friend's copy of me — same idea as
  * profileSync.service.ts's propagateProfileToGroups, but there's no
  * `friends`-wide collection to query the way `groups` can be queried by
  * `memberIds array-contains`. Instead this reads my OWN friends
@@ -148,15 +182,19 @@ export async function addFriendByUid(
  * independent and failures are swallowed (best-effort sync; the profile
  * save itself already succeeded by the time this runs).
  */
-export async function propagateProfileToFriends(uid: string, changes: { name?: string; color?: string }) {
-  if (!changes.name && !changes.color) return;
+export async function propagateProfileToFriends(uid: string, changes: ProfileChanges) {
+  if (!changes.name && !changes.color && changes.photoUrl === undefined) return;
+  const { photoUrl, ...rest } = changes;
+  const payload: Record<string, unknown> = { ...rest };
+  if (photoUrl !== undefined) payload.photoUrl = photoUrl === null ? deleteField() : photoUrl;
+
   const friendsSnap = await getDocs(collection(db, "users", uid, "friends"));
   await Promise.allSettled(
-    friendsSnap.docs.map((friendDoc) => updateDoc(doc(db, "users", friendDoc.id, "friends", uid), changes))
+    friendsSnap.docs.map((friendDoc) => updateDoc(doc(db, "users", friendDoc.id, "friends", uid), payload))
   );
   // Keep the public preview projection in sync too, so a code shared before
-  // a rename/recolor still previews correctly afterward.
-  await updateDoc(doc(db, "friendCodes", uid), changes).catch(() => {
+  // a rename/recolor/photo change still previews correctly afterward.
+  await updateDoc(doc(db, "friendCodes", uid), payload).catch(() => {
     /* no projection yet (never opened Amigos/Perfil) — nothing to sync */
   });
 }

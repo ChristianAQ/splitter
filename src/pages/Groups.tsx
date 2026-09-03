@@ -118,7 +118,7 @@ export function Groups() {
                       onClick={() => setSelectedFriend(f)}
                       className="flex w-16 shrink-0 flex-col items-center gap-1.5 transition-transform duration-150 active:scale-90"
                     >
-                      <Avatar name={f.name} color={f.color} size="md" />
+                      <Avatar name={f.name} color={f.color} photoUrl={f.photoUrl} size="md" />
                       <span className="w-full truncate text-center text-xs font-medium text-neutral-600 dark:text-neutral-300">
                         {f.name}
                       </span>

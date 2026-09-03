@@ -59,7 +59,7 @@ export function Friends() {
     if (!preview || !user || !profile) return;
     setAdding(true);
     try {
-      const result = await addFriendByCode(code, user.uid, profile.name, profile.color);
+      const result = await addFriendByCode(code, user.uid, profile.name, profile.color, profile.photoUrl);
       show(result.alreadyFriend ? `Ya erais amigos con ${result.name}` : `${result.name} añadido a tus amigos`, "success");
       resetAddForm();
     } catch (err) {
@@ -112,7 +112,7 @@ export function Friends() {
 
               {preview && (
                 <div className="flex items-center gap-3 rounded-2xl bg-accent-50 p-3.5 dark:bg-accent-900/20">
-                  <Avatar name={preview.name} color={preview.color} size="sm" />
+                  <Avatar name={preview.name} color={preview.color} photoUrl={preview.photoUrl} size="sm" />
                   <p className="text-sm">
                     Vas a añadir a <span className="font-semibold">{preview.name}</span> como amigo
                   </p>
@@ -142,7 +142,7 @@ export function Friends() {
                 <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
                   {friends.map((f) => (
                     <li key={f.uid} className="flex items-center gap-3 py-2.5">
-                      <Avatar name={f.name} color={f.color} size="sm" />
+                      <Avatar name={f.name} color={f.color} photoUrl={f.photoUrl} size="sm" />
                       <span className="flex-1 truncate text-sm font-medium">{f.name}</span>
                       <button
                         onClick={() => setRemoving(f)}

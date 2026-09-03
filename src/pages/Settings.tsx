@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from "react";
-import { Coins, LogOut, Palette, Pencil, ShieldCheck, SunMoon, Sparkles } from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { Camera, Coins, LogOut, Palette, Pencil, ShieldCheck, SunMoon, Sparkles, X } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -16,6 +16,7 @@ import { updateUserProfile } from "../services/users.service";
 import { signOutUser } from "../services/auth.service";
 import { propagateProfileToGroups } from "../services/profileSync.service";
 import { propagateProfileToFriends } from "../services/friends.service";
+import { fileToAvatarDataUrl } from "../lib/imageResize";
 import { CURRENCIES } from "../types";
 
 export function Settings() {
@@ -26,8 +27,42 @@ export function Settings() {
   const [name, setName] = useState(profile?.name ?? "");
   const [savingName, setSavingName] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   if (!profile || !user) return null;
+
+  async function handlePhotoPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // lets picking the exact same file again re-trigger onChange
+    if (!file) return;
+    setUploadingPhoto(true);
+    try {
+      const photoUrl = await fileToAvatarDataUrl(file);
+      await updateUserProfile(user!.uid, { photoUrl });
+      await propagateProfileToGroups(user!.uid, { photoUrl });
+      await propagateProfileToFriends(user!.uid, { photoUrl });
+      show("Foto de perfil actualizada", "success");
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo subir la foto.", "error");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  async function handleRemovePhoto() {
+    setUploadingPhoto(true);
+    try {
+      await updateUserProfile(user!.uid, { photoUrl: null });
+      await propagateProfileToGroups(user!.uid, { photoUrl: null });
+      await propagateProfileToFriends(user!.uid, { photoUrl: null });
+      show("Foto de perfil eliminada", "success");
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo eliminar la foto.", "error");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
 
   async function handleSaveName() {
     setEditingName(false);
@@ -72,7 +107,36 @@ export function Settings() {
       <PageContainer>
         <div className="flex flex-col gap-6">
           <Card className="flex flex-col items-center gap-3 py-7">
-            <Avatar name={profile.name} color={profile.color} size="lg" />
+            <div className="relative">
+              <Avatar name={profile.name} color={profile.color} photoUrl={profile.photoUrl} size="lg" />
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                aria-label={profile.photoUrl ? "Cambiar foto de perfil" : "Añadir foto de perfil"}
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-accent text-white shadow-card active:scale-90 disabled:opacity-60"
+              >
+                <Camera size={14} strokeWidth={2.25} />
+              </button>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoPicked}
+                className="hidden"
+              />
+            </div>
+            {profile.photoUrl && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                disabled={uploadingPhoto}
+                className="-mt-2 flex items-center gap-1 text-xs font-medium text-neutral-400 active:text-negative disabled:opacity-60"
+              >
+                <X size={12} strokeWidth={2.5} />
+                Quitar foto
+              </button>
+            )}
 
             {editingName ? (
               <div className="flex w-full max-w-xs items-center gap-2">

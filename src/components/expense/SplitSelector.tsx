@@ -61,7 +61,7 @@ export function SplitSelector({
           const share = equalPreview?.splits.find((s) => s.uid === p.uid)?.amount;
           return (
             <li key={p.uid} className="flex items-center gap-3 py-2.5">
-              <Avatar name={p.name} color={p.color} size="sm" />
+              <Avatar name={p.name} color={p.color} photoUrl={p.photoUrl} size="sm" />
               <span className="flex-1 truncate text-sm font-medium">{p.name}</span>
               {method === "equal" ? (
                 <span className="text-sm font-semibold tabular-nums text-neutral-500 dark:text-neutral-400">

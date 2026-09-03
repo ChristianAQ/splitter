@@ -44,6 +44,7 @@ function fromMemberSnap(id: string, data: Record<string, unknown>): GroupMember 
     uid: id,
     name: data.name as string,
     color: data.color as string,
+    photoUrl: data.photoUrl as string | undefined,
     joinedAt: tsToMillis(data.joinedAt),
     active: data.active as boolean,
     isGhost: Boolean(data.isGhost),
