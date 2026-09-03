@@ -56,6 +56,10 @@ export interface UserProfile {
   color: UserColor;
   currency: Currency;
   theme: "light" | "dark" | "system";
+  // The app's global accent color (buttons, active tabs...) — one of
+  // ACCENT_COLOR_PALETTE's hex values (lib/accentColors.ts). Absent for
+  // accounts created before this setting existed, which default to Índigo.
+  accentColor?: string;
   createdAt: EpochMillis;
 }
 

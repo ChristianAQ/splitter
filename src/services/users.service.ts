@@ -21,6 +21,7 @@ export function subscribeUserProfile(
         color: data.color,
         currency: data.currency,
         theme: data.theme,
+        accentColor: data.accentColor,
         createdAt: tsToMillis(data.createdAt),
       });
     },
@@ -28,7 +29,10 @@ export function subscribeUserProfile(
   );
 }
 
-export async function updateUserProfile(uid: string, changes: Partial<Pick<UserProfile, "name" | "color" | "currency" | "theme">>) {
+export async function updateUserProfile(
+  uid: string,
+  changes: Partial<Pick<UserProfile, "name" | "color" | "currency" | "theme" | "accentColor">>
+) {
   try {
     await updateDoc(doc(db, "users", uid), changes);
   } catch (error) {

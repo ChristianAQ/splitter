@@ -53,3 +53,13 @@ export function ensureReadableColor(hex: string): string {
   if (l <= MAX_LIGHTNESS) return hex.toLowerCase();
   return hslToHex(h, s, MAX_LIGHTNESS);
 }
+
+/** "#6366F1" -> "99 102 241" — the space-separated triplet format Tailwind's
+ * CSS-variable color syntax expects (`rgb(var(--x) / <alpha-value>)`), used
+ * to make the app's accent color swappable at runtime (see lib/accentColors.ts). */
+export function hexToRgbTriplet(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `${r} ${g} ${b}`;
+}

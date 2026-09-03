@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from "react";
-import { Coins, LogOut, Palette, Pencil, ShieldCheck, SunMoon, Trash2 } from "lucide-react";
+import { Coins, LogOut, Palette, Pencil, ShieldCheck, SunMoon, Sparkles } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
 import { Input } from "../components/ui/Input";
 import { Avatar } from "../components/ui/Avatar";
 import { ColorPicker } from "../components/ui/ColorPicker";
+import { AccentColorPicker } from "../components/ui/AccentColorPicker";
 import { FriendCodeCard } from "../components/ui/FriendCodeCard";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { useAuth } from "../context/AuthContext";
@@ -13,21 +14,18 @@ import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
 import { updateUserProfile } from "../services/users.service";
 import { signOutUser } from "../services/auth.service";
-import { deleteAccount as deleteAccountCascade } from "../services/account.service";
 import { propagateProfileToGroups } from "../services/profileSync.service";
 import { propagateProfileToFriends } from "../services/friends.service";
 import { CURRENCIES } from "../types";
 
 export function Settings() {
   const { user, profile } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, accentColor, setAccentColor } = useTheme();
   const { show } = useToast();
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(profile?.name ?? "");
   const [savingName, setSavingName] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   if (!profile || !user) return null;
 
@@ -65,18 +63,6 @@ export function Settings() {
       await updateUserProfile(user!.uid, { currency });
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo cambiar la moneda.", "error");
-    }
-  }
-
-  async function handleDeleteAccount() {
-    setDeleting(true);
-    try {
-      await deleteAccountCascade(user!.uid, profile!.name);
-      show("Cuenta eliminada", "success");
-    } catch (err) {
-      show(err instanceof Error ? err.message : "No se pudo eliminar la cuenta.", "error");
-      setDeleting(false);
-      setConfirmDelete(false);
     }
   }
 
@@ -142,7 +128,7 @@ export function Settings() {
                   </div>
                 </div>
 
-                <div className="pt-4">
+                <div className="py-4">
                   <SettingLabel icon={SunMoon}>Tema</SettingLabel>
                   <div className="flex gap-2">
                     {(
@@ -157,6 +143,11 @@ export function Settings() {
                       </SegmentButton>
                     ))}
                   </div>
+                </div>
+
+                <div className="pt-4">
+                  <SettingLabel icon={Sparkles}>Color de la app</SettingLabel>
+                  <AccentColorPicker value={accentColor} onChange={setAccentColor} />
                 </div>
               </div>
             </Card>
@@ -185,13 +176,6 @@ export function Settings() {
                 <LogOut size={18} strokeWidth={2.1} className="text-neutral-400" />
                 <span className="text-sm font-semibold">Cerrar sesión</span>
               </button>
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-3 p-4 text-left text-negative active:bg-negative-light dark:active:bg-negative/10"
-              >
-                <Trash2 size={18} strokeWidth={2.1} />
-                <span className="text-sm font-semibold">Eliminar cuenta</span>
-              </button>
             </Card>
           </section>
 
@@ -209,17 +193,6 @@ export function Settings() {
         }}
         onCancel={() => setConfirmSignOut(false)}
       />
-      <ConfirmDialog
-        open={confirmDelete}
-        title="¿Eliminar tu cuenta?"
-        description="Se borrarán tus gastos personales y tu perfil. Si administras un grupo con más miembros, primero deberás archivarlo. Esta acción no se puede deshacer."
-        confirmLabel="Eliminar cuenta"
-        destructive
-        onConfirm={handleDeleteAccount}
-        onCancel={() => setConfirmDelete(false)}
-      >
-        {deleting && <p className="mt-2 text-sm text-neutral-500">Eliminando…</p>}
-      </ConfirmDialog>
     </>
   );
 }

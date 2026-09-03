@@ -1,5 +1,16 @@
 import type { Config } from "tailwindcss";
 
+// The accent color is user-choosable at runtime (see lib/accentColors.ts +
+// ThemeContext), so its shades resolve through CSS variables set on
+// :root/`document.documentElement.style` instead of fixed hex — this is
+// Tailwind's documented pattern for that (variable holds a space-separated
+// "R G B" triplet, e.g. "99 102 241", so the alpha modifier in classes like
+// `bg-accent-900/30` still works).
+function accentShade(cssVar: string) {
+  return ({ opacityValue }: { opacityValue?: string }) =>
+    opacityValue === undefined ? `rgb(var(${cssVar}))` : `rgb(var(${cssVar}) / ${opacityValue})`;
+}
+
 export default {
   darkMode: "class",
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
@@ -17,17 +28,17 @@ export default {
       },
       colors: {
         accent: {
-          DEFAULT: "#6366F1",
-          50: "#EEF0FF",
-          100: "#E0E3FF",
-          200: "#C6CAFF",
-          300: "#A5A9FF",
-          400: "#8285FA",
-          500: "#6366F1",
-          600: "#4F46E5",
-          700: "#4338CA",
-          800: "#372FA0",
-          900: "#2D2870",
+          DEFAULT: accentShade("--accent-500"),
+          50: accentShade("--accent-50"),
+          100: accentShade("--accent-100"),
+          200: accentShade("--accent-200"),
+          300: accentShade("--accent-300"),
+          400: accentShade("--accent-400"),
+          500: accentShade("--accent-500"),
+          600: accentShade("--accent-600"),
+          700: accentShade("--accent-700"),
+          800: accentShade("--accent-800"),
+          900: accentShade("--accent-900"),
         },
         positive: { DEFAULT: "#16A34A", light: "#DCFCE7", dark: "#4ADE80" },
         negative: { DEFAULT: "#E11D48", light: "#FFE4E6", dark: "#FB7185" },

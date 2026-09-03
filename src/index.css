@@ -5,6 +5,19 @@
 @layer base {
   :root {
     color-scheme: light;
+    /* Índigo — the app's default accent. Overridden at runtime per-user by
+     * ThemeContext (see lib/accentColors.ts) when someone picks a different
+     * one in Ajustes; these are just the values before that ever runs. */
+    --accent-50: 238 240 255;
+    --accent-100: 224 227 255;
+    --accent-200: 198 202 255;
+    --accent-300: 165 169 255;
+    --accent-400: 130 133 250;
+    --accent-500: 99 102 241;
+    --accent-600: 79 70 229;
+    --accent-700: 67 56 202;
+    --accent-800: 55 47 160;
+    --accent-900: 45 40 112;
   }
   .dark {
     color-scheme: dark;
