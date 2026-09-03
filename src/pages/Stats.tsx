@@ -169,10 +169,10 @@ function PersonalStats({
           <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(average, currency)}</p>
         </Card>
       </div>
-      {recurring.length > 0 && (
+      {isCurrentMonth && recurring.length > 0 && (
         <Card>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Recurrentes de este mes</p>
+            <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Gastos fijos de este mes</p>
             <Link to="/gastos?tab=recurrentes" className="text-sm font-semibold text-accent">
               Ver
             </Link>
@@ -182,11 +182,6 @@ function PersonalStats({
             <StatTile label="Pagado" value={formatCurrency(recurringSummary.spent, currency)} />
             <StatTile label="Por pagar" value={formatCurrency(recurringSummary.pending, currency)} />
           </div>
-          {recurringSummary.pending > 0 && (
-            <p className="mt-3 text-xs text-neutral-400">
-              Son gastos fijos que seguro tendrás que pagar este mes.
-            </p>
-          )}
         </Card>
       )}
       {selectedCategorySlices.length > 0 ? (
