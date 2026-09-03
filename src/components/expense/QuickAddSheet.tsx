@@ -32,47 +32,55 @@ export function QuickAddSheet({ open, onClose }: Props) {
 
   return (
     <BottomSheet open={open} onClose={onClose} title="Añadir gasto">
-      <div className="flex flex-col gap-2 pb-2">
-        <button
-          onClick={() => setMode("personal")}
-          className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-4 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
-        >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
-            <User size={19} strokeWidth={1.8} />
-          </span>
-          <div>
-            <p className="font-semibold">Gasto personal</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Solo tuyo, en tu zona privada</p>
-          </div>
-        </button>
+      <div className="flex flex-col gap-5 pb-2">
+        <div>
+          <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Personal</h2>
+          <button
+            onClick={() => setMode("personal")}
+            className="flex w-full items-center gap-3 rounded-2xl border-2 border-accent-100 bg-accent-50/60 p-4 text-left active:bg-accent-50 dark:border-accent-900/40 dark:bg-accent-900/10 dark:active:bg-accent-900/20"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent dark:bg-accent-900/40 dark:text-accent-300">
+              <User size={19} strokeWidth={1.8} />
+            </span>
+            <div>
+              <p className="font-semibold">Gasto personal</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Solo tuyo, en tu zona privada</p>
+            </div>
+          </button>
+        </div>
 
-        {groups.map((g) => {
-          const GroupIcon = groupIconComponent(g.icon);
-          return (
-            <button
-              key={g.id}
-              onClick={() => setMode(g.id)}
-              className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-4 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
-            >
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                style={{ backgroundColor: `${g.color}22`, color: g.color }}
-              >
-                <GroupIcon size={19} strokeWidth={1.8} />
-              </span>
-              <div>
-                <p className="font-semibold">{g.name}</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Gasto compartido de grupo</p>
-              </div>
-            </button>
-          );
-        })}
-
-        {groups.length === 0 && (
-          <p className="px-1 py-2 text-sm text-neutral-500 dark:text-neutral-400">
-            Crea un grupo desde la pestaña Grupos para añadir gastos compartidos.
-          </p>
-        )}
+        <div>
+          <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Grupos</h2>
+          {groups.length === 0 ? (
+            <p className="px-1 py-2 text-sm text-neutral-500 dark:text-neutral-400">
+              Crea un grupo desde la pestaña Grupos para añadir gastos compartidos.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {groups.map((g) => {
+                const GroupIcon = groupIconComponent(g.icon);
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => setMode(g.id)}
+                    className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-4 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
+                  >
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                      style={{ backgroundColor: `${g.color}22`, color: g.color }}
+                    >
+                      <GroupIcon size={19} strokeWidth={1.8} />
+                    </span>
+                    <div>
+                      <p className="font-semibold">{g.name}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">Gasto compartido de grupo</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </BottomSheet>
   );
