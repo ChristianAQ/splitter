@@ -4,14 +4,14 @@ interface Props {
   name: string;
   color: string;
   photoUrl?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 interface IndicatorProps extends Props {
   badge?: string;
 }
 
-const SIZE_CLASSES = { sm: "h-7 w-7 text-xs", md: "h-10 w-10 text-sm", lg: "h-14 w-14 text-lg" };
+const SIZE_CLASSES = { sm: "h-7 w-7 text-xs", md: "h-10 w-10 text-sm", lg: "h-14 w-14 text-lg", xl: "h-24 w-24 text-3xl" };
 
 export function Avatar({ name, color, photoUrl, size = "md" }: Props) {
   if (photoUrl) {

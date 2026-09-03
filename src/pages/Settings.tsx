@@ -106,63 +106,72 @@ export function Settings() {
       <TopBar title="Perfil" />
       <PageContainer>
         <div className="flex flex-col gap-6">
-          <Card className="flex flex-col items-center gap-3 py-7">
-            <div className="relative">
-              <Avatar name={profile.name} color={profile.color} photoUrl={profile.photoUrl} size="lg" />
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                disabled={uploadingPhoto}
-                aria-label={profile.photoUrl ? "Cambiar foto de perfil" : "Añadir foto de perfil"}
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-accent text-white shadow-card active:scale-90 disabled:opacity-60"
-              >
-                <Camera size={14} strokeWidth={2.25} />
-              </button>
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoPicked}
-                className="hidden"
-              />
-            </div>
-            {profile.photoUrl && (
-              <button
-                type="button"
-                onClick={handleRemovePhoto}
-                disabled={uploadingPhoto}
-                className="-mt-2 flex items-center gap-1 text-xs font-medium text-neutral-400 active:text-negative disabled:opacity-60"
-              >
-                <X size={12} strokeWidth={2.5} />
-                Quitar foto
-              </button>
-            )}
-
-            {editingName ? (
-              <div className="flex w-full max-w-xs items-center gap-2">
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onBlur={handleSaveName}
-                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                  autoFocus
-                  className="flex-1 text-center"
+          <Card className="overflow-hidden p-0">
+            <div
+              className="h-20"
+              style={{ background: `linear-gradient(135deg, ${profile.color}, ${profile.color}99)` }}
+              aria-hidden
+            />
+            <div className="flex flex-col items-center gap-3 px-6 pb-7">
+              <div className="relative -mt-12">
+                <div className="rounded-full ring-4 ring-white dark:ring-surface-dark-subtle">
+                  <Avatar name={profile.name} color={profile.color} photoUrl={profile.photoUrl} size="xl" />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={uploadingPhoto}
+                  aria-label={profile.photoUrl ? "Cambiar foto de perfil" : "Añadir foto de perfil"}
+                  className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-white shadow-card ring-2 ring-white active:scale-90 disabled:opacity-60 dark:ring-surface-dark-subtle"
+                >
+                  <Camera size={15} strokeWidth={2.25} />
+                </button>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoPicked}
+                  className="hidden"
                 />
               </div>
-            ) : (
-              <button
-                onClick={() => setEditingName(true)}
-                className="flex items-center gap-1.5 rounded-full px-2 py-0.5 active:bg-neutral-100 dark:active:bg-neutral-800"
-              >
-                <h1 className="text-lg font-bold">{profile.name}</h1>
-                {savingName ? (
-                  <span className="text-xs font-normal text-neutral-400">Guardando…</span>
-                ) : (
-                  <Pencil size={13} strokeWidth={2.25} className="text-neutral-400" />
-                )}
-              </button>
-            )}
-            <p className="-mt-2 text-sm text-neutral-500 dark:text-neutral-400">{profile.email}</p>
+              {profile.photoUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  disabled={uploadingPhoto}
+                  className="flex items-center gap-1 text-xs font-medium text-neutral-400 active:text-negative disabled:opacity-60"
+                >
+                  <X size={12} strokeWidth={2.5} />
+                  Quitar foto
+                </button>
+              )}
+
+              {editingName ? (
+                <div className="flex w-full max-w-xs items-center gap-2">
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onBlur={handleSaveName}
+                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                    autoFocus
+                    className="flex-1 text-center"
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => setEditingName(true)}
+                  className="flex items-center gap-1.5 rounded-full px-2 py-0.5 active:bg-neutral-100 dark:active:bg-neutral-800"
+                >
+                  <h1 className="text-lg font-bold">{profile.name}</h1>
+                  {savingName ? (
+                    <span className="text-xs font-normal text-neutral-400">Guardando…</span>
+                  ) : (
+                    <Pencil size={13} strokeWidth={2.25} className="text-neutral-400" />
+                  )}
+                </button>
+              )}
+              <p className="-mt-2 text-sm text-neutral-500 dark:text-neutral-400">{profile.email}</p>
+            </div>
           </Card>
 
           <section>
@@ -172,24 +181,13 @@ export function Settings() {
           </section>
 
           <section>
-            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Preferencias</h2>
+            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Apariencia</h2>
             <Card>
               <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
                 <div className="pb-4">
                   <SettingLabel icon={Palette}>Color identificativo</SettingLabel>
                   <ColorPicker value={profile.color} onChange={handleColorChange} />
                   <p className="mt-2 text-xs text-neutral-400">Este color se usará en todos tus grupos.</p>
-                </div>
-
-                <div className="py-4">
-                  <SettingLabel icon={Coins}>Moneda</SettingLabel>
-                  <div className="flex gap-2">
-                    {CURRENCIES.map((c) => (
-                      <SegmentButton key={c} active={profile.currency === c} onClick={() => handleCurrencyChange(c)}>
-                        {c}
-                      </SegmentButton>
-                    ))}
-                  </div>
                 </div>
 
                 <div className="py-4">
@@ -212,7 +210,22 @@ export function Settings() {
                 <div className="pt-4">
                   <SettingLabel icon={Sparkles}>Color de la app</SettingLabel>
                   <AccentColorPicker value={accentColor} onChange={setAccentColor} />
+                  <p className="mt-2 text-xs text-neutral-400">Sustituye el color por defecto en botones y pestañas.</p>
                 </div>
+              </div>
+            </Card>
+          </section>
+
+          <section>
+            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">General</h2>
+            <Card>
+              <SettingLabel icon={Coins}>Moneda</SettingLabel>
+              <div className="flex gap-2">
+                {CURRENCIES.map((c) => (
+                  <SegmentButton key={c} active={profile.currency === c} onClick={() => handleCurrencyChange(c)}>
+                    {c}
+                  </SegmentButton>
+                ))}
               </div>
             </Card>
           </section>
@@ -237,7 +250,9 @@ export function Settings() {
                 onClick={() => setConfirmSignOut(true)}
                 className="flex items-center gap-3 p-4 text-left active:bg-neutral-50 dark:active:bg-neutral-800/60"
               >
-                <LogOut size={18} strokeWidth={2.1} className="text-neutral-400" />
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+                  <LogOut size={15} strokeWidth={2.1} />
+                </span>
                 <span className="text-sm font-semibold">Cerrar sesión</span>
               </button>
             </Card>
@@ -263,8 +278,10 @@ export function Settings() {
 
 function SettingLabel({ icon: Icon, children }: { icon: typeof Palette; children: ReactNode }) {
   return (
-    <p className="mb-2 flex items-center gap-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">
-      <Icon size={15} strokeWidth={2.1} className="text-neutral-400" />
+    <p className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-600 dark:text-neutral-300">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+        <Icon size={14} strokeWidth={2.1} />
+      </span>
       {children}
     </p>
   );
