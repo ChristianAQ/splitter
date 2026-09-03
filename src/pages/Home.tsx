@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Sparkles, Users } from "lucide-react";
+import { ChevronRight, Sparkles, UserPlus } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -203,7 +203,26 @@ export function Home() {
           {groupsLoading ? (
             <CardListSkeleton count={2} />
           ) : groups.length === 0 ? (
-            <EmptyState icon={Users} title="Sin grupos todavía" description="Crea un grupo para compartir gastos con amigos." />
+            <Link
+              to="/grupos?crear=1"
+              className="group flex items-center gap-3.5 rounded-2xl border-2 border-dashed border-accent-200 bg-accent-50/50 p-4 transition-transform active:scale-[0.98] dark:border-accent-900/40 dark:bg-accent-900/10"
+            >
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent-100 text-accent dark:bg-accent-900/40 dark:text-accent-300">
+                <UserPlus size={22} strokeWidth={1.8} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">Crea tu primer grupo</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  Comparte gastos de viajes, pisos o planes con amigos
+                </p>
+              </div>
+              <ChevronRight
+                size={18}
+                strokeWidth={2}
+                className="shrink-0 text-accent/50 transition-transform duration-150 ease-out group-active:translate-x-0.5"
+                aria-hidden
+              />
+            </Link>
           ) : (
             <div className="flex flex-col gap-2.5">
               {groups.slice(0, 4).map((g) => (

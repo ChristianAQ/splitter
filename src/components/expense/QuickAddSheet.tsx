@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ChevronRight, User, UserPlus } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { useGroups } from "../../hooks/useGroups";
 import { groupIconComponent } from "../../lib/groupIcons";
@@ -16,6 +17,7 @@ interface Props {
  * possible steps from anywhere in the app. */
 export function QuickAddSheet({ open, onClose }: Props) {
   const { groups } = useGroups();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<"choose" | "personal" | string>("choose");
 
   function handleClose() {
@@ -52,9 +54,23 @@ export function QuickAddSheet({ open, onClose }: Props) {
         <div>
           <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Grupos</h2>
           {groups.length === 0 ? (
-            <p className="px-1 py-2 text-sm text-neutral-500 dark:text-neutral-400">
-              Crea un grupo desde la pestaña Grupos para añadir gastos compartidos.
-            </p>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                navigate("/grupos?crear=1");
+              }}
+              className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 p-4 text-left active:bg-neutral-50 dark:border-neutral-700 dark:active:bg-neutral-800/60"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                <UserPlus size={19} strokeWidth={1.8} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">Crea tu primer grupo</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Comparte gastos con amigos o compañeros de piso</p>
+              </div>
+              <ChevronRight size={16} strokeWidth={2} className="shrink-0 text-neutral-300 dark:text-neutral-600" aria-hidden />
+            </button>
           ) : (
             <div className="flex flex-col gap-2">
               {groups.map((g) => {

@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from "react";
-import { Camera, Coins, LogOut, Palette, Pencil, ShieldCheck, SunMoon, Sparkles, X } from "lucide-react";
+import { Camera, Check, Coins, LogOut, Palette, Pencil, ShieldCheck, SunMoon, Sparkles, X } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Card } from "../components/ui/Card";
@@ -83,6 +83,11 @@ export function Settings() {
     }
   }
 
+  function handleCancelName() {
+    setName(profile!.name);
+    setEditingName(false);
+  }
+
   async function handleColorChange(color: string) {
     try {
       await updateUserProfile(user!.uid, { color });
@@ -147,15 +152,33 @@ export function Settings() {
               )}
 
               {editingName ? (
-                <div className="flex w-full max-w-xs items-center gap-2">
+                <div className="flex w-full max-w-xs items-center gap-1.5">
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    onBlur={handleSaveName}
-                    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveName();
+                      if (e.key === "Escape") handleCancelName();
+                    }}
                     autoFocus
                     className="flex-1 text-center"
                   />
+                  <button
+                    type="button"
+                    onClick={handleSaveName}
+                    aria-label="Guardar nombre"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-positive-light text-positive active:scale-90 dark:bg-positive/15 dark:text-positive-dark"
+                  >
+                    <Check size={16} strokeWidth={2.5} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelName}
+                    aria-label="Cancelar"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 active:scale-90 dark:bg-neutral-800 dark:text-neutral-400"
+                  >
+                    <X size={16} strokeWidth={2.5} />
+                  </button>
                 </div>
               ) : (
                 <button

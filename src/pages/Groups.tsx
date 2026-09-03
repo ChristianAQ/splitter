@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Link2, Plus, UserPlus, Users } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
@@ -29,6 +29,14 @@ export function Groups() {
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("crear") === "1") {
+      setCreating(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const { pending, settled } = useMemo(() => {
     const isSettled = (g: Group) => Math.abs(summaries[g.id]?.balance ?? 0) < 0.005;
