@@ -8,6 +8,7 @@ import { PersonalExpenseSheet } from "../components/expense/PersonalExpenseSheet
 import { RecurringExpenseSheet } from "../components/expense/RecurringExpenseSheet";
 import { RecurringBudgetCard } from "../components/expense/RecurringBudgetCard";
 import { CardListSkeleton } from "../components/ui/Skeleton";
+import { Collapsible } from "../components/ui/Collapsible";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Button } from "../components/ui/Button";
 import { useAuth } from "../context/AuthContext";
@@ -113,7 +114,13 @@ export function Expenses() {
           ) : grouped.past.length === 0 ? (
             <EmptyState icon={Wallet} title="Aún no tienes gastos" description="Añade tu primer gasto para empezar." />
           ) : (
-            <MonthlyList expenses={grouped.past} totals={monthTotals} onSelect={setEditingExpense} currency={expenses[0]?.currency} />
+            <MonthlyList
+              expenses={grouped.past}
+              totals={monthTotals}
+              onSelect={setEditingExpense}
+              currency={expenses[0]?.currency}
+              currentMonth={currentMonth}
+            />
           ))}
 
         {tab === "proximos" &&
@@ -229,33 +236,45 @@ function MonthlyList({
   totals,
   onSelect,
   currency,
+  currentMonth,
 }: {
   expenses: PersonalExpense[];
   totals: Map<string, number>;
   onSelect: (e: PersonalExpense) => void;
   currency?: string;
+  currentMonth: string;
 }) {
-  let lastMonth = "";
+  const groups = useMemo(() => {
+    const list: { month: string; items: PersonalExpense[] }[] = [];
+    for (const e of expenses) {
+      const month = e.date.slice(0, 7);
+      const last = list[list.length - 1];
+      if (last?.month === month) last.items.push(e);
+      else list.push({ month, items: [e] });
+    }
+    return list;
+  }, [expenses]);
+
   return (
-    <div className="flex flex-col gap-2.5">
-      {expenses.map((e) => {
-        const month = e.date.slice(0, 7);
-        const showHeader = month !== lastMonth;
-        lastMonth = month;
-        return (
-          <div key={e.id}>
-            {showHeader && (
-              <div className="mb-2 mt-3 flex items-baseline justify-between first:mt-0">
-                <h3 className="text-xs font-bold uppercase tracking-wide text-neutral-400">{formatMonth(e.date)}</h3>
-                <span className="text-xs font-semibold text-neutral-400">
-                  {formatCurrency(totals.get(month) ?? 0, (currency as never) ?? "EUR")}
-                </span>
-              </div>
-            )}
-            <PersonalExpenseCard expense={e} onClick={() => onSelect(e)} />
+    <div className="flex flex-col gap-4">
+      {groups.map(({ month, items }) => (
+        <Collapsible
+          key={month}
+          defaultOpen={month === currentMonth}
+          title={formatMonth(items[0].date)}
+          headerRight={
+            <span className="shrink-0 text-xs font-semibold text-neutral-400">
+              {formatCurrency(totals.get(month) ?? 0, (currency as never) ?? "EUR")}
+            </span>
+          }
+        >
+          <div className="flex flex-col gap-2.5 pb-1">
+            {items.map((e) => (
+              <PersonalExpenseCard key={e.id} expense={e} onClick={() => onSelect(e)} />
+            ))}
           </div>
-        );
-      })}
+        </Collapsible>
+      ))}
     </div>
   );
 }
