@@ -35,7 +35,7 @@ function lastNMonths(n: number): string[] {
 
 export function Stats() {
   const { profile } = useAuth();
-  const { groups } = useGroups();
+  const { groups, archivedGroups } = useGroups();
   const [scope, setScope] = useState<Scope>("personal");
   const [searchParams] = useSearchParams();
   const initialMonth = searchParams.get("month") ?? undefined;
@@ -75,7 +75,13 @@ export function Stats() {
         </div>
 
         {scope === "personal" ? (
-          <PersonalStats currency={profile?.currency ?? "EUR"} groups={groups} uid={profile?.uid} initialMonth={initialMonth} />
+          <PersonalStats
+            currency={profile?.currency ?? "EUR"}
+            groups={groups}
+            archivedGroups={archivedGroups}
+            uid={profile?.uid}
+            initialMonth={initialMonth}
+          />
         ) : (
           <GroupStats groupId={scope} />
         )}
@@ -87,11 +93,13 @@ export function Stats() {
 function PersonalStats({
   currency,
   groups,
+  archivedGroups,
   uid,
   initialMonth,
 }: {
   currency: "EUR" | "USD" | "GBP";
   groups: Group[];
+  archivedGroups: Group[];
   uid: string | undefined;
   initialMonth?: string;
 }) {
@@ -100,7 +108,11 @@ function PersonalStats({
   const { expenses, loading } = usePersonalExpenses();
   const { items: recurring } = useRecurringExpenses();
   const months = useMemo(() => lastNMonths(6), []);
-  const groupsSpendByMonth = useGroupsMonthlySpend(groups, uid, months);
+  // An archived group's past expenses still happened — they should keep
+  // counting towards the month they occurred, not disappear from stats just
+  // because the group itself is no longer active.
+  const allGroups = useMemo(() => [...groups, ...archivedGroups], [groups, archivedGroups]);
+  const groupsSpendByMonth = useGroupsMonthlySpend(allGroups, uid, months);
   const groupsSpendSelectedMonth = groupsSpendByMonth[selectedMonth]?.[currency] ?? 0;
 
   // Always "this month", regardless of the bar-chart month selector below —
@@ -149,7 +161,11 @@ function PersonalStats({
     return slices;
   }, [byCategoryPerMonth, selectedMonth, groupsSpendSelectedMonth]);
 
-  if (!loading && expenses.length === 0 && groupsSpendSelectedMonth === 0 && recurring.length === 0) {
+  // Checked against all 6 months shown, not just the selected one — otherwise
+  // someone whose only history is an old (possibly archived) group expense
+  // outside the currently selected month would see an empty state instead
+  // of the chart that actually has their data.
+  if (!loading && bars.every((b) => b.value === 0) && recurring.length === 0) {
     return <EmptyState icon={BarChart3} title="Sin datos todavía" description="Añade gastos para ver tus estadísticas." />;
   }
 
