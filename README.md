@@ -391,7 +391,7 @@ avanzadas de análisis.
 ## 11. Manejo de errores
 
 `src/lib/errors.ts` traduce códigos de Firebase (`permission-denied`,
-`unauthenticated`, `auth/wrong-password`...) a mensajes en español
+`unauthenticated`, `auth/wrong-password`...) a mensajes en español 
 comprensibles — nunca se muestra un `FirebaseError:` crudo al usuario. Los
 estados de "sin conexión", "grupo inexistente" (`GroupDetail` muestra un
 `ErrorState` dedicado si el grupo no existe o no tienes acceso) y "código
