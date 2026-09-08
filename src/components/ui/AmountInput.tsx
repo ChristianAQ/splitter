@@ -46,7 +46,7 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
           {label}
         </label>
       )}
-      <div className={`flex items-baseline justify-center gap-1 ${large ? "text-5xl" : "text-3xl"} font-bold tabular-nums`}>
+      <div className={`flex items-baseline justify-center gap-1 ${large ? "text-5xl" : "text-3xl"} font-semibold tracking-tight tabular-nums`}>
         <span className="text-neutral-400 dark:text-neutral-500">{CURRENCY_SYMBOL[currency]}</span>
         <input
           id={id}

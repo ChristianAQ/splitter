@@ -32,7 +32,7 @@
   body {
     @apply bg-surface-light-subtle text-neutral-900 antialiased;
     @apply dark:bg-surface-dark dark:text-neutral-50;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 

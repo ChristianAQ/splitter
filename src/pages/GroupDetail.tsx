@@ -302,11 +302,11 @@ export function GroupDetail() {
             <div className="grid grid-cols-2 gap-3">
               <Card>
                 <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Total gastado</p>
-                <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(totalSpent, group.currency)}</p>
+                <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">{formatCurrency(totalSpent, group.currency)}</p>
               </Card>
               <Card>
                 <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Tu balance</p>
-                <p className={`mt-1 text-xl font-bold tabular-nums ${myBalance >= 0 ? "text-positive" : "text-negative"}`}>
+                <p className={`mt-1 text-xl font-semibold tracking-tight tabular-nums ${myBalance >= 0 ? "text-positive" : "text-negative"}`}>
                   {formatSignedCurrency(myBalance, group.currency)}
                 </p>
               </Card>

@@ -53,7 +53,7 @@ export function RecurringBudgetCard({ recurring, month, uid, currency }: Props) 
             Te sobrará este mes
           </p>
           <p
-            className={`mt-1 text-3xl font-bold tabular-nums ${
+            className={`mt-1 text-3xl font-semibold tracking-tight tabular-nums ${
               positive ? "text-positive dark:text-positive-dark" : "text-negative dark:text-negative-dark"
             }`}
           >

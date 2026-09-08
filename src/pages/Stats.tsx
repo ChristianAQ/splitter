@@ -186,11 +186,11 @@ function PersonalStats({
       <div className="grid grid-cols-2 gap-3">
         <Card>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{selectedMonthLabel}</p>
-          <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(selectedMonthTotal, currency)}</p>
+          <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">{formatCurrency(selectedMonthTotal, currency)}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Media mensual</p>
-          <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(average, currency)}</p>
+          <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">{formatCurrency(average, currency)}</p>
         </Card>
       </div>
       {isCurrentMonth && recurring.length > 0 && (
@@ -258,11 +258,11 @@ function GroupStats({ groupId }: { groupId: string }) {
       <div className="grid grid-cols-2 gap-3">
         <Card>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Gasto total</p>
-          <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(total, group.currency)}</p>
+          <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">{formatCurrency(total, group.currency)}</p>
         </Card>
         <Card>
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Gasto medio / persona</p>
-          <p className="mt-1 text-xl font-bold tabular-nums">
+          <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">
             {formatCurrency(total / Math.max(1, activeMembers.length), group.currency)}
           </p>
         </Card>

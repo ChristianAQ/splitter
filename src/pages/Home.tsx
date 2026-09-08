@@ -107,7 +107,7 @@ export function Home() {
         >
           <div className="min-w-0">
             <p className="text-xs font-medium text-accent-100">Gastado este mes</p>
-            <p className="mt-1 text-3xl font-bold tabular-nums">{formatCurrency(thisMonthTotal, currency)}</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">{formatCurrency(thisMonthTotal, currency)}</p>
             {delta !== null ? (
               <p className="mt-1 text-xs font-medium text-accent-100">
                 {delta <= 0 ? "▼" : "▲"} {Math.abs(Math.round(delta))}% vs. {formatMonth(`${lastMonth}-01`)}
@@ -131,7 +131,7 @@ export function Home() {
             className="rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
           >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Mes anterior</p>
-            <p className="mt-1 text-xl font-bold tabular-nums">{formatCurrency(lastMonthTotal, currency)}</p>
+            <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">{formatCurrency(lastMonthTotal, currency)}</p>
             <p className="mt-0.5 truncate text-xs text-neutral-400">{formatMonth(`${lastMonth}-01`)}</p>
           </Link>
           <Link
@@ -155,7 +155,7 @@ export function Home() {
             className="rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
           >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Recurrentes</p>
-            <p className="mt-1 text-xl font-bold tabular-nums">{recurringPending}</p>
+            <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">{recurringPending}</p>
             <p className="mt-0.5 text-xs text-neutral-400">por pagar este mes</p>
           </Link>
           <Link
@@ -164,7 +164,7 @@ export function Home() {
             className="rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
           >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Grupos activos</p>
-            <p className="mt-1 text-xl font-bold tabular-nums">{groups.length}</p>
+            <p className="mt-1 text-xl font-semibold tracking-tight tabular-nums">{groups.length}</p>
             <p className="mt-0.5 text-xs text-neutral-400">{groups.length === 1 ? "grupo" : "grupos"}</p>
           </Link>
         </section>

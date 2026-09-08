@@ -17,11 +17,15 @@ export default {
   theme: {
     extend: {
       fontFamily: {
+        // Inter first — a deliberately-chosen, consistent typeface across
+        // every platform, rather than whatever system font each OS
+        // defaults to. Falls back to the native system stack if the
+        // Google Fonts request is ever blocked (offline first load, etc.).
         sans: [
+          "'Inter'",
           "-apple-system",
           "BlinkMacSystemFont",
           "'SF Pro Text'",
-          "'Inter'",
           "system-ui",
           "sans-serif",
         ],
