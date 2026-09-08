@@ -99,8 +99,9 @@ function PersonalStats({
   const [selectedMonth, setSelectedMonth] = useState(initialMonth ?? currentMonth);
   const { expenses, loading } = usePersonalExpenses();
   const { items: recurring } = useRecurringExpenses();
-  const groupsSpendByCurrency = useGroupsMonthlySpend(groups, uid, selectedMonth);
-  const groupsSpendSelectedMonth = groupsSpendByCurrency[currency] ?? 0;
+  const months = useMemo(() => lastNMonths(6), []);
+  const groupsSpendByMonth = useGroupsMonthlySpend(groups, uid, months);
+  const groupsSpendSelectedMonth = groupsSpendByMonth[selectedMonth]?.[currency] ?? 0;
 
   // Always "this month", regardless of the bar-chart month selector below —
   // a recurring expense only remembers the single most recent month it was
@@ -109,7 +110,6 @@ function PersonalStats({
   const recurringSummary = useMemo(() => summarizeRecurringBudget(recurring, currentMonth, 0), [recurring, currentMonth]);
 
   const { bars, byCategoryPerMonth, average } = useMemo(() => {
-    const months = lastNMonths(6);
     const totals = new Map(months.map((m) => [m, 0]));
     const byCategory: Record<string, Record<string, number>> = {};
 
@@ -121,6 +121,14 @@ function PersonalStats({
       monthCategories[e.categoryId] = (monthCategories[e.categoryId] ?? 0) + e.amount;
     }
 
+    // The "total" for a month is every expense that's really the user's own,
+    // whether it lives in their personal collection or is their split share
+    // of a shared group expense — see useGroupsMonthlySpend.
+    for (const month of months) {
+      const groupsShare = groupsSpendByMonth[month]?.[currency] ?? 0;
+      if (groupsShare > 0) totals.set(month, (totals.get(month) ?? 0) + groupsShare);
+    }
+
     const values = Array.from(totals.values());
     const nonZeroMonths = values.filter((v) => v > 0).length || 1;
     const avg = values.reduce((s, v) => s + v, 0) / nonZeroMonths;
@@ -130,7 +138,7 @@ function PersonalStats({
       byCategoryPerMonth: byCategory,
       average: avg,
     };
-  }, [expenses]);
+  }, [expenses, months, groupsSpendByMonth, currency]);
 
   const selectedMonthTotal = bars.find((b) => b.key === selectedMonth)?.value ?? 0;
 

@@ -329,7 +329,7 @@ export function GroupDetail() {
                 {activeMembers.map((m) => {
                   const b = balances.find((x) => x.uid === m.uid);
                   return b ? (
-                    <BalanceRow key={m.uid} member={m} balance={b} currency={group.currency} action={addFriendAction(m)} />
+                    <BalanceRow key={m.uid} member={m} balance={b} currency={group.currency} action={addFriendAction(m)} showPaid />
                   ) : null;
                 })}
               </div>
