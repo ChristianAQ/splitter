@@ -54,7 +54,7 @@ export function PersonalExpenseCard({ expense, onClick, onMarkDone, onDelete }: 
         </div>
         <div className="flex flex-col items-end gap-1">
           <span className="font-semibold tabular-nums">{formatCurrency(expense.amount, expense.currency)}</span>
-          {expense.status === "future" && <Badge tone="accent">Próximo</Badge>}
+          {expense.partOfId && <Badge>Pago parcial</Badge>}
         </div>
       </button>
   );

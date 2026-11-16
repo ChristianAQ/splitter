@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
-import { AmountInput } from "../ui/AmountInput";
 import { Button } from "../ui/Button";
 import { Badge } from "../ui/Card";
 import { DetailHero, DetailRows, EditAction } from "../ui/Detail";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { usePartialPayment } from "../../hooks/usePartialPayment";
 import { setDebtProgress } from "../../services/debts.service";
 import { dueLabel, dueState, isSettled, paymentsOf, recordPayment, remainingAmount, reopenDebt, settleDebt } from "../../domain/debts";
 import { localISO, todayISO } from "../../domain/date";
-import { toMinorUnits } from "../../domain/money";
 import { DEBT_KIND_META } from "../../lib/debts";
 import { formatCurrency, formatDate, formatDateLong } from "../../lib/format";
 import type { Debt, DebtKind } from "../../types";
@@ -99,15 +98,48 @@ export function DebtDetailSheet({ open, onClose, debt, onEdit }: Props) {
   const { user } = useAuth();
   const { show } = useToast();
   const [paying, setPaying] = useState(false);
-  const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const today = todayISO();
+
+  const pay = usePartialPayment({
+    remaining: debt ? remainingAmount(debt) : 0,
+    currency: debt?.currency ?? "EUR",
+    question: debt ? COPY[debt.kind].ask : "",
+    verb: debt ? COPY[debt.kind].confirm : "",
+    busy,
+    onBack: () => setPaying(false),
+    onConfirm: (amount) => {
+      if (!debt) return;
+      const progress = recordPayment(debt, amount, today, Date.now());
+      // Stays open after a partial payment so the new balance is right
+      // there to see; one that clears the debt has nothing left to show.
+      void run(progress, progress.settled ? COPY[debt.kind].toastFull : COPY[debt.kind].toastPartial, progress.settled);
+    },
+  });
 
   useEffect(() => {
     if (open) {
       setPaying(false);
-      setAmount("");
+      pay.reset();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, debt?.id]);
+
+  async function run(progress: Parameters<typeof setDebtProgress>[2], message: string, closeAfter: boolean) {
+    if (!user || !debt) return;
+    setBusy(true);
+    try {
+      await setDebtProgress(user.uid, debt.id, progress);
+      show(message, "success");
+      setPaying(false);
+      pay.reset();
+      if (closeAfter) onClose();
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo guardar.", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (!debt) return <BottomSheet open={false} onClose={onClose} children={null} />;
 
@@ -117,110 +149,18 @@ export function DebtDetailSheet({ open, onClose, debt, onEdit }: Props) {
   const remaining = remainingAmount(debt);
   const paid = settled ? debt.amount : debt.paidAmount;
   const percent = Math.round(Math.min(paid / debt.amount, 1) * 100);
-  const today = todayISO();
   const state = dueState(debt, today);
   const relative = dueLabel(debt, today);
   const payments = paymentsOf(debt);
   const title = debt.kind === "reminder" ? debt.concept || "Pago pendiente" : debt.person || "Sin nombre";
 
-  const value = parseFloat(amount);
-  const valueMinor = value > 0 ? toMinorUnits(value, debt.currency) : 0;
-  const remainingMinor = toMinorUnits(remaining, debt.currency);
-  const tooMuch = valueMinor > remainingMinor;
-  const coversAll = valueMinor > 0 && valueMinor >= remainingMinor;
-  const leftAfter = (remainingMinor - Math.min(valueMinor, remainingMinor)) / 100;
-
-  async function run(progress: Parameters<typeof setDebtProgress>[2], message: string, closeAfter: boolean) {
-    if (!user || !debt) return;
-    setBusy(true);
-    try {
-      await setDebtProgress(user.uid, debt.id, progress);
-      show(message, "success");
-      setPaying(false);
-      setAmount("");
-      if (closeAfter) onClose();
-    } catch (err) {
-      show(err instanceof Error ? err.message : "No se pudo guardar.", "error");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const payPartial = () => {
-    if (!(value > 0) || tooMuch) return;
-    const progress = recordPayment(debt, value, today, Date.now());
-    // Stays open after a partial payment so the new balance is right there
-    // to see; a payment that clears the debt has nothing left to show.
-    return run(progress, progress.settled ? copy.toastFull : copy.toastPartial, progress.settled);
-  };
   const payAll = () => run(settleDebt(debt, today, Date.now()), copy.toastFull, true);
   const reopen = () => run(reopenDebt(debt), "Vuelve a estar pendiente", false);
 
   if (paying) {
     return (
-      <BottomSheet
-        open={open}
-        onClose={onClose}
-        title={copy.ask}
-        footer={
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={() => setPaying(false)} disabled={busy}>
-              <ArrowLeft size={17} strokeWidth={2.2} />
-              Volver
-            </Button>
-            <Button className="flex-1" onClick={payPartial} loading={busy} disabled={!(value > 0) || tooMuch}>
-              {value > 0 && !tooMuch ? `${copy.confirm} ${formatCurrency(value, debt.currency)}` : copy.confirm}
-            </Button>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-5 pb-2 pt-3">
-          <AmountInput value={amount} onChange={setAmount} currency={debt.currency} autoFocus large />
-
-          <div className="flex justify-center gap-2">
-            {remainingMinor >= 2 && (
-              <button
-                type="button"
-                onClick={() => setAmount(String(Math.round(remainingMinor / 2) / 100))}
-                className="well well-press pressable rounded-full px-3.5 py-2 text-[13px] font-semibold text-neutral-700 dark:text-neutral-200"
-              >
-                La mitad
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setAmount(String(remaining))}
-              className="well well-press pressable rounded-full px-3.5 py-2 text-[13px] font-semibold text-neutral-700 dark:text-neutral-200"
-            >
-              Todo · {formatCurrency(remaining, debt.currency)}
-            </button>
-          </div>
-
-          <p
-            className={`rounded-[18px] px-4 py-3 text-center text-sm ${
-              tooMuch
-                ? "bg-negative/10 text-negative dark:text-negative-dark"
-                : coversAll
-                  ? "bg-positive/10 text-positive dark:text-positive-dark"
-                  : "well text-neutral-600 dark:text-neutral-300"
-            }`}
-            aria-live="polite"
-          >
-            {tooMuch ? (
-              <>Solo quedan {formatCurrency(remaining, debt.currency)} pendientes.</>
-            ) : coversAll ? (
-              <>Con esto queda saldado del todo.</>
-            ) : value > 0 ? (
-              <>
-                Después quedarán <span className="font-semibold">{formatCurrency(leftAfter, debt.currency)}</span> pendientes.
-              </>
-            ) : (
-              <>
-                Ahora mismo quedan <span className="font-semibold">{formatCurrency(remaining, debt.currency)}</span> pendientes.
-              </>
-            )}
-          </p>
-        </div>
+      <BottomSheet open={open} onClose={onClose} title={pay.title} footer={pay.footer}>
+        {pay.children}
       </BottomSheet>
     );
   }

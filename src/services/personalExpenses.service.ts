@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   onSnapshot,
   orderBy,
@@ -35,6 +36,9 @@ function fromSnap(id: string, data: Record<string, unknown>): PersonalExpense {
     status: data.status as PersonalExpense["status"],
     notes: data.notes as string | undefined,
     recurringSourceId: data.recurringSourceId as string | undefined,
+    undated: data.undated === true ? true : undefined,
+    partOfId: data.partOfId as string | undefined,
+    plannedAmount: data.plannedAmount as number | undefined,
     createdAt: tsToMillis(data.createdAt),
     updatedAt: tsToMillis(data.updatedAt),
   };
@@ -75,6 +79,8 @@ export interface PersonalExpenseInput {
   status: PersonalExpense["status"];
   notes?: string;
   recurringSourceId?: string;
+  /** Upcoming expense with no deadline. */
+  undated?: boolean;
 }
 
 export async function createPersonalExpense(uid: string, input: PersonalExpenseInput) {
@@ -92,7 +98,67 @@ export async function createPersonalExpense(uid: string, input: PersonalExpenseI
 
 export async function updatePersonalExpense(uid: string, id: string, input: Partial<PersonalExpenseInput>) {
   try {
-    await commit(updateDoc(doc(col(uid), id), { ...input, updatedAt: serverTimestamp() }));
+    const payload: Record<string, unknown> = { ...input, updatedAt: serverTimestamp() };
+    // Optional fields the form sends empty are removed, not left as they
+    // were (a plain `undefined` is dropped by the client and the old value
+    // would survive the edit).
+    if ("notes" in input && !input.notes) payload.notes = deleteField();
+    if ("undated" in input && !input.undated) payload.undated = deleteField();
+    await commit(updateDoc(doc(col(uid), id), payload));
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
+/**
+ * Pays part of an upcoming expense: a new, ordinary paid expense for
+ * `amount` dated `today`, pointing back at it. The upcoming expense itself
+ * isn't touched — see domain/installments.ts.
+ */
+export async function payPartOfExpense(uid: string, expense: PersonalExpense, amount: number, today: string) {
+  try {
+    await commit(
+      addDoc(col(uid), {
+        ownerId: uid,
+        amount,
+        currency: expense.currency,
+        description: expense.description,
+        categoryId: expense.categoryId,
+        date: today,
+        status: "done",
+        partOfId: expense.id,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+    );
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
+/**
+ * Pays off what's left of an upcoming expense, which turns it into a paid
+ * one. If earlier parts exist, it becomes the final part: its amount drops
+ * to `remaining` (the parts already count on their own days) and the
+ * original total is kept in `plannedAmount`.
+ *
+ * Dated `today` — that's when the money left — unless it's a plain,
+ * never-part-paid expense whose planned day has already passed, which
+ * keeps that day (ticking off yesterday's expense today).
+ */
+export async function settleExpense(uid: string, expense: PersonalExpense, remaining: number, hadParts: boolean, today: string) {
+  try {
+    const keepPlannedDate = !hadParts && !expense.undated && expense.date <= today;
+    await commit(
+      updateDoc(doc(col(uid), expense.id), {
+        status: "done",
+        amount: remaining,
+        date: keepPlannedDate ? expense.date : today,
+        undated: deleteField(),
+        ...(hadParts ? { plannedAmount: expense.amount } : {}),
+        updatedAt: serverTimestamp(),
+      })
+    );
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -106,9 +172,6 @@ export async function deletePersonalExpense(uid: string, id: string) {
   }
 }
 
-export async function markExpenseDone(uid: string, id: string) {
-  return updatePersonalExpense(uid, id, { status: "done" });
-}
 
 /** Undo for a delete: writes the expense back under its original id, with
  * its original creation time. */

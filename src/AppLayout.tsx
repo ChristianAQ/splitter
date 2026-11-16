@@ -3,11 +3,13 @@ import { useLocation } from "react-router-dom";
 import { BottomNav } from "./components/layout/BottomNav";
 import { FAB } from "./components/layout/FAB";
 import { QuickAddSheet } from "./components/expense/QuickAddSheet";
+import { useLegacyMigrations } from "./hooks/useLegacyMigrations";
 import { SwipeableTabTransition } from "./components/layout/SwipeableTabTransition";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const location = useLocation();
+  useLegacyMigrations();
   const hideFab = location.pathname.startsWith("/perfil") || location.pathname === "/grupos";
 
   // HashRouter navigation never triggers a real page load, so the browser

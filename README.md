@@ -22,10 +22,15 @@ sensible vive en `firestore.rules`; ver §4.
 - Autenticación por email/contraseña, perfil de usuario.
 - Gastos personales: crear/editar/eliminar, categorías, gastos futuros.
 - Gastos recurrentes (motor de próximas ocurrencias — ver §5).
-- Deudas y pendientes (pestaña «Deudas» de Gastos): dinero que debes, que
-  te deben, o un pago que no quieres olvidar — con fecha límite opcional
-  («cuando se pueda»), devoluciones parciales y aviso de vencidas en Inicio.
-  No cuentan como gasto ni entran en las estadísticas.
+- Próximos (pestaña de Gastos): lo que queda por pagar, con fecha o sin
+  ella, agrupado por urgencia. Se paga de una vez o por partes; cada parte
+  es un gasto normal del día en que se paga (`domain/installments.ts`).
+- Fijos: gastos recurrentes que se marcan mes a mes. A cada uno se le puede
+  asignar un banco con su color; un resumen totaliza lo que sale de cada
+  cuenta y permite filtrar por banco (`domain/banks.ts`).
+- Deudas (pestaña de Gastos): dinero que debes o que te deben — con fecha
+  límite opcional («cuando se pueda»), devoluciones parciales con historial
+  y aviso de vencidas en Inicio. No cuentan como gasto.
 - Grupos: crear, invitar por código, unirse, miembros, colores.
 - Archivar un grupo solo para ti (cualquier miembro, reversible) — distinto
   de «Cerrar el grupo para todos», que solo puede hacer el admin.
@@ -103,7 +108,7 @@ La lógica financiera (`src/domain/`) es la parte más importante de la
 aplicación y **no importa nada de Firebase ni de React** — son funciones
 puras (`splitEqual`, `computeBalances`, `optimizeSettlement`,
 `occurrencesInRange`...) que reciben datos y devuelven datos. Esto permite:
-1. Testearla exhaustivamente sin mocks (`npm run test`, 54 tests).
+1. Testearla exhaustivamente sin mocks (`npm run test`, 71 tests).
 2. Reutilizarla igual en cualquier punto de la app sin duplicar la lógica
    de reparto o de balances.
 3. Que un cliente manipulado nunca sea la fuente de verdad: el cliente
@@ -228,7 +233,7 @@ cambiar.
 
 ## 5. Lógica financiera (`src/domain/`)
 
-Todo cubierto por tests (`npm run test`, 54 tests, 6 ficheros):
+Todo cubierto por tests (`npm run test`, 71 tests, 8 ficheros):
 
 - **`split.ts`** — reparto igual (con reparto exacto del céntimo sobrante,
   nunca se "pierde" un céntimo) y reparto por importe exacto (valida que

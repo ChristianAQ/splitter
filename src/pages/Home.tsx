@@ -234,7 +234,9 @@ export function Home() {
             <Section title="Próximos pagos" to="/gastos?tab=proximos" linkLabel="Ver gastos">
               <div className="surface divide-y divide-black/[0.06] rounded-[22px] dark:divide-white/[0.08]">
                 {upcoming.slice(0, 4).map((u) => {
-                  const date = new Date(Number(u.date.slice(0, 4)), Number(u.date.slice(5, 7)) - 1, Number(u.date.slice(8)));
+                  const date = u.date
+                    ? new Date(Number(u.date.slice(0, 4)), Number(u.date.slice(5, 7)) - 1, Number(u.date.slice(8)))
+                    : null;
                   return (
                     <Link key={u.key} to={UPCOMING_LINK[u.kind]} className="well-press flex items-center gap-3 px-4 py-3 first:rounded-t-[22px] last:rounded-b-[22px]">
                       <span
@@ -242,10 +244,20 @@ export function Home() {
                           u.overdue ? "bg-negative/10 text-negative dark:bg-negative/20 dark:text-negative-dark" : "well text-neutral-700 dark:text-neutral-200"
                         }`}
                       >
-                        <span className="text-[15px] font-semibold tabular-nums">{date.getDate()}</span>
-                        <span className="mt-0.5 text-[9px] font-medium uppercase tracking-wide opacity-70">
-                          {MONTH_SHORT.format(date).replace(".", "")}
-                        </span>
+                        {date ? (
+                          <>
+                            <span className="text-[15px] font-semibold tabular-nums">{date.getDate()}</span>
+                            <span className="mt-0.5 text-[9px] font-medium uppercase tracking-wide opacity-70">
+                              {MONTH_SHORT.format(date).replace(".", "")}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[9px] font-medium uppercase leading-tight tracking-wide opacity-70">
+                            Sin
+                            <br />
+                            fecha
+                          </span>
+                        )}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-medium">{u.title}</span>

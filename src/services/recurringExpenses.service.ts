@@ -37,6 +37,7 @@ function fromSnap(id: string, data: Record<string, unknown>): RecurringExpense {
     endDate: data.endDate as string | undefined,
     active: data.active as boolean,
     notes: data.notes as string | undefined,
+    bankId: data.bankId as string | undefined,
     lastCompletedMonth: data.lastCompletedMonth as string | undefined,
     createdAt: tsToMillis(data.createdAt),
     updatedAt: tsToMillis(data.updatedAt),
@@ -67,6 +68,7 @@ export interface RecurringExpenseInput {
   endDate?: string;
   active: boolean;
   notes?: string;
+  bankId?: string;
 }
 
 export async function createRecurringExpense(uid: string, input: RecurringExpenseInput) {
@@ -79,7 +81,12 @@ export async function createRecurringExpense(uid: string, input: RecurringExpens
 
 export async function updateRecurringExpense(uid: string, id: string, input: Partial<RecurringExpenseInput>) {
   try {
-    await commit(updateDoc(doc(col(uid), id), { ...input, updatedAt: serverTimestamp() }));
+    const payload: Record<string, unknown> = { ...input, updatedAt: serverTimestamp() };
+    // "No bank" / "no end date" chosen in the form: remove the field rather
+    // than leave the previous value (an `undefined` would just be dropped).
+    if ("bankId" in input && !input.bankId) payload.bankId = deleteField();
+    if ("endDate" in input && !input.endDate) payload.endDate = deleteField();
+    await commit(updateDoc(doc(col(uid), id), payload));
   } catch (error) {
     throw toFriendlyError(error);
   }

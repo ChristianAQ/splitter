@@ -6,12 +6,14 @@ import { categoryById } from "../../lib/categories";
 import { nextOccurrence } from "../../domain/recurring";
 import { todayISO } from "../../domain/date";
 import { formatCurrency, formatDateLong } from "../../lib/format";
-import type { RecurringExpense } from "../../types";
+import type { Bank, RecurringExpense } from "../../types";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   recurring?: RecurringExpense;
+  /** The bank it's paid from, if one is assigned. */
+  bank?: Bank;
   doneThisMonth: boolean;
   onToggleDone: () => void;
   onEdit: () => void;
@@ -25,7 +27,7 @@ const PERIODICITY: Record<RecurringExpense["periodicity"], string> = {
 
 /** Read-only view of a recurring expense, with the one thing you do to it
  * month to month: tick it off as paid. */
-export function RecurringDetailSheet({ open, onClose, recurring, doneThisMonth, onToggleDone, onEdit }: Props) {
+export function RecurringDetailSheet({ open, onClose, recurring, bank, doneThisMonth, onToggleDone, onEdit }: Props) {
   if (!recurring) return <BottomSheet open={false} onClose={onClose} children={null} />;
 
   const category = categoryById(recurring.categoryId);
@@ -47,7 +49,8 @@ export function RecurringDetailSheet({ open, onClose, recurring, doneThisMonth, 
       <div className="flex flex-col gap-5 pb-2">
         <DetailHero
           icon={Repeat}
-          chipClassName="well text-neutral-600 dark:text-neutral-300"
+          chipClassName={bank ? "text-white" : "well text-neutral-600 dark:text-neutral-300"}
+          chipStyle={bank ? { backgroundColor: bank.color } : undefined}
           title={recurring.description}
           amount={formatCurrency(recurring.amount, recurring.currency)}
           caption={
@@ -63,6 +66,17 @@ export function RecurringDetailSheet({ open, onClose, recurring, doneThisMonth, 
         />
         <DetailRows
           rows={[
+            {
+              label: "Banco",
+              value: bank ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: bank.color }} aria-hidden />
+                  {bank.name}
+                </span>
+              ) : (
+                <span className="text-neutral-500 dark:text-neutral-400">Sin asignar</span>
+              ),
+            },
             { label: "Se repite", value: PERIODICITY[recurring.periodicity] },
             { label: "Próximo cargo", value: next ? formatDateLong(next) : null },
             { label: "Categoría", value: category.label },

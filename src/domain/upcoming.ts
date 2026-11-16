@@ -1,6 +1,7 @@
 import type { Currency, Debt, ISODate, PersonalExpense, RecurringExpense } from "../types";
 import { addDays, daysInMonth, formatISO, parseISO } from "./date";
 import { isSettled, remainingAmount } from "./debts";
+import { partsByParent, progressOf } from "./installments";
 import { occurrencesInRange } from "./recurring";
 
 export type UpcomingKind = "expense" | "recurring" | "debt";
@@ -11,7 +12,8 @@ export interface UpcomingPayment {
   kind: UpcomingKind;
   title: string;
   detail: string;
-  date: ISODate;
+  /** null: no deadline. Those come last. */
+  date: ISODate | null;
   amount: number;
   currency: Currency;
   overdue: boolean;
@@ -21,9 +23,9 @@ export interface UpcomingPayment {
 const DEBT_HORIZON_DAYS = 45;
 
 /**
- * Everything still to be paid, soonest first: personal expenses dated in
- * the future, this month's fixed expenses not yet ticked off, and money
- * owed (or payments noted down) with a deadline coming up. Money other
+ * Everything still to be paid, soonest first: upcoming expenses (at what's
+ * left of them, if paid in part), this month's fixed expenses not yet
+ * ticked off, and money owed with a deadline coming up. Money other
  * people owe the user isn't a payment and is left out.
  */
 export function upcomingPayments(
@@ -39,17 +41,19 @@ export function upcomingPayments(
   const monthEnd = `${month}-${String(daysInMonth(year, monthNumber - 1)).padStart(2, "0")}`;
   const debtHorizon = formatISO(addDays(parseISO(today), DEBT_HORIZON_DAYS));
 
+  const parts = partsByParent(expenses);
   for (const e of expenses) {
     if (e.status !== "future") continue;
+    const progress = progressOf(e, parts);
     items.push({
       key: `expense:${e.id}`,
       kind: "expense",
       title: e.description,
-      detail: "Gasto programado",
-      date: e.date,
-      amount: e.amount,
+      detail: progress.paid > 0 ? "Pagado en parte" : "Gasto programado",
+      date: e.undated ? null : e.date,
+      amount: progress.remaining,
       currency: e.currency,
-      overdue: e.date < today,
+      overdue: !e.undated && e.date < today,
     });
   }
 
@@ -87,5 +91,8 @@ export function upcomingPayments(
     });
   }
 
-  return items.sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
+  return items.sort((a, b) => {
+    if (a.date === null || b.date === null) return a.date === b.date ? a.title.localeCompare(b.title) : a.date === null ? 1 : -1;
+    return a.date.localeCompare(b.date) || a.title.localeCompare(b.title);
+  });
 }

@@ -3,7 +3,7 @@ import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
 import { commit } from "../lib/commit";
-import type { UserProfile } from "../types";
+import type { Bank, UserProfile } from "../types";
 
 export function subscribeUserProfile(
   uid: string,
@@ -25,6 +25,7 @@ export function subscribeUserProfile(
         accentColor: data.accentColor,
         photoUrl: data.photoUrl,
         archivedGroupIds: Array.isArray(data.archivedGroupIds) ? data.archivedGroupIds : [],
+        banks: Array.isArray(data.banks) ? data.banks : [],
         createdAt: tsToMillis(data.createdAt),
       });
     },
@@ -60,6 +61,15 @@ export async function setGroupArchivedForMe(uid: string, groupId: string, archiv
     await commit(updateDoc(doc(db, "users", uid), {
       archivedGroupIds: archived ? arrayUnion(groupId) : arrayRemove(groupId),
     }));
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
+/** Replaces the user's list of banks (see types' Bank). */
+export async function saveBanks(uid: string, banks: Bank[]) {
+  try {
+    await commit(updateDoc(doc(db, "users", uid), { banks }));
   } catch (error) {
     throw toFriendlyError(error);
   }

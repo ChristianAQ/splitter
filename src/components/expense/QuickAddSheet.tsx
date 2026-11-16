@@ -46,7 +46,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
               </span>
               <div>
                 <p className="font-semibold">Gasto personal</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Solo tuyo, en tu zona privada</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Ya pagado, o para pagar más adelante</p>
               </div>
             </button>
             <button onClick={() => setMode("debt")} className="well well-press pressable flex w-full items-center gap-3 rounded-[22px] p-4 text-left">
@@ -54,8 +54,8 @@ export function QuickAddSheet({ open, onClose }: Props) {
                 <HandCoins size={19} strokeWidth={1.8} />
               </span>
               <div>
-                <p className="font-semibold">Préstamo o pago pendiente</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">Dinero que debes, que te deben o que no quieres olvidar</p>
+                <p className="font-semibold">Préstamo</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Dinero que debes o que te deben</p>
               </div>
             </button>
           </div>

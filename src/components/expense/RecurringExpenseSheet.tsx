@@ -12,7 +12,9 @@ import {
   deleteRecurringExpense,
   updateRecurringExpense,
 } from "../../services/recurringExpenses.service";
-import type { RecurringExpense, RecurringPeriodicity } from "../../types";
+import { saveBanks } from "../../services/users.service";
+import { BankPicker } from "./BankPicker";
+import type { Bank, RecurringExpense, RecurringPeriodicity } from "../../types";
 
 interface Props {
   open: boolean;
@@ -36,6 +38,7 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
   const [dayOfMonth, setDayOfMonth] = useState(1);
   const [startDate, setStartDate] = useState(todayISO());
   const [endDate, setEndDate] = useState("");
+  const [bankId, setBankId] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -49,6 +52,7 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
       setDayOfMonth(recurring.dayOfMonth);
       setStartDate(recurring.startDate);
       setEndDate(recurring.endDate ?? "");
+      setBankId(recurring.bankId);
     } else {
       setAmount("");
       setDescription("");
@@ -57,8 +61,21 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
       setDayOfMonth(Number(todayISO().slice(8, 10)));
       setStartDate(todayISO());
       setEndDate("");
+      setBankId(undefined);
     }
   }, [open, recurring]);
+
+  const banks = profile?.banks ?? [];
+
+  async function handleCreateBank(bank: Bank) {
+    if (!user) return;
+    try {
+      await saveBanks(user.uid, [...banks, bank]);
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo añadir el banco.", "error");
+      throw err;
+    }
+  }
 
   const amountValue = parseFloat(amount);
   const valid = amountValue > 0 && description.trim().length > 0;
@@ -69,21 +86,23 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
     try {
       const input = {
         amount: amountValue,
-        currency: profile.currency,
+        currency: recurring?.currency ?? profile.currency,
         description: description.trim(),
         categoryId: category,
         dayOfMonth,
         periodicity,
         startDate,
         endDate: endDate || undefined,
+        // A bank that has since been removed counts as none.
+        bankId: banks.some((b) => b.id === bankId) ? bankId : undefined,
         active: true,
       };
       if (recurring) {
         await updateRecurringExpense(user.uid, recurring.id, input);
-        show("Gasto recurrente actualizado", "success");
+        show("Cambios guardados", "success");
       } else {
         await createRecurringExpense(user.uid, input);
-        show("Gasto recurrente creado", "success");
+        show("Gasto fijo creado", "success");
       }
       onClose();
     } catch (err) {
@@ -98,7 +117,7 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
     setDeleting(true);
     try {
       await deleteRecurringExpense(user.uid, recurring.id);
-      show("Gasto recurrente eliminado", "success");
+      show("Gasto fijo eliminado", "success");
       onClose();
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo eliminar.", "error");
@@ -111,7 +130,7 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
     <BottomSheet
       open={open}
       onClose={onClose}
-      title={recurring ? "Editar recurrente" : "Nuevo gasto recurrente"}
+      title={recurring ? "Editar gasto fijo" : "Nuevo gasto fijo"}
       footer={
         <div className="flex gap-3">
           {recurring && (
@@ -126,7 +145,7 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
       }
     >
       <div className="flex flex-col gap-5 pb-2 pt-1">
-        <AmountInput value={amount} onChange={setAmount} currency={profile?.currency} autoFocus large />
+        <AmountInput value={amount} onChange={setAmount} currency={recurring?.currency ?? profile?.currency} autoFocus={!recurring} large />
         <Input
           label="Descripción"
           placeholder="Ej. Netflix, Alquiler, Gimnasio"
@@ -137,6 +156,8 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
           <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Categoría</p>
           <CategoryPicker value={category} onChange={setCategory} />
         </div>
+
+        <BankPicker banks={banks} value={bankId} onChange={setBankId} onCreate={handleCreateBank} />
 
         <div>
           <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Periodicidad</p>

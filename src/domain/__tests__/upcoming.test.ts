@@ -32,6 +32,23 @@ describe("upcomingPayments", () => {
     ]);
   });
 
+  it("shows what's left of an expense paid in part, and puts undated ones last", () => {
+    const items = upcomingPayments(
+      [
+        expense({ id: "u", description: "Fianza", amount: 500, undated: true, date: "2026-01-01" }),
+        expense({ id: "p", description: "Dentista", amount: 300, date: "2026-11-25" }),
+        expense({ id: "c", amount: 120, date: "2026-11-10", status: "done", partOfId: "p" }),
+      ],
+      [],
+      [],
+      TODAY
+    );
+    expect(items.map((i) => [i.title, i.date, i.amount, i.overdue])).toEqual([
+      ["Dentista", "2026-11-25", 180, false],
+      ["Fianza", null, 500, false],
+    ]);
+  });
+
   it("only counts expenses still marked as future", () => {
     expect(upcomingPayments([expense({ status: "done" })], [], [], TODAY)).toEqual([]);
   });

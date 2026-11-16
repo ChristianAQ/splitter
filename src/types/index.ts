@@ -66,12 +66,24 @@ export interface UserProfile {
   // firestore.rules' top comment), and Storage now requires Blaze for a new
   // bucket. Absent means "show initials on the color swatch" (see Avatar).
   photoUrl?: string;
+  // The accounts fixed expenses are paid from, each with its own color —
+  // see Bank below. Kept on the profile (not a subcollection) so no new
+  // security rule is needed.
+  banks?: Bank[];
   // Groups this user has put away for themselves ("Archivar para mí") —
   // unlike Group.archivedAt, which the admin sets and closes the group for
   // everyone, this only moves the group out of *my* active lists and can be
   // undone at any time.
   archivedGroupIds?: string[];
   createdAt: EpochMillis;
+}
+
+/** A bank/account the user pays fixed expenses from. Purely a label with a
+ * color, for telling them apart at a glance and totalling per bank. */
+export interface Bank {
+  id: string;
+  name: string;
+  color: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -104,6 +116,20 @@ export interface PersonalExpense {
   status: Extract<ExpenseStatus, "future" | "pending" | "done">;
   notes?: string;
   recurringSourceId?: string; // set if generated from a RecurringExpense
+  // --- Upcoming expenses paid in parts ("Próximos") ---
+  // An upcoming expense with no deadline ("cuando pueda"). `date` still
+  // holds a value (when it was noted down) so sorting and storage stay
+  // uniform, but it isn't shown or treated as a due date.
+  undated?: boolean;
+  // Set on a *paid* expense that is one part of an upcoming one: the id of
+  // that upcoming expense. Each part is an ordinary "done" expense on the
+  // day it was paid, so monthly totals and statistics need no special
+  // cases — what's left to pay is the upcoming expense's amount minus its
+  // parts (see domain/installments.ts).
+  partOfId?: string;
+  // On an expense that was paid off in parts: what it added up to in
+  // total. Its own `amount` is then just the final part.
+  plannedAmount?: number;
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
 }
@@ -121,6 +147,7 @@ export interface RecurringExpense {
   endDate?: ISODate;
   active: boolean;
   notes?: string;
+  bankId?: string; // which of the profile's `banks` this is paid from
   lastCompletedMonth?: string; // "YYYY-MM" of the most recent month checked off
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
@@ -131,8 +158,10 @@ export interface RecurringExpense {
 // ---------------------------------------------------------------------------
 
 /** "owe": money I borrowed and have to give back. "owed": money I lent and
- * am waiting to get back. "reminder": a payment I must not forget that
- * isn't owed to anyone in particular (a fine, a deposit, a bill...). */
+ * am waiting to get back.
+ * "reminder" is legacy: a payment not owed to anyone in particular. Those
+ * are upcoming expenses now ("Próximos") and existing ones are converted
+ * on sight — see services/migrations.service.ts. */
 export type DebtKind = "owe" | "owed" | "reminder";
 
 /** One repayment recorded against a debt. */

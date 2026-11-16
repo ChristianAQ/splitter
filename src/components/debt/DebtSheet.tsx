@@ -10,8 +10,8 @@ import { useToast } from "../../context/ToastContext";
 import { useFriends } from "../../hooks/useFriends";
 import { createDebt, deleteDebt, updateDebt } from "../../services/debts.service";
 import { isSettled } from "../../domain/debts";
-import { addDays, addMonthsClamped, daysInMonth, formatISO, parseISO, todayISO } from "../../domain/date";
-import { DEBT_KIND_OPTIONS } from "../../lib/debts";
+import { todayISO } from "../../domain/date";
+import { DuePicker } from "../ui/DuePicker";
 import { formatCurrency } from "../../lib/format";
 import type { Debt, DebtKind } from "../../types";
 
@@ -43,18 +43,12 @@ const COPY: Record<DebtKind, { person: string; concept: string; conceptPlacehold
   },
 };
 
-function duePresets(today: string): { label: string; value: string }[] {
-  const now = parseISO(today);
-  const endOfMonth = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), daysInMonth(now.getUTCFullYear(), now.getUTCMonth()))
-  );
-  return [
-    { label: "Cuando se pueda", value: "" },
-    { label: "En una semana", value: formatISO(addDays(now, 7)) },
-    { label: "Fin de mes", value: formatISO(endOfMonth) },
-    { label: "El mes que viene", value: formatISO(addMonthsClamped(now, 1, now.getUTCDate())) },
-  ];
-}
+// Only money between people. (A third kind, "Pendiente", used to live here;
+// those are upcoming expenses now — see services/migrations.service.ts.)
+const KIND_OPTIONS: [DebtKind, string][] = [
+  ["owe", "Debo"],
+  ["owed", "Me deben"],
+];
 
 export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
   const { user, profile } = useAuth();
@@ -178,7 +172,7 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
       }
     >
         <div className="flex flex-col gap-5 pb-2 pt-1">
-          <Segmented options={DEBT_KIND_OPTIONS} value={kind} onChange={setKind} label="Tipo" />
+          <Segmented options={KIND_OPTIONS} value={kind} onChange={setKind} label="Tipo" />
 
           <AmountInput value={amount} onChange={setAmount} currency={currency} autoFocus={!debt} large />
           {belowPaid && (
@@ -209,33 +203,7 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
 
           <Input label={copy.concept} placeholder={copy.conceptPlaceholder} value={concept} onChange={(e) => setConcept(e.target.value)} />
 
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">{copy.due}</p>
-            <div className="flex flex-wrap gap-1.5">
-              {duePresets(todayISO()).map((p) => {
-                const selected = dueDate === p.value;
-                return (
-                  <button
-                    key={p.label}
-                    type="button"
-                    onClick={() => setDueDate(p.value)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      selected ? "bg-accent text-white" : "well well-press text-neutral-600 dark:text-neutral-300"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
-            <Input
-              type="date"
-              aria-label="Fecha límite"
-              placeholder="O elige un día concreto"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
+          <DuePicker label={copy.due} value={dueDate} onChange={setDueDate} />
 
           <Input
             label={kind === "reminder" ? "Apuntado el" : "Fecha del préstamo"}

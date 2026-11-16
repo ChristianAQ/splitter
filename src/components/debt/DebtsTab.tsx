@@ -92,7 +92,7 @@ export function DebtsTab() {
         <EmptyState
           icon={HandCoins}
           title="Nada apuntado"
-          description="Dinero que te han prestado, que has prestado tú, o un pago que no quieres que se te pase."
+          description="Dinero que te han prestado o que has prestado tú, con su fecha y lo que se va devolviendo."
           action={
             <Button onClick={() => setEditing(null)}>
               <Plus size={17} strokeWidth={2.5} />
@@ -136,7 +136,7 @@ export function DebtsTab() {
             </h2>
             <button
               onClick={() => setEditing(null)}
-              aria-label="Apuntar deuda o pago pendiente"
+              aria-label="Apuntar deuda o préstamo"
               className="hit-slop pressable flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300"
             >
               <Plus size={17} strokeWidth={2.5} />
