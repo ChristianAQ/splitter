@@ -170,14 +170,14 @@ export function RecurringTab() {
                 }
               >
                 <button type="button" onClick={() => setViewingId(r.id)} className="surface pressable flex w-full items-center gap-3 rounded-[22px] p-3.5 text-left">
-                  {/* The bank's color is the row's identity: a solid chip
-                   * when one is assigned, a neutral one when not. */}
+                  {/* The bank's color as a slim marker down the side — enough
+                   * to tell accounts apart at a glance without an icon on
+                   * every row saying the same thing. */}
                   <span
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${bank ? "text-white" : "well text-neutral-500 dark:text-neutral-400"}`}
+                    aria-hidden
+                    className={`h-9 w-1 shrink-0 rounded-full ${bank ? "" : "bg-black/10 dark:bg-white/15"}`}
                     style={bank ? { backgroundColor: bank.color } : undefined}
-                  >
-                    <Repeat size={17} strokeWidth={2} />
-                  </span>
+                  />
                   <span className="min-w-0 flex-1">
                     <span className={`block truncate font-semibold ${done ? "text-neutral-500 dark:text-neutral-400" : ""}`}>{r.description}</span>
                     <span className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
