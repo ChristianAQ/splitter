@@ -98,7 +98,23 @@ export function PersonalExpenseSheet({ open, onClose, expense }: Props) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={expense ? "Editar gasto" : "Nuevo gasto"}>
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title={expense ? "Editar gasto" : "Nuevo gasto"}
+      footer={
+        <div className="flex gap-3">
+          {expense && (
+            <Button variant="ghost" className="!text-negative" onClick={handleDelete} loading={deleting}>
+              Eliminar
+            </Button>
+          )}
+          <Button onClick={handleSave} loading={saving} disabled={!valid} className="flex-1">
+            Guardar
+          </Button>
+        </div>
+      }
+    >
       <div className="flex flex-col gap-5 pb-2 pt-1">
         <AmountInput value={amount} onChange={setAmount} currency={expense?.currency ?? profile?.currency} autoFocus large />
         <Input
@@ -118,17 +134,6 @@ export function PersonalExpenseSheet({ open, onClose, expense }: Props) {
           </p>
         )}
         <Input label="Notas (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
-
-        <div className="flex gap-3">
-          {expense && (
-            <Button variant="danger" onClick={handleDelete} loading={deleting} className="flex-1">
-              Eliminar
-            </Button>
-          )}
-          <Button onClick={handleSave} loading={saving} disabled={!valid} className="flex-1">
-            Guardar
-          </Button>
-        </div>
       </div>
     </BottomSheet>
   );

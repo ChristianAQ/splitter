@@ -69,6 +69,11 @@ export default {
         "fade-in": "fade-in 0.2s ease-out",
         "scale-in": "scale-in 0.24s cubic-bezier(0.22, 1, 0.36, 1)",
         rise: "rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both",
+        // Exits — `forwards` so the element holds its final frame until
+        // React unmounts it a tick later instead of flashing back.
+        "fade-out": "fade-out 0.24s ease-out forwards",
+        "sheet-out": "sheet-out 0.24s cubic-bezier(0.4, 0, 1, 1) forwards",
+        "scale-out": "scale-out 0.2s ease-in forwards",
       },
       keyframes: {
         "slide-up": {
@@ -78,6 +83,18 @@ export default {
         "fade-in": {
           from: { opacity: "0" },
           to: { opacity: "1" },
+        },
+        "fade-out": {
+          from: { opacity: "1" },
+          to: { opacity: "0" },
+        },
+        "sheet-out": {
+          from: { transform: "translateY(0)" },
+          to: { transform: "translateY(100%)" },
+        },
+        "scale-out": {
+          from: { opacity: "1", transform: "scale(1)" },
+          to: { opacity: "0", transform: "scale(0.96)" },
         },
         "scale-in": {
           from: { opacity: "0", transform: "scale(0.94)" },

@@ -48,7 +48,7 @@ export function GroupExpenseCard({ expense, members, currentUid, onClick, onDele
       </div>
       <div className="flex flex-col items-end gap-0.5">
         <span className="font-semibold tabular-nums">{formatCurrency(expense.amount, expense.currency)}</span>
-        <span className="text-xs text-neutral-400">tu parte {formatCurrency(myShare, expense.currency)}</span>
+        <span className="text-xs text-neutral-500 dark:text-neutral-400">tu parte {formatCurrency(myShare, expense.currency)}</span>
       </div>
     </button>
   );

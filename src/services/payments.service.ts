@@ -13,6 +13,7 @@ import {
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
+import { commit } from "../lib/commit";
 import type { Payment } from "../types";
 
 function col(groupId: string) {
@@ -62,7 +63,7 @@ export interface RecordPaymentInput {
  * `revertPayment` if it was a mistake. */
 export async function recordPayment(groupId: string, createdBy: string, input: RecordPaymentInput) {
   try {
-    await addDoc(col(groupId), {
+    await commit(addDoc(col(groupId), {
       groupId,
       ...input,
       status: "confirmed",
@@ -70,7 +71,7 @@ export async function recordPayment(groupId: string, createdBy: string, input: R
       deleted: false,
       createdAt: serverTimestamp(),
       confirmedAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -79,7 +80,7 @@ export async function recordPayment(groupId: string, createdBy: string, input: R
 /** Only the creator can revert — enforced by Firestore rules. */
 export async function revertPayment(groupId: string, paymentId: string) {
   try {
-    await updateDoc(doc(col(groupId), paymentId), { deleted: true, status: "pending" });
+    await commit(updateDoc(doc(col(groupId), paymentId), { deleted: true, status: "pending" }));
   } catch (error) {
     throw toFriendlyError(error);
   }

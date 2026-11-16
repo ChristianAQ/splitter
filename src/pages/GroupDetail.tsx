@@ -477,7 +477,7 @@ export function GroupDetail() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm">{h.summary}</p>
-                      <p className="text-xs text-neutral-400">{formatDate(localISO(new Date(h.createdAt)))}</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{formatDate(localISO(new Date(h.createdAt)))}</p>
                     </div>
                   </div>
                 );

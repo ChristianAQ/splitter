@@ -100,11 +100,11 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
 
       if (!gesture.recognized) {
         if (Math.abs(dx) < RECOGNIZE_THRESHOLD && Math.abs(dy) < RECOGNIZE_THRESHOLD) return;
-        // A rightward drag that starts on a swipe-to-delete row belongs to
+        // A leftward drag that starts on a swipe-to-delete row belongs to
         // that row (see ui/SwipeToDelete) — without this both would move
         // at once: the card under the finger and the whole page with it.
-        // Leftward drags from the same spot still change page.
-        if (Math.abs(dx) < Math.abs(dy) * DIRECTION_RATIO || (gesture.onSwipeRow && dx > 0)) {
+        // Rightward drags from the same spot still change page.
+        if (Math.abs(dx) < Math.abs(dy) * DIRECTION_RATIO || (gesture.onSwipeRow && dx < 0)) {
           gesture.excluded = true;
           return;
         }

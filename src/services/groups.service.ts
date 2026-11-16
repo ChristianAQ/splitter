@@ -19,6 +19,7 @@ import {
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError, AppError } from "../lib/errors";
+import { commit, getDocSoon, getDocsSoon } from "../lib/commit";
 import { generateInviteCode } from "../lib/inviteCode";
 import { USER_COLOR_PALETTE } from "../lib/userColors";
 import { logHistory } from "./history.service";
@@ -92,7 +93,7 @@ export function subscribeMembers(
 
 /** Picks the first palette color not already used by an active member. */
 export async function pickFreeColor(groupId: string): Promise<string> {
-  const snap = await getDocs(collection(db, "groups", groupId, "members"));
+  const snap = await getDocsSoon(collection(db, "groups", groupId, "members"));
   const used = new Set(snap.docs.map((d) => d.data().color as string));
   const free = USER_COLOR_PALETTE.find((c) => !used.has(c.value));
   return free?.value ?? USER_COLOR_PALETTE[snap.size % USER_COLOR_PALETTE.length].value;
@@ -103,8 +104,11 @@ export async function pickFreeColor(groupId: string): Promise<string> {
 async function generateUniqueInviteCode(): Promise<string> {
   for (let attempt = 0; attempt < 6; attempt += 1) {
     const code = generateInviteCode();
-    const existing = await getDoc(doc(db, "inviteCodes", code));
-    if (!existing.exists()) return code;
+    // Answered from the cache if the server is slow — at 32^6 codes a
+    // clash is astronomically unlikely anyway, and the rules reject the
+    // write if one ever happens (an existing code can't be overwritten).
+    const existing = await getDocSoon(doc(db, "inviteCodes", code));
+    if (!existing?.exists()) return code;
   }
   throw new AppError("No se pudo generar un código único, inténtalo de nuevo.");
 }
@@ -134,34 +138,40 @@ export async function createGroup(
     const inviteCode = await generateUniqueInviteCode();
     const groupRef = doc(collection(db, "groups"));
 
-    await setDoc(groupRef, {
-      name: input.name,
-      ...(input.description ? { description: input.description } : {}),
-      icon: input.icon,
-      color: input.color,
-      currency: input.currency,
-      createdBy: creatorUid,
-      inviteCode,
-      memberIds: [creatorUid],
-      createdAt: serverTimestamp(),
-    });
-
-    await setDoc(doc(groupRef, "members", creatorUid), {
-      uid: creatorUid,
-      name: creatorName,
-      color: creatorColor,
-      photoUrl: creatorPhotoUrl,
-      joinedAt: serverTimestamp(),
-      active: true,
-    });
-
-    await setDoc(doc(db, "inviteCodes", inviteCode), {
-      groupId: groupRef.id,
-      groupName: input.name,
-      icon: input.icon,
-      color: input.color,
-    });
-
+    // Issued back to back, *not* awaited one by one: Firestore sends queued
+    // writes to the server strictly in the order they were made, each as
+    // its own commit, so the member doc's rule still sees the group doc
+    // the write before it created. Awaiting each one separately made
+    // "Crear grupo" wait for four server round-trips — and spin for as
+    // long as the connection took to wake up.
+    const writes = [
+      setDoc(groupRef, {
+        name: input.name,
+        ...(input.description ? { description: input.description } : {}),
+        icon: input.icon,
+        color: input.color,
+        currency: input.currency,
+        createdBy: creatorUid,
+        inviteCode,
+        memberIds: [creatorUid],
+        createdAt: serverTimestamp(),
+      }),
+      setDoc(doc(groupRef, "members", creatorUid), {
+        uid: creatorUid,
+        name: creatorName,
+        color: creatorColor,
+        photoUrl: creatorPhotoUrl,
+        joinedAt: serverTimestamp(),
+        active: true,
+      }),
+      setDoc(doc(db, "inviteCodes", inviteCode), {
+        groupId: groupRef.id,
+        groupName: input.name,
+        icon: input.icon,
+        color: input.color,
+      }),
+    ];
+    await commit(Promise.all(writes));
     await logHistory(groupRef.id, "group_created", creatorUid, creatorName, `${creatorName} creó el grupo`);
 
     return { groupId: groupRef.id, inviteCode };
@@ -175,7 +185,7 @@ export async function updateGroup(
   changes: Partial<Pick<Group, "name" | "description" | "icon" | "color">>
 ) {
   try {
-    await updateDoc(doc(db, "groups", groupId), changes);
+    await commit(updateDoc(doc(db, "groups", groupId), changes));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -183,7 +193,7 @@ export async function updateGroup(
 
 export async function archiveGroup(groupId: string) {
   try {
-    await updateDoc(doc(db, "groups", groupId), { archivedAt: serverTimestamp() });
+    await commit(updateDoc(doc(db, "groups", groupId), { archivedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -389,10 +399,10 @@ export async function addFriendsToGroup(
   try {
     const groupRef = doc(db, "groups", groupId);
     for (const friend of friends) {
-      await updateDoc(groupRef, { memberIds: arrayUnion(friend.uid) });
+      await commit(updateDoc(groupRef, { memberIds: arrayUnion(friend.uid) }));
       const memberRef = doc(groupRef, "members", friend.uid);
-      const [existing, color] = await Promise.all([getDoc(memberRef), pickFreeColor(groupId)]);
-      if (existing.exists()) {
+      const [existing, color] = await Promise.all([getDocSoon(memberRef), pickFreeColor(groupId)]);
+      if (existing?.exists()) {
         // Someone who was in the group before (left or was removed) still
         // has their member doc, marked inactive. Overwriting it with a
         // fresh `joinedAt` is rejected by the rules (that field is
@@ -400,21 +410,21 @@ export async function addFriendsToGroup(
         // inactive — in the group, yet missing from every balance and
         // picker. Reactivate the existing doc instead, same as
         // joinGroupByCode does for a self-rejoin.
-        await updateDoc(memberRef, {
+        await commit(updateDoc(memberRef, {
           active: true,
           name: friend.name,
           color,
           photoUrl: friend.photoUrl ?? deleteField(),
-        });
+        }));
       } else {
-        await setDoc(memberRef, {
+        await commit(setDoc(memberRef, {
           uid: friend.uid,
           name: friend.name,
           color,
           photoUrl: friend.photoUrl,
           joinedAt: serverTimestamp(),
           active: true,
-        });
+        }));
       }
       await logHistory(groupId, "member_joined", adminUid, adminName, `${friend.name} fue añadido al grupo por ${adminName}`);
     }
@@ -434,16 +444,16 @@ export async function addGhostMember(groupId: string, adminUid: string, adminNam
   try {
     const groupRef = doc(db, "groups", groupId);
     const ghostRef = doc(collection(groupRef, "members"));
-    await updateDoc(groupRef, { memberIds: arrayUnion(ghostRef.id) });
+    await commit(updateDoc(groupRef, { memberIds: arrayUnion(ghostRef.id) }));
     const color = await pickFreeColor(groupId);
-    await setDoc(ghostRef, {
+    await commit(setDoc(ghostRef, {
       uid: ghostRef.id,
       name: name.trim(),
       color,
       joinedAt: serverTimestamp(),
       active: true,
       isGhost: true,
-    });
+    }));
     await logHistory(groupId, "member_joined", adminUid, adminName, `${adminName} añadió a ${name.trim()} (sin cuenta)`);
     return ghostRef.id;
   } catch (error) {
@@ -453,7 +463,7 @@ export async function addGhostMember(groupId: string, adminUid: string, adminNam
 
 export async function updateMemberColor(groupId: string, uid: string, color: string) {
   try {
-    await updateDoc(doc(db, "groups", groupId, "members", uid), { color });
+    await commit(updateDoc(doc(db, "groups", groupId, "members", uid), { color }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -461,7 +471,7 @@ export async function updateMemberColor(groupId: string, uid: string, color: str
 
 export async function renameMember(groupId: string, uid: string, name: string) {
   try {
-    await updateDoc(doc(db, "groups", groupId, "members", uid), { name: name.trim() });
+    await commit(updateDoc(doc(db, "groups", groupId, "members", uid), { name: name.trim() }));
   } catch (error) {
     throw toFriendlyError(error);
   }

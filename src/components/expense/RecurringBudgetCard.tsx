@@ -67,7 +67,7 @@ export function RecurringBudgetCard({ recurring, month, uid, currency }: Props) 
           </p>
         </div>
       ) : (
-        <div className="rounded-xl2 border-2 border-dashed border-neutral-200 p-4 text-center text-sm text-neutral-400 dark:border-neutral-700">
+        <div className="rounded-xl2 border-2 border-dashed border-neutral-200 p-4 text-center text-sm text-neutral-500 dark:text-neutral-400 dark:border-neutral-700">
           Añade tu dinero disponible para ver cuánto te sobraría este mes
         </div>
       )}

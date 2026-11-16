@@ -35,7 +35,7 @@ export function DebtCard({ debt, today, onClick, onToggleSettled, onDelete }: Pr
           onClick={onToggleSettled}
           aria-label={settled ? "Volver a marcar como pendiente" : "Marcar como saldado"}
           aria-pressed={settled}
-          className={`pressable flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
+          className={`hit-slop pressable flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
             settled ? "border-positive bg-positive text-white" : "border-neutral-300 text-transparent dark:border-neutral-600"
           }`}
         >
@@ -57,23 +57,23 @@ export function DebtCard({ debt, today, onClick, onToggleSettled, onDelete }: Pr
             {secondary && <p className="truncate text-xs text-neutral-500 dark:text-neutral-400">{secondary}</p>}
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               {settled ? (
-                <span className="text-xs text-neutral-400">Saldado</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">Saldado</span>
               ) : state === "overdue" ? (
                 <Badge tone="negative">{relative ?? `Venció el ${formatDate(debt.dueDate!)}`}</Badge>
               ) : state === "today" || state === "soon" ? (
                 <Badge tone="warning">{relative}</Badge>
               ) : debt.dueDate ? (
-                <span className="text-xs text-neutral-400">{relative ?? `Vence el ${formatDate(debt.dueDate)}`}</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">{relative ?? `Vence el ${formatDate(debt.dueDate)}`}</span>
               ) : (
-                <span className="text-xs text-neutral-400">Sin fecha · cuando se pueda</span>
+                <span className="text-xs text-neutral-500 dark:text-neutral-400">Sin fecha · cuando se pueda</span>
               )}
             </div>
           </div>
           <div className="shrink-0 text-right">
-            <p className={`font-semibold tabular-nums ${settled ? "text-neutral-400" : meta.amount}`}>
+            <p className={`font-semibold tabular-nums ${settled ? "text-neutral-500 dark:text-neutral-400" : meta.amount}`}>
               {formatCurrency(settled ? debt.amount : remaining, debt.currency)}
             </p>
-            {partial && <p className="text-[11px] tabular-nums text-neutral-400">de {formatCurrency(debt.amount, debt.currency)}</p>}
+            {partial && <p className="text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">de {formatCurrency(debt.amount, debt.currency)}</p>}
           </div>
         </div>
         {partial && (

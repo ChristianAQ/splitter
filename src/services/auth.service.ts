@@ -11,10 +11,44 @@ import {
   updateProfile,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, getDocFromServer, serverTimestamp, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import { toFriendlyError } from "../lib/errors";
+import { commit } from "../lib/commit";
 import { USER_COLOR_PALETTE } from "../lib/userColors";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Creates `users/{uid}` for an account that has only just come into being.
+ *
+ * Firestore keeps a separate outgoing-write queue per signed-in user, and it
+ * learns about a new sign-in asynchronously, a beat after Firebase Auth
+ * reports it. A write made in that beat is filed under "nobody": it shows
+ * up locally for a moment, then vanishes when Firestore switches to the
+ * real user, and is never sent. For the profile document that meant an
+ * account that looked fine for a few seconds and then silently lost its
+ * profile — after which no form in the app would save anything.
+ *
+ * So first make sure Firestore is really acting as this user: a read of
+ * their own profile is refused by the rules until it is, and allowed once
+ * it is. Only then write.
+ */
+async function writeProfileWhenReady(uid: string, data: Record<string, unknown>) {
+  const ref = doc(db, "users", uid);
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      // Bounded: on a dead connection this would otherwise never settle,
+      // and offline there's nothing to wait for anyway.
+      await Promise.race([getDocFromServer(ref), sleep(4000)]);
+      break;
+    } catch (error) {
+      if ((error as { code?: string }).code !== "permission-denied") break;
+      await sleep(200 * (attempt + 1));
+    }
+  }
+  await commit(setDoc(ref, data));
+}
 
 export function onAuthChange(callback: (user: User | null) => void) {
   return onAuthStateChanged(auth, callback);
@@ -24,9 +58,7 @@ export async function signUp(name: string, email: string, password: string) {
   try {
     const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
     await updateProfile(credential.user, { displayName: name.trim() });
-    // No Cloud Function bootstraps this doc — the client is the only
-    // writer, so there's no race to guard against here.
-    await setDoc(doc(db, "users", credential.user.uid), {
+    await writeProfileWhenReady(credential.user.uid, {
       uid: credential.user.uid,
       name: name.trim(),
       email: email.trim(),
@@ -58,7 +90,7 @@ async function ensureGoogleProfile(user: User) {
   const ref = doc(db, "users", user.uid);
   const existing = await getDoc(ref);
   if (existing.exists()) return;
-  await setDoc(ref, {
+  await writeProfileWhenReady(user.uid, {
     uid: user.uid,
     name: user.displayName?.trim() || "Usuario",
     email: user.email ?? "",

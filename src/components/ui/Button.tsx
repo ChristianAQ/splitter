@@ -19,7 +19,7 @@ const VARIANT_CLASSES: Record<Variant, string> = {
 const SIZE_CLASSES: Record<Size, string> = {
   md: "h-11 px-4 text-[15px] rounded-full",
   lg: "h-14 px-6 text-base rounded-full",
-  icon: "h-10 w-10 rounded-full",
+  icon: "h-11 w-11 rounded-full",
 };
 
 export const Button = forwardRef<HTMLButtonElement, Props>(

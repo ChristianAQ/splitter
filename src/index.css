@@ -116,6 +116,17 @@
     font-size: 16px;
   }
 
+  /* Keyboard focus only (not taps): a visible ring in the accent color on
+   * anything interactive that doesn't already draw its own. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--accent-500) / 0.7);
+    outline-offset: 2px;
+  }
+  input:focus-visible,
+  textarea:focus-visible {
+    outline: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -221,6 +232,17 @@
   .stagger > *:nth-child(6) { animation-delay: 175ms; }
   .stagger > *:nth-child(7) { animation-delay: 210ms; }
   .stagger > *:nth-child(n + 8) { animation-delay: 245ms; }
+
+  /* Extends a small control's tappable area to roughly the 44pt minimum
+   * without changing how big it looks or how the row lays out. */
+  .hit-slop {
+    position: relative;
+  }
+  .hit-slop::after {
+    content: "";
+    position: absolute;
+    inset: -7px;
+  }
 
   .pressable {
     transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease-out;

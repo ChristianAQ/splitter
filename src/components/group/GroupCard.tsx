@@ -38,7 +38,7 @@ export function GroupCard({ groupId, name, icon, color, balance, currency, archi
           <p className="truncate font-semibold">{name}</p>
           {archived && <Badge>Archivado</Badge>}
         </div>
-        <p className={`text-sm font-medium ${settled ? "text-neutral-400" : owed ? "text-positive" : "text-negative"}`}>
+        <p className={`text-sm font-medium ${settled ? "text-neutral-500 dark:text-neutral-400" : owed ? "text-positive" : "text-negative"}`}>
           {settled ? "Todo saldado" : owed ? `Te deben ${formatSignedCurrency(balance, currency).replace("+", "")}` : `Debes ${formatSignedCurrency(-balance, currency).replace("+", "")}`}
         </p>
       </div>

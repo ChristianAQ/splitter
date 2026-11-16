@@ -91,7 +91,7 @@ export function Friends() {
           <section>
             <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Tu código</p>
             <FriendCodeCard />
-            <p className="mt-1.5 text-xs text-neutral-400">Compártelo para que alguien te añada como amigo.</p>
+            <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">Compártelo para que alguien te añada como amigo.</p>
           </section>
 
           <section>
@@ -147,7 +147,7 @@ export function Friends() {
                       <button
                         onClick={() => setRemoving(f)}
                         aria-label={`Eliminar a ${f.name} de tus amigos`}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 well-press"
+                        className="hit-slop flex h-8 w-8 items-center justify-center rounded-full text-neutral-500 dark:text-neutral-400 well-press"
                       >
                         <UserX size={16} strokeWidth={2.1} />
                       </button>

@@ -35,7 +35,7 @@ export function UserColorIndicator({ name, color, photoUrl, size = "md", badge }
     <div className="flex items-center gap-2 min-w-0">
       <Avatar name={name} color={color} photoUrl={photoUrl} size={size} />
       <span className="truncate font-medium">{name}</span>
-      {badge && <span className="shrink-0 text-xs font-normal text-neutral-400">{badge}</span>}
+      {badge && <span className="shrink-0 text-xs font-normal text-neutral-500 dark:text-neutral-400">{badge}</span>}
     </div>
   );
 }

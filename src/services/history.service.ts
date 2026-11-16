@@ -2,6 +2,7 @@ import { addDoc, collection, limit as fbLimit, onSnapshot, orderBy, query, serve
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
+import { commit } from "../lib/commit";
 import type { HistoryEntry, HistoryEventType } from "../types";
 
 function col(groupId: string) {
@@ -47,7 +48,7 @@ export async function logHistory(
   entityId?: string
 ) {
   try {
-    await addDoc(col(groupId), {
+    await commit(addDoc(col(groupId), {
       groupId,
       type,
       actorId,
@@ -55,7 +56,7 @@ export async function logHistory(
       summary,
       ...(entityId ? { entityId } : {}),
       createdAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }

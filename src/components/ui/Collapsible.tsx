@@ -32,7 +32,7 @@ export function Collapsible({ title, defaultOpen = true, headerRight, children }
           <ChevronDown
             size={14}
             strokeWidth={2.6}
-            className={`shrink-0 text-neutral-400 transition-transform duration-300 ${EASE} ${open ? "" : "-rotate-90"}`}
+            className={`shrink-0 text-neutral-500 dark:text-neutral-400 transition-transform duration-300 ${EASE} ${open ? "" : "-rotate-90"}`}
           />
           <h2 className="eyebrow truncate">{title}</h2>
         </button>

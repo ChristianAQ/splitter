@@ -24,7 +24,7 @@ export function PaymentCard({ payment, members, canRevert, onRevert }: Props) {
         <p className="truncate text-sm font-medium">
           {from?.name} pagó a {to?.name}
         </p>
-        <p className="text-xs text-neutral-400">{formatDate(payment.createdAt ? isoFromMillis(payment.createdAt) : "")}</p>
+        <p className="text-xs text-neutral-500 dark:text-neutral-400">{formatDate(payment.createdAt ? isoFromMillis(payment.createdAt) : "")}</p>
       </div>
       <span className="font-semibold tabular-nums text-positive">{formatCurrency(payment.amount, payment.currency)}</span>
       {canRevert && onRevert && (

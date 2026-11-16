@@ -131,7 +131,7 @@ export function DebtsTab() {
             <button
               onClick={() => setEditing(null)}
               aria-label="Apuntar deuda o pago pendiente"
-              className="pressable flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300"
+              className="hit-slop pressable flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300"
             >
               <Plus size={17} strokeWidth={2.5} />
             </button>

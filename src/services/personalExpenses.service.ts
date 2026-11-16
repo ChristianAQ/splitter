@@ -16,6 +16,7 @@ import {
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
+import { commit } from "../lib/commit";
 import type { PersonalExpense } from "../types";
 
 function col(uid: string) {
@@ -78,12 +79,12 @@ export interface PersonalExpenseInput {
 
 export async function createPersonalExpense(uid: string, input: PersonalExpenseInput) {
   try {
-    await addDoc(col(uid), {
+    await commit(addDoc(col(uid), {
       ownerId: uid,
       ...input,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -91,7 +92,7 @@ export async function createPersonalExpense(uid: string, input: PersonalExpenseI
 
 export async function updatePersonalExpense(uid: string, id: string, input: Partial<PersonalExpenseInput>) {
   try {
-    await updateDoc(doc(col(uid), id), { ...input, updatedAt: serverTimestamp() });
+    await commit(updateDoc(doc(col(uid), id), { ...input, updatedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -99,7 +100,7 @@ export async function updatePersonalExpense(uid: string, id: string, input: Part
 
 export async function deletePersonalExpense(uid: string, id: string) {
   try {
-    await deleteDoc(doc(col(uid), id));
+    await commit(deleteDoc(doc(col(uid), id)));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -114,7 +115,7 @@ export async function markExpenseDone(uid: string, id: string) {
 export async function restorePersonalExpense(uid: string, expense: PersonalExpense) {
   try {
     const { id, createdAt, updatedAt: _updatedAt, ...fields } = expense;
-    await setDoc(doc(col(uid), id), { ...fields, createdAt: Timestamp.fromMillis(createdAt), updatedAt: serverTimestamp() });
+    await commit(setDoc(doc(col(uid), id), { ...fields, createdAt: Timestamp.fromMillis(createdAt), updatedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }

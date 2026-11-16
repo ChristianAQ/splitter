@@ -75,7 +75,7 @@ export function Groups() {
             <Link
               to="/amigos"
               aria-label="Amigos"
-              className="flex h-11 w-11 items-center justify-center well well-press pressable rounded-full text-neutral-900 dark:text-neutral-50"
+              className="well well-press pressable flex h-11 w-11 items-center justify-center rounded-full text-neutral-900 dark:text-neutral-50"
             >
               <UserPlus size={19} strokeWidth={2.1} />
             </Link>

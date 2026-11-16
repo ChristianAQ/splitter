@@ -2,6 +2,7 @@ import { arrayRemove, arrayUnion, deleteField, doc, onSnapshot, updateDoc, type 
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
+import { commit } from "../lib/commit";
 import type { UserProfile } from "../types";
 
 export function subscribeUserProfile(
@@ -45,7 +46,7 @@ export async function updateUserProfile(
     const { photoUrl, ...rest } = changes;
     const payload: Record<string, unknown> = { ...rest };
     if (photoUrl !== undefined) payload.photoUrl = photoUrl === null ? deleteField() : photoUrl;
-    await updateDoc(doc(db, "users", uid), payload);
+    await commit(updateDoc(doc(db, "users", uid), payload));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -56,9 +57,9 @@ export async function updateUserProfile(
  * the group changes. */
 export async function setGroupArchivedForMe(uid: string, groupId: string, archived: boolean) {
   try {
-    await updateDoc(doc(db, "users", uid), {
+    await commit(updateDoc(doc(db, "users", uid), {
       archivedGroupIds: archived ? arrayUnion(groupId) : arrayRemove(groupId),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }

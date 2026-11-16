@@ -16,6 +16,7 @@ import {
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
+import { commit } from "../lib/commit";
 import type { Debt, DebtKind } from "../types";
 
 // Lives under users/{uid}/, next to personalExpenses and recurringExpenses,
@@ -66,13 +67,13 @@ export interface DebtInput {
 
 export async function createDebt(uid: string, input: DebtInput) {
   try {
-    await addDoc(col(uid), {
+    await commit(addDoc(col(uid), {
       ownerId: uid,
       ...input,
       paidAmount: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -83,14 +84,14 @@ export async function createDebt(uid: string, input: DebtInput) {
  * client and the old value would survive the edit. */
 export async function updateDebt(uid: string, id: string, input: DebtInput) {
   try {
-    await updateDoc(doc(col(uid), id), {
+    await commit(updateDoc(doc(col(uid), id), {
       ...input,
       person: input.person ?? deleteField(),
       concept: input.concept ?? deleteField(),
       dueDate: input.dueDate ?? deleteField(),
       notes: input.notes ?? deleteField(),
       updatedAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -99,11 +100,11 @@ export async function updateDebt(uid: string, id: string, input: DebtInput) {
 /** Records how much has been returned so far; `settled` closes the debt. */
 export async function setDebtProgress(uid: string, id: string, paidAmount: number, settled: boolean) {
   try {
-    await updateDoc(doc(col(uid), id), {
+    await commit(updateDoc(doc(col(uid), id), {
       paidAmount,
       settledAt: settled ? serverTimestamp() : deleteField(),
       updatedAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -111,7 +112,7 @@ export async function setDebtProgress(uid: string, id: string, paidAmount: numbe
 
 export async function deleteDebt(uid: string, id: string) {
   try {
-    await deleteDoc(doc(col(uid), id));
+    await commit(deleteDoc(doc(col(uid), id)));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -122,12 +123,12 @@ export async function deleteDebt(uid: string, id: string) {
 export async function restoreDebt(uid: string, debt: Debt) {
   try {
     const { id, createdAt, updatedAt: _updatedAt, settledAt, ...fields } = debt;
-    await setDoc(doc(col(uid), id), {
+    await commit(setDoc(doc(col(uid), id), {
       ...fields,
       settledAt: settledAt === undefined ? undefined : Timestamp.fromMillis(settledAt),
       createdAt: Timestamp.fromMillis(createdAt),
       updatedAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }

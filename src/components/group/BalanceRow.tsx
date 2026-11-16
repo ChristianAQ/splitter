@@ -24,11 +24,11 @@ export function BalanceRow({ member, balance, currency, action, showPaid }: Prop
       <div className="flex shrink-0 items-center gap-2">
         {action}
         <div className="flex flex-col items-end">
-          <span className={`font-semibold tabular-nums ${settled ? "text-neutral-400" : balance.net > 0 ? "text-positive" : "text-negative"}`}>
+          <span className={`font-semibold tabular-nums ${settled ? "text-neutral-500 dark:text-neutral-400" : balance.net > 0 ? "text-positive" : "text-negative"}`}>
             {settled ? "Saldado" : formatSignedCurrency(balance.net, currency)}
           </span>
           {showPaid && (
-            <span className="text-xs text-neutral-400">Pagó {formatCurrency(balance.paid, currency)}</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">Pagó {formatCurrency(balance.paid, currency)}</span>
           )}
         </div>
       </div>

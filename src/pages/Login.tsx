@@ -132,7 +132,7 @@ export function Login() {
 
         <div className="my-5 flex items-center gap-3">
           <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
-          <span className="text-xs font-medium text-neutral-400">o</span>
+          <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">o</span>
           <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
         </div>
 

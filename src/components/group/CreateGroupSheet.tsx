@@ -69,7 +69,16 @@ export function CreateGroupSheet({ open, onClose }: Props) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title="Nuevo grupo">
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title="Nuevo grupo"
+      footer={
+        <Button onClick={handleCreate} loading={saving} disabled={!valid} className="w-full">
+          Crear grupo
+        </Button>
+      }
+    >
       <div className="flex flex-col gap-5 pb-2 pt-1">
         <div className="flex justify-center">
           <div
@@ -133,7 +142,7 @@ export function CreateGroupSheet({ open, onClose }: Props) {
         <div>
           <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Añadir amigos (opcional)</p>
           {friends.length === 0 ? (
-            <p className="text-sm text-neutral-400">
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
               Aún no tienes amigos añadidos.{" "}
               <Link to="/amigos" onClick={onClose} className="font-semibold text-accent">
                 Añade alguno
@@ -145,9 +154,6 @@ export function CreateGroupSheet({ open, onClose }: Props) {
           )}
         </div>
 
-        <Button onClick={handleCreate} loading={saving} disabled={!valid} size="lg">
-          Crear grupo
-        </Button>
       </div>
     </BottomSheet>
   );

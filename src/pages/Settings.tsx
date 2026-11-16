@@ -144,7 +144,7 @@ export function Settings() {
                   type="button"
                   onClick={handleRemovePhoto}
                   disabled={uploadingPhoto}
-                  className="flex items-center gap-1 text-xs font-medium text-neutral-400 active:text-negative disabled:opacity-60"
+                  className="flex items-center gap-1 text-xs font-medium text-neutral-500 dark:text-neutral-400 active:text-negative disabled:opacity-60"
                 >
                   <X size={12} strokeWidth={2.5} />
                   Quitar foto
@@ -187,9 +187,9 @@ export function Settings() {
                 >
                   <h1 className="text-lg font-bold">{profile.name}</h1>
                   {savingName ? (
-                    <span className="text-xs font-normal text-neutral-400">Guardando…</span>
+                    <span className="text-xs font-normal text-neutral-500 dark:text-neutral-400">Guardando…</span>
                   ) : (
-                    <Pencil size={13} strokeWidth={2.25} className="text-neutral-400" />
+                    <Pencil size={13} strokeWidth={2.25} className="text-neutral-500 dark:text-neutral-400" />
                   )}
                 </button>
               )}
@@ -200,7 +200,7 @@ export function Settings() {
           <section>
             <h2 className="mb-2 px-1 eyebrow">Tu código de amigo</h2>
             <FriendCodeCard />
-            <p className="mt-1.5 px-1 text-xs text-neutral-400">Compártelo para que alguien te añada como amigo.</p>
+            <p className="mt-1.5 px-1 text-xs text-neutral-500 dark:text-neutral-400">Compártelo para que alguien te añada como amigo.</p>
           </section>
 
           <section>
@@ -210,7 +210,7 @@ export function Settings() {
                 <div className="pb-4">
                   <SettingLabel icon={Palette}>Color identificativo</SettingLabel>
                   <ColorPicker value={profile.color} onChange={handleColorChange} />
-                  <p className="mt-2 text-xs text-neutral-400">Este color se usará en todos tus grupos.</p>
+                  <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">Este color se usará en todos tus grupos.</p>
                 </div>
 
                 <div className="py-4">
@@ -233,7 +233,7 @@ export function Settings() {
                 <div className="pt-4">
                   <SettingLabel icon={Sparkles}>Color de la app</SettingLabel>
                   <AccentColorPicker value={accentColor} onChange={setAccentColor} />
-                  <p className="mt-2 text-xs text-neutral-400">Sustituye el color por defecto en botones y pestañas.</p>
+                  <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">Sustituye el color por defecto en botones y pestañas.</p>
                 </div>
               </div>
             </Card>
@@ -273,7 +273,7 @@ export function Settings() {
                 onClick={() => setConfirmSignOut(true)}
                 className="flex items-center gap-3 p-4 text-left well-press"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300">
+                <span className="hit-slop flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300">
                   <LogOut size={15} strokeWidth={2.1} />
                 </span>
                 <span className="text-sm font-semibold">Cerrar sesión</span>
@@ -281,7 +281,7 @@ export function Settings() {
             </Card>
           </section>
 
-          <p className="pb-2 text-center text-xs text-neutral-400">Splitter</p>
+          <p className="pb-2 text-center text-xs text-neutral-500 dark:text-neutral-400">Splitter</p>
         </div>
       </PageContainer>
 

@@ -174,10 +174,10 @@ export function GroupSettingsSheet({ open, onClose, group, members, archivedForM
               </Button>
             </div>
             {isArchived ? (
-              <p className="mt-1.5 text-xs text-neutral-400">Grupo archivado — ya no se puede usar para unirse.</p>
+              <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">Grupo archivado — ya no se puede usar para unirse.</p>
             ) : (
               <>
-                <p className="mt-1.5 text-xs text-neutral-400">
+                <p className="mt-1.5 text-xs text-neutral-500 dark:text-neutral-400">
                   Para invitar a alguien, usa el icono de invitación en la cabecera del grupo.
                 </p>
                 {isAdmin && (
@@ -207,9 +207,9 @@ export function GroupSettingsSheet({ open, onClose, group, members, archivedForM
                   ) : (
                     <span className="flex-1 truncate text-sm font-medium">
                       {m.name}
-                      {m.uid === group.createdBy && <span className="ml-1.5 text-xs text-neutral-400">Admin</span>}
-                      {m.isGhost && <span className="ml-1.5 text-xs text-neutral-400">Sin cuenta</span>}
-                      {!m.active && <span className="ml-1.5 text-xs text-neutral-400">(salió)</span>}
+                      {m.uid === group.createdBy && <span className="ml-1.5 text-xs text-neutral-500 dark:text-neutral-400">Admin</span>}
+                      {m.isGhost && <span className="ml-1.5 text-xs text-neutral-500 dark:text-neutral-400">Sin cuenta</span>}
+                      {!m.active && <span className="ml-1.5 text-xs text-neutral-500 dark:text-neutral-400">(salió)</span>}
                     </span>
                   )}
                   {!isArchived && isAdmin && m.active && renamingUid !== m.uid && (
@@ -244,7 +244,7 @@ export function GroupSettingsSheet({ open, onClose, group, members, archivedForM
                   <Button variant="secondary" onClick={() => setConfirmArchiveForMe(true)}>
                     Archivar para mí
                   </Button>
-                  <p className="-mt-0.5 mb-1 px-1 text-xs text-neutral-400">
+                  <p className="-mt-0.5 mb-1 px-1 text-xs text-neutral-500 dark:text-neutral-400">
                     Lo quita de tus grupos activos. Los demás lo siguen viendo igual y puedes recuperarlo cuando quieras.
                   </p>
                 </>

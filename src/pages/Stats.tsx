@@ -215,7 +215,7 @@ function PersonalStats({
         </Card>
       ) : (
         <Card>
-          <p className="text-sm text-neutral-400">Sin gastos en {selectedMonthLabel.toLowerCase()}.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Sin gastos en {selectedMonthLabel.toLowerCase()}.</p>
         </Card>
       )}
     </div>
@@ -275,7 +275,7 @@ function GroupStats({ groupId }: { groupId: string }) {
           </span>
           <div>
             <p className="text-sm font-semibold">{mostActive.name} ha añadido más gastos</p>
-            <p className="text-xs text-neutral-400">Quien más aporta al registro del grupo</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">Quien más aporta al registro del grupo</p>
           </div>
         </Card>
       )}
@@ -283,7 +283,7 @@ function GroupStats({ groupId }: { groupId: string }) {
       <Card>
         <div className="mb-2 flex items-center justify-between">
           <p className="eyebrow">Gasto por persona</p>
-          <div className="flex gap-4 text-xs font-medium text-neutral-400">
+          <div className="flex gap-4 text-xs font-medium text-neutral-500 dark:text-neutral-400">
             <span>Pagado</span>
             <span>Le tocaba</span>
           </div>
@@ -294,7 +294,7 @@ function GroupStats({ groupId }: { groupId: string }) {
               <span className="min-w-0 flex-1 truncate font-medium">{member.name}</span>
               <div className="flex shrink-0 gap-4">
                 <span className="w-16 text-right font-semibold tabular-nums">{formatCurrency(paid, group.currency)}</span>
-                <span className="w-16 text-right tabular-nums text-neutral-400">{formatCurrency(owed, group.currency)}</span>
+                <span className="w-16 text-right tabular-nums text-neutral-500 dark:text-neutral-400">{formatCurrency(owed, group.currency)}</span>
               </div>
             </div>
           ))}

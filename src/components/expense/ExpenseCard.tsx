@@ -20,7 +20,7 @@ export function PersonalExpenseCard({ expense, onClick, onMarkDone, onDelete }: 
           type="button"
           onClick={onMarkDone}
           aria-label="Marcar como realizado"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-neutral-300 text-transparent active:scale-95 active:bg-positive/10 dark:border-neutral-600"
+          className="hit-slop flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-neutral-300 text-transparent active:scale-95 active:bg-positive/10 dark:border-neutral-600"
         >
           <Check size={15} strokeWidth={3} />
         </button>

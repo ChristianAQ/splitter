@@ -28,10 +28,11 @@ const EXIT_MS = 200;
 const COLLAPSE_MS = 220;
 
 /**
- * Drag a row to the right to delete it: a red pill with a trash icon grows
- * out of the left edge behind the card, the icon pops once the card is far
- * enough that letting go will delete, and releasing there sends the card
- * off to the right and closes the gap it leaves.
+ * Drag a row to the left to delete it (the direction iOS itself uses): a
+ * red pill with a trash icon grows out of the right edge behind the card,
+ * the icon pops once the card is far enough that letting go will delete,
+ * and releasing there sends the card off to the left and closes the gap
+ * it leaves.
  *
  * Everything that moves is driven straight through refs rather than React
  * state — a state update per touchmove re-renders the row's whole subtree
@@ -77,7 +78,7 @@ export function SwipeToDelete({ onDelete, children, leading, disabled }: Props) 
     if (!card || !action) return;
     const transition = animate ? `${SNAP_MS}ms ${EASE}` : "";
     card.style.transition = animate ? `transform ${transition}` : "none";
-    card.style.transform = dx > 0 ? `translate3d(${dx}px, 0, 0)` : "";
+    card.style.transform = dx > 0 ? `translate3d(${-dx}px, 0, 0)` : "";
     action.style.transition = animate ? `width ${transition}, opacity 160ms ease-out` : "none";
     action.style.width = `${Math.max(dx - GAP, 0)}px`;
     action.style.opacity = dx > GAP ? "1" : "0";
@@ -122,9 +123,9 @@ export function SwipeToDelete({ onDelete, children, leading, disabled }: Props) 
     g.pointerId = -1;
     g.axis = null;
 
-    // 1. Card leaves to the right; the red action fills the space behind it.
+    // 1. Card leaves to the left; the red action fills the space behind it.
     card.style.transition = `transform ${EXIT_MS}ms ease-in`;
-    card.style.transform = `translate3d(${g.width + 32}px, 0, 0)`;
+    card.style.transform = `translate3d(${-(g.width + 32)}px, 0, 0)`;
     action.style.transition = `width ${EXIT_MS}ms ease-in`;
     action.style.width = "100%";
 
@@ -177,9 +178,9 @@ export function SwipeToDelete({ onDelete, children, leading, disabled }: Props) 
 
     if (g.axis === null) {
       if (Math.abs(rawX) < SLOP && Math.abs(rawY) < SLOP) return;
-      // Only a rightward, clearly horizontal drag is ours. Leftward ones
+      // Only a leftward, clearly horizontal drag is ours. Rightward ones
       // stay available to the page-to-page swipe; vertical ones are scroll.
-      if (rawX <= 0 || Math.abs(rawX) < Math.abs(rawY) * DIRECTION_RATIO) {
+      if (rawX >= 0 || Math.abs(rawX) < Math.abs(rawY) * DIRECTION_RATIO) {
         g.axis = "y";
         return;
       }
@@ -188,7 +189,7 @@ export function SwipeToDelete({ onDelete, children, leading, disabled }: Props) 
       e.currentTarget.setPointerCapture(e.pointerId);
     }
 
-    g.dx = Math.max(0, rawX - SLOP);
+    g.dx = Math.max(0, -rawX - SLOP);
     setArmed(g.dx > g.width * COMMIT_FRACTION);
     paint(g.dx, false);
   }
@@ -233,10 +234,10 @@ export function SwipeToDelete({ onDelete, children, leading, disabled }: Props) 
           ref={actionRef}
           aria-hidden
           data-armed="false"
-          className="absolute inset-y-0 left-0 flex items-center overflow-hidden rounded-[22px] bg-negative/80 text-white opacity-0 transition-colors duration-150 data-[armed=true]:bg-negative"
+          className="absolute inset-y-0 right-0 flex items-center justify-end overflow-hidden rounded-[22px] bg-negative/80 text-white opacity-0 transition-colors duration-150 data-[armed=true]:bg-negative"
           style={{ width: 0 }}
         >
-          <span ref={iconRef} className="ml-[18px] flex shrink-0 transition-transform duration-200 ease-out">
+          <span ref={iconRef} className="mr-[18px] flex shrink-0 transition-transform duration-200 ease-out">
             <Trash2 size={20} strokeWidth={2.1} />
           </span>
         </div>

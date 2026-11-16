@@ -20,24 +20,19 @@ export function QuickAddSheet({ open, onClose }: Props) {
   const { groups } = useGroups();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"choose" | "personal" | "debt" | string>("choose");
+  // The group whose form was opened last — kept after it closes so that
+  // form stays mounted long enough to animate out (see BottomSheet).
+  const [groupId, setGroupId] = useState<string | null>(null);
+  const isGroupMode = mode !== "choose" && mode !== "personal" && mode !== "debt";
 
   function handleClose() {
     setMode("choose");
     onClose();
   }
 
-  if (mode === "personal") {
-    return <PersonalExpenseSheet open onClose={handleClose} />;
-  }
-  if (mode === "debt") {
-    return <DebtSheet open onClose={handleClose} />;
-  }
-  if (mode !== "choose") {
-    return <GroupExpenseSheetLauncher groupId={mode} onClose={handleClose} />;
-  }
-
   return (
-    <BottomSheet open={open} onClose={onClose} title="Añadir gasto">
+    <>
+    <BottomSheet open={open && mode === "choose"} onClose={onClose} title="Añadir gasto">
       <div className="flex flex-col gap-5 pb-2">
         <div>
           <h2 className="mb-2 px-1 eyebrow">Personal</h2>
@@ -93,7 +88,10 @@ export function QuickAddSheet({ open, onClose }: Props) {
                 return (
                   <button
                     key={g.id}
-                    onClick={() => setMode(g.id)}
+                    onClick={() => {
+                      setGroupId(g.id);
+                      setMode(g.id);
+                    }}
                     className="flex items-center gap-3 well rounded-[18px] p-4 text-left well-press"
                   >
                     <span
@@ -114,5 +112,9 @@ export function QuickAddSheet({ open, onClose }: Props) {
         </div>
       </div>
     </BottomSheet>
+    <PersonalExpenseSheet open={open && mode === "personal"} onClose={handleClose} />
+    <DebtSheet open={open && mode === "debt"} onClose={handleClose} />
+    {groupId && <GroupExpenseSheetLauncher groupId={groupId} open={open && isGroupMode} onClose={handleClose} />}
+    </>
   );
 }

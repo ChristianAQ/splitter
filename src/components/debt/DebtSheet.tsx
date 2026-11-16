@@ -207,7 +207,23 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
 
   return (
     <>
-      <BottomSheet open={open} onClose={onClose} title={debt ? "Editar" : "Apuntar"}>
+      <BottomSheet
+      open={open}
+      onClose={onClose}
+      title={debt ? "Editar" : "Apuntar"}
+      footer={
+        <div className="flex gap-3">
+          {debt && (
+            <Button variant="ghost" className="!text-negative" onClick={() => setConfirmDelete(true)} disabled={busy !== null}>
+              Eliminar
+            </Button>
+          )}
+          <Button onClick={handleSave} loading={busy === "save"} disabled={!valid || (busy !== null && busy !== "save")} className="flex-1">
+            Guardar
+          </Button>
+        </div>
+      }
+    >
         <div className="flex flex-col gap-5 pb-2 pt-1">
           <Segmented options={DEBT_KIND_OPTIONS} value={kind} onChange={setKind} label="Tipo" />
 
@@ -320,17 +336,6 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
               </Button>
             </div>
           )}
-
-          <div className="flex gap-3">
-            {debt && (
-              <Button variant="ghost" className="!text-negative" onClick={() => setConfirmDelete(true)} disabled={busy !== null}>
-                Eliminar
-              </Button>
-            )}
-            <Button onClick={handleSave} loading={busy === "save"} disabled={!valid || (busy !== null && busy !== "save")} className="flex-1">
-              Guardar
-            </Button>
-          </div>
         </div>
       </BottomSheet>
 

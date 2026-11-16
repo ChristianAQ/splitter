@@ -34,6 +34,11 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
     return () => clearTimeout(timer);
   }, [autoFocus]);
 
+  // Shown the way amounts are written in each currency: "42,50 €" but
+  // "$42.50" / "£42.50". The value handed to callers always uses a dot.
+  const symbolAfter = currency === "EUR";
+  const symbol = <span className="text-neutral-400 dark:text-neutral-500">{CURRENCY_SYMBOL[currency]}</span>;
+
   function handleChange(raw: string) {
     const normalized = raw.replace(",", ".");
     if (/^\d*\.?\d{0,2}$/.test(normalized)) onChange(normalized);
@@ -47,16 +52,18 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
         </label>
       )}
       <div className={`flex items-baseline justify-center gap-1 ${large ? "text-5xl" : "text-3xl"} font-semibold tracking-tight tabular-nums`}>
-        <span className="text-neutral-400 dark:text-neutral-500">{CURRENCY_SYMBOL[currency]}</span>
+        {!symbolAfter && symbol}
         <input
           id={id}
           ref={inputRef}
           inputMode="decimal"
           placeholder="0"
-          value={value}
+          value={value.replace(".", ",")}
           onChange={(e) => handleChange(e.target.value)}
           size={1}
-          style={{ width: `${Math.max((value || "0").length, 1) + 0.75}ch` }}
+          // A little slack for the caret; less when the symbol trails the
+          // number, or it reads as "0   €" with a hole in the middle.
+          style={{ width: `${Math.max((value || "0").length, 1) + (symbolAfter ? 0.25 : 0.75)}ch` }}
           // Global `input { font-size: 16px }` (index.css, prevents iOS
           // Safari zooming on focus for normal-sized fields) otherwise
           // overrides this element's inherited text-5xl/text-3xl — an
@@ -69,6 +76,7 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
           // purpose isn't undermined here.
           className={`min-w-0 shrink-0 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-600 ${large ? "text-5xl" : "text-3xl"}`}
         />
+        {symbolAfter && symbol}
       </div>
     </div>
   );

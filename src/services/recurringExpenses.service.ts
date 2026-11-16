@@ -16,6 +16,7 @@ import {
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
+import { commit } from "../lib/commit";
 import type { RecurringExpense } from "../types";
 
 function col(uid: string) {
@@ -70,7 +71,7 @@ export interface RecurringExpenseInput {
 
 export async function createRecurringExpense(uid: string, input: RecurringExpenseInput) {
   try {
-    await addDoc(col(uid), { ownerId: uid, ...input, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+    await commit(addDoc(col(uid), { ownerId: uid, ...input, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -78,7 +79,7 @@ export async function createRecurringExpense(uid: string, input: RecurringExpens
 
 export async function updateRecurringExpense(uid: string, id: string, input: Partial<RecurringExpenseInput>) {
   try {
-    await updateDoc(doc(col(uid), id), { ...input, updatedAt: serverTimestamp() });
+    await commit(updateDoc(doc(col(uid), id), { ...input, updatedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -86,7 +87,7 @@ export async function updateRecurringExpense(uid: string, id: string, input: Par
 
 export async function deleteRecurringExpense(uid: string, id: string) {
   try {
-    await deleteDoc(doc(col(uid), id));
+    await commit(deleteDoc(doc(col(uid), id)));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -97,10 +98,10 @@ export async function deleteRecurringExpense(uid: string, id: string) {
  * (Netflix paid, rent paid...), it does not create a PersonalExpense. */
 export async function setRecurringCompletedThisMonth(uid: string, id: string, month: string, done: boolean) {
   try {
-    await updateDoc(doc(col(uid), id), {
+    await commit(updateDoc(doc(col(uid), id), {
       lastCompletedMonth: done ? month : deleteField(),
       updatedAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -110,7 +111,7 @@ export async function setRecurringCompletedThisMonth(uid: string, id: string, mo
 export async function restoreRecurringExpense(uid: string, recurring: RecurringExpense) {
   try {
     const { id, createdAt, updatedAt: _updatedAt, ...fields } = recurring;
-    await setDoc(doc(col(uid), id), { ...fields, createdAt: Timestamp.fromMillis(createdAt), updatedAt: serverTimestamp() });
+    await commit(setDoc(doc(col(uid), id), { ...fields, createdAt: Timestamp.fromMillis(createdAt), updatedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }

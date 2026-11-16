@@ -41,7 +41,7 @@ export function CategoryBreakdown({ slices, currency = "EUR" }: Props) {
               <category.icon size={15} strokeWidth={2} className="shrink-0 text-neutral-400 dark:text-neutral-500" />
               <span className="flex-1 truncate text-neutral-700 dark:text-neutral-300">{category.label}</span>
               <span className="font-semibold tabular-nums">{formatCurrency(slice.amount, currency)}</span>
-              <span className="w-10 text-right text-xs text-neutral-400">
+              <span className="w-10 text-right text-xs text-neutral-500 dark:text-neutral-400">
                 {Math.round((slice.amount / total) * 100)}%
               </span>
             </li>

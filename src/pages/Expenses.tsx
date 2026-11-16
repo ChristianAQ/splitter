@@ -185,7 +185,7 @@ export function Expenses() {
                 <button
                   onClick={() => setEditingRecurring(null)}
                   aria-label="Nuevo gasto recurrente"
-                  className="flex h-8 w-8 items-center justify-center rounded-full pressable bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300"
+                  className="hit-slop flex h-8 w-8 items-center justify-center rounded-full pressable bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300"
                 >
                   <Plus size={17} strokeWidth={2.5} />
                 </button>
@@ -220,7 +220,7 @@ export function Expenses() {
                             onClick={() => handleToggleRecurringDone(r)}
                             aria-label={doneThisMonth ? "Marcar como no hecho este mes" : "Marcar como hecho este mes"}
                             aria-pressed={doneThisMonth}
-                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 active:scale-95 ${
+                            className={`hit-slop flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 active:scale-95 ${
                               doneThisMonth
                                 ? "border-positive bg-positive text-white"
                                 : "border-neutral-300 text-transparent dark:border-neutral-600"
@@ -301,7 +301,7 @@ function MonthlyList({
           defaultOpen={month === currentMonth}
           title={formatMonth(items[0].date)}
           headerRight={
-            <span className="shrink-0 text-xs font-semibold text-neutral-400">
+            <span className="shrink-0 text-xs font-semibold text-neutral-500 dark:text-neutral-400">
               {formatCurrency(totals.get(month) ?? 0, (currency as never) ?? "EUR")}
             </span>
           }

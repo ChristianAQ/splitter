@@ -34,7 +34,7 @@ export function Segmented<T extends string>({ options, value, onChange, classNam
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(key)}
-            className={`relative z-10 min-w-0 flex-1 truncate rounded-full px-1 py-2 text-[13px] font-semibold transition-colors duration-200 ${
+            className={`relative z-10 min-w-0 flex-1 truncate rounded-full px-1 py-2.5 text-[13px] font-semibold transition-colors duration-200 ${
               selected ? "text-neutral-900 dark:text-white" : "text-neutral-500 dark:text-neutral-400"
             }`}
           >

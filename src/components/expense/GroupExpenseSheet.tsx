@@ -138,7 +138,25 @@ export function GroupExpenseSheet({ open, onClose, groupId, currency, members, e
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={expense ? "Editar gasto" : "Nuevo gasto de grupo"}>
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title={expense ? "Editar gasto" : "Nuevo gasto de grupo"}
+      footer={
+        isCreator ? (
+          <div className="flex gap-3">
+            {expense && (
+              <Button variant="ghost" className="!text-negative" onClick={handleDelete} loading={deleting}>
+                Eliminar
+              </Button>
+            )}
+            <Button onClick={handleSave} loading={saving} disabled={!basicsValid} className="flex-1">
+              Guardar
+            </Button>
+          </div>
+        ) : undefined
+      }
+    >
       <div className="flex flex-col gap-5 pb-2 pt-1">
         <AmountInput value={amount} onChange={setAmount} currency={currency} autoFocus={!expense} large />
         <Input
@@ -186,19 +204,6 @@ export function GroupExpenseSheet({ open, onClose, groupId, currency, members, e
             <Lock size={14} strokeWidth={2.1} className="shrink-0" />
             Solo quien creó este gasto puede editarlo o eliminarlo.
           </p>
-        )}
-
-        {isCreator && (
-          <div className="flex gap-3">
-            {expense && (
-              <Button variant="danger" onClick={handleDelete} loading={deleting} className="flex-1">
-                Eliminar
-              </Button>
-            )}
-            <Button onClick={handleSave} loading={saving} disabled={!basicsValid} className="flex-1">
-              Guardar
-            </Button>
-          </div>
         )}
       </div>
     </BottomSheet>

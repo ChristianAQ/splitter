@@ -13,6 +13,7 @@ import {
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
+import { commit } from "../lib/commit";
 import type { ExpenseSplit, GroupExpense, SplitMethod } from "../types";
 
 function col(groupId: string) {
@@ -69,14 +70,14 @@ export interface GroupExpenseInput {
 
 export async function createGroupExpense(groupId: string, createdBy: string, input: GroupExpenseInput) {
   try {
-    await addDoc(col(groupId), {
+    await commit(addDoc(col(groupId), {
       groupId,
       createdBy,
       ...input,
       deleted: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -85,7 +86,7 @@ export async function createGroupExpense(groupId: string, createdBy: string, inp
 /** Only the creator can call this successfully — enforced by Firestore rules. */
 export async function updateGroupExpense(groupId: string, expenseId: string, input: Partial<GroupExpenseInput>) {
   try {
-    await updateDoc(doc(col(groupId), expenseId), { ...input, updatedAt: serverTimestamp() });
+    await commit(updateDoc(doc(col(groupId), expenseId), { ...input, updatedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -94,7 +95,7 @@ export async function updateGroupExpense(groupId: string, expenseId: string, inp
 /** Soft delete — history/balances remain reconstructable. Creator only. */
 export async function deleteGroupExpense(groupId: string, expenseId: string) {
   try {
-    await updateDoc(doc(col(groupId), expenseId), { deleted: true, updatedAt: serverTimestamp() });
+    await commit(updateDoc(doc(col(groupId), expenseId), { deleted: true, updatedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }
@@ -103,7 +104,7 @@ export async function deleteGroupExpense(groupId: string, expenseId: string) {
 /** Undo for the soft delete above. Creator only, like every other edit. */
 export async function restoreGroupExpense(groupId: string, expenseId: string) {
   try {
-    await updateDoc(doc(col(groupId), expenseId), { deleted: false, updatedAt: serverTimestamp() });
+    await commit(updateDoc(doc(col(groupId), expenseId), { deleted: false, updatedAt: serverTimestamp() }));
   } catch (error) {
     throw toFriendlyError(error);
   }

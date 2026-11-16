@@ -149,7 +149,7 @@ export function Home() {
           >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Mes anterior</p>
             <p className="mt-1 text-[22px] font-semibold tracking-[-0.03em] tabular-nums">{formatCurrency(lastMonthTotal, currency)}</p>
-            <p className="mt-0.5 truncate text-xs text-neutral-400">{formatMonth(`${lastMonth}-01`)}</p>
+            <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">{formatMonth(`${lastMonth}-01`)}</p>
           </Link>
           <Link
             to="/estadisticas"
@@ -163,7 +163,7 @@ export function Home() {
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">{topCategoryInfo.label}</p>
               </>
             ) : (
-              <p className="mt-1 text-sm text-neutral-400">Sin datos</p>
+              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">Sin datos</p>
             )}
           </Link>
           <Link
@@ -173,7 +173,7 @@ export function Home() {
           >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Recurrentes</p>
             <p className="mt-1 text-[22px] font-semibold tracking-[-0.03em] tabular-nums">{recurringPending}</p>
-            <p className="mt-0.5 text-xs text-neutral-400">por pagar este mes</p>
+            <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">por pagar este mes</p>
           </Link>
           <Link
             to="/grupos"
@@ -182,7 +182,7 @@ export function Home() {
           >
             <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Grupos activos</p>
             <p className="mt-1 text-[22px] font-semibold tracking-[-0.03em] tabular-nums">{groups.length}</p>
-            <p className="mt-0.5 text-xs text-neutral-400">{groups.length === 1 ? "grupo" : "grupos"}</p>
+            <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">{groups.length === 1 ? "grupo" : "grupos"}</p>
           </Link>
         </section>
 
@@ -232,7 +232,7 @@ export function Home() {
                       <ItemIcon size={18} strokeWidth={1.8} className="text-neutral-500 dark:text-neutral-400" />
                       <div>
                         <p className="text-sm font-semibold">{e.description}</p>
-                        <p className="text-xs text-neutral-400">{formatDate(e.date)}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">{formatDate(e.date)}</p>
                       </div>
                     </div>
                     <span className="font-semibold tabular-nums">{formatCurrency(e.amount, e.currency)}</span>

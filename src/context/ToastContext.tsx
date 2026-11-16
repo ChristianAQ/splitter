@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { setLateWriteFailureHandler } from "../lib/commit";
 
 export type ToastVariant = "default" | "success" | "error";
 
@@ -40,6 +41,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     },
     [dismiss]
   );
+
+  // A write the UI didn't wait for (see lib/commit.ts) and that the server
+  // ended up rejecting: the change has already been rolled back on screen,
+  // so say why.
+  useEffect(() => {
+    setLateWriteFailureHandler((error) => show(`No se pudo guardar un cambio. ${error.message}`, "error"));
+    return () => setLateWriteFailureHandler(() => {});
+  }, [show]);
 
   return (
     <ToastContext.Provider value={{ show }}>

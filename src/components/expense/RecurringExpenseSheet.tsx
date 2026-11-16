@@ -108,7 +108,23 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
   }
 
   return (
-    <BottomSheet open={open} onClose={onClose} title={recurring ? "Editar recurrente" : "Nuevo gasto recurrente"}>
+    <BottomSheet
+      open={open}
+      onClose={onClose}
+      title={recurring ? "Editar recurrente" : "Nuevo gasto recurrente"}
+      footer={
+        <div className="flex gap-3">
+          {recurring && (
+            <Button variant="ghost" className="!text-negative" onClick={handleDelete} loading={deleting}>
+              Eliminar
+            </Button>
+          )}
+          <Button onClick={handleSave} loading={saving} disabled={!valid} className="flex-1">
+            Guardar
+          </Button>
+        </div>
+      }
+    >
       <div className="flex flex-col gap-5 pb-2 pt-1">
         <AmountInput value={amount} onChange={setAmount} currency={profile?.currency} autoFocus large />
         <Input
@@ -161,17 +177,6 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
         />
-
-        <div className="flex gap-3">
-          {recurring && (
-            <Button variant="danger" onClick={handleDelete} loading={deleting} className="flex-1">
-              Eliminar
-            </Button>
-          )}
-          <Button onClick={handleSave} loading={saving} disabled={!valid} className="flex-1">
-            Guardar
-          </Button>
-        </div>
       </div>
     </BottomSheet>
   );
