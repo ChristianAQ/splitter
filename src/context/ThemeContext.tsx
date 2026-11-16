@@ -23,6 +23,12 @@ const ThemeContext = createContext<ThemeContextValue>({
 function applyTheme(theme: ThemePreference) {
   const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.classList.toggle("dark", isDark);
+  // Safari on iPhone paints its toolbar (and the overscroll area) with this
+  // color. It was a fixed indigo bar regardless of theme or chosen accent;
+  // now it's the page's own background, so the browser chrome blends in.
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", isDark ? "#0D0E14" : "#F3F4F8");
 }
 
 function applyAccentColor(hex: string) {

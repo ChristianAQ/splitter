@@ -43,6 +43,9 @@ sensible vive en `firestore.rules`; ver §4.
 - Iconografía consistente con [lucide-react](https://lucide.dev) en toda la
   navegación y los controles de UI; los emoji se reservan para elecciones
   del usuario (icono de grupo, categorías) donde aportan color/personalidad.
+- Deslizar un gasto hacia la derecha para borrarlo (gastos personales,
+  recurrentes, deudas y los gastos de grupo que has creado tú), con
+  «Deshacer» durante unos segundos — `components/ui/SwipeToDelete.tsx`.
 - PWA instalable en iOS/Android/escritorio, dark mode, safe areas, offline
   con persistencia de Firestore.
 

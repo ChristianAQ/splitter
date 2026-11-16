@@ -259,7 +259,13 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
                 );
               })}
             </div>
-            <Input type="date" aria-label="Fecha límite" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            <Input
+              type="date"
+              aria-label="Fecha límite"
+              placeholder="O elige un día concreto"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
           </div>
 
           <Input

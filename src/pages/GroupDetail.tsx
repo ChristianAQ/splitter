@@ -44,6 +44,7 @@ import { useGroups } from "../hooks/useGroups";
 import { useToast } from "../context/ToastContext";
 import { formatCurrency, formatDate, formatSignedCurrency } from "../lib/format";
 import { recordPayment, revertPayment } from "../services/payments.service";
+import { deleteGroupExpense, restoreGroupExpense } from "../services/expenses.service";
 import { addFriendByUid } from "../services/friends.service";
 import { setGroupArchivedForMe } from "../services/users.service";
 import { logHistory } from "../services/history.service";
@@ -228,6 +229,28 @@ export function GroupDetail() {
     }
   }
 
+  async function handleDeleteExpense(expense: GroupExpense) {
+    if (!user || !group) return;
+    const groupId = group.id;
+    const uid = user.uid;
+    const actorName = membersById.get(uid)?.name ?? "Alguien";
+    try {
+      await deleteGroupExpense(groupId, expense.id);
+      await logHistory(groupId, "expense_deleted", uid, actorName, `${actorName} eliminó "${expense.description}"`, expense.id);
+      show("Gasto eliminado", "default", {
+        label: "Deshacer",
+        onClick: () => {
+          restoreGroupExpense(groupId, expense.id)
+            .then(() => logHistory(groupId, "expense_added", uid, actorName, `${actorName} recuperó "${expense.description}"`, expense.id))
+            .catch((err) => show(err instanceof Error ? err.message : "No se pudo recuperar.", "error"));
+        },
+      });
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo eliminar.", "error");
+      throw err; // lets the row slide back into place
+    }
+  }
+
   async function handleUnarchiveForMe() {
     if (!user || !group) return;
     try {
@@ -365,6 +388,7 @@ export function GroupDetail() {
                   members={membersById}
                   currentUid={user?.uid ?? ""}
                   onClick={isArchived ? undefined : () => setEditingExpense(e)}
+                  onDelete={!isArchived && e.createdBy === user?.uid ? () => handleDeleteExpense(e) : undefined}
                 />
               ))}
             </div>

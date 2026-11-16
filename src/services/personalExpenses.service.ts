@@ -7,6 +7,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
+  Timestamp,
   updateDoc,
   where,
   type Unsubscribe,
@@ -105,4 +107,15 @@ export async function deletePersonalExpense(uid: string, id: string) {
 
 export async function markExpenseDone(uid: string, id: string) {
   return updatePersonalExpense(uid, id, { status: "done" });
+}
+
+/** Undo for a delete: writes the expense back under its original id, with
+ * its original creation time. */
+export async function restorePersonalExpense(uid: string, expense: PersonalExpense) {
+  try {
+    const { id, createdAt, updatedAt: _updatedAt, ...fields } = expense;
+    await setDoc(doc(col(uid), id), { ...fields, createdAt: Timestamp.fromMillis(createdAt), updatedAt: serverTimestamp() });
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
 }

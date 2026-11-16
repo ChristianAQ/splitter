@@ -79,7 +79,7 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (currentIndex === -1) return;
 
-    const gesture = { active: false, excluded: false, recognized: false, startX: 0, startY: 0 };
+    const gesture = { active: false, excluded: false, recognized: false, onSwipeRow: false, startX: 0, startY: 0 };
 
     function onTouchStart(e: TouchEvent) {
       if (e.touches.length !== 1 || settleTimeoutRef.current) return;
@@ -87,6 +87,7 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
       gesture.active = true;
       gesture.recognized = false;
       gesture.excluded = isExcluded(e.target) || window.scrollY !== 0;
+      gesture.onSwipeRow = e.target instanceof Element && e.target.closest("[data-swipe-row]") !== null;
       gesture.startX = touch.clientX;
       gesture.startY = touch.clientY;
     }
@@ -99,7 +100,11 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
 
       if (!gesture.recognized) {
         if (Math.abs(dx) < RECOGNIZE_THRESHOLD && Math.abs(dy) < RECOGNIZE_THRESHOLD) return;
-        if (Math.abs(dx) < Math.abs(dy) * DIRECTION_RATIO) {
+        // A rightward drag that starts on a swipe-to-delete row belongs to
+        // that row (see ui/SwipeToDelete) — without this both would move
+        // at once: the card under the finger and the whole page with it.
+        // Leftward drags from the same spot still change page.
+        if (Math.abs(dx) < Math.abs(dy) * DIRECTION_RATIO || (gesture.onSwipeRow && dx > 0)) {
           gesture.excluded = true;
           return;
         }

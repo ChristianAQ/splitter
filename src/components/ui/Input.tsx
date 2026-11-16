@@ -21,6 +21,13 @@ export const Input = forwardRef<HTMLInputElement, Props>(
     const inputId = id ?? autoId;
     const inputRef = useRef<HTMLInputElement | null>(null);
 
+    // iOS Safari shows nothing at all in an empty date input — no "dd/mm/aaaa"
+    // hint like desktop browsers — so an optional date reads as a broken,
+    // blank box. When the caller gives a placeholder it's drawn on top
+    // until the field has a value or focus (see .date-empty in index.css
+    // for the matching desktop tweak).
+    const showDatePlaceholder = rest.type === "date" && !rest.value && Boolean(rest.placeholder);
+
     useEffect(() => {
       if (!autoFocus) return;
       const timer = setTimeout(() => inputRef.current?.focus(), AUTOFOCUS_DELAY_MS);
@@ -34,20 +41,27 @@ export const Input = forwardRef<HTMLInputElement, Props>(
             {label}
           </label>
         )}
-        <input
-          ref={(node) => {
-            inputRef.current = node;
-            if (typeof forwardedRef === "function") forwardedRef(node);
-            else if (forwardedRef) forwardedRef.current = node;
-          }}
-          id={inputId}
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
-          className={`h-12 w-full rounded-2xl field px-4 text-[16px] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-accent focus:ring-2 focus:ring-accent-100 dark:text-neutral-50 dark:placeholder:text-neutral-500 dark:focus:ring-accent-900/40 ${
-            error ? "!border-negative" : ""
-          } ${className}`}
-          {...rest}
-        />
+        <div className="relative">
+          <input
+            ref={(node) => {
+              inputRef.current = node;
+              if (typeof forwardedRef === "function") forwardedRef(node);
+              else if (forwardedRef) forwardedRef.current = node;
+            }}
+            id={inputId}
+            aria-invalid={Boolean(error)}
+            aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
+            className={`h-12 w-full rounded-2xl field px-4 text-[16px] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-accent focus:ring-2 focus:ring-accent-100 dark:text-neutral-50 dark:placeholder:text-neutral-500 dark:focus:ring-accent-900/40 ${
+              error ? "!border-negative" : ""
+            } ${showDatePlaceholder ? "date-empty peer" : ""} ${className}`}
+            {...rest}
+          />
+          {showDatePlaceholder && (
+            <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[16px] text-neutral-400 peer-focus:hidden dark:text-neutral-500">
+              {rest.placeholder}
+            </span>
+          )}
+        </div>
         {error && (
           <p id={`${inputId}-error`} className="text-sm text-negative">
             {error}

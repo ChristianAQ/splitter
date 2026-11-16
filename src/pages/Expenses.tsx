@@ -11,14 +11,19 @@ import { CardListSkeleton } from "../components/ui/Skeleton";
 import { Collapsible } from "../components/ui/Collapsible";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Button } from "../components/ui/Button";
+import { SwipeToDelete } from "../components/ui/SwipeToDelete";
 import { Segmented } from "../components/ui/Segmented";
 import { DebtsTab } from "../components/debt/DebtsTab";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
 import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
-import { markExpenseDone } from "../services/personalExpenses.service";
-import { setRecurringCompletedThisMonth } from "../services/recurringExpenses.service";
+import { deletePersonalExpense, markExpenseDone, restorePersonalExpense } from "../services/personalExpenses.service";
+import {
+  deleteRecurringExpense,
+  restoreRecurringExpense,
+  setRecurringCompletedThisMonth,
+} from "../services/recurringExpenses.service";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { todayISO } from "../domain/date";
 import type { PersonalExpense, RecurringExpense } from "../types";
@@ -67,6 +72,40 @@ export function Expenses() {
     }
   }
 
+  async function handleDeleteExpense(expense: PersonalExpense) {
+    if (!user) return;
+    const uid = user.uid;
+    try {
+      await deletePersonalExpense(uid, expense.id);
+      show("Gasto eliminado", "default", {
+        label: "Deshacer",
+        onClick: () => {
+          restorePersonalExpense(uid, expense).catch((err) => show(err instanceof Error ? err.message : "No se pudo recuperar.", "error"));
+        },
+      });
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo eliminar.", "error");
+      throw err; // lets the row slide back into place
+    }
+  }
+
+  async function handleDeleteRecurring(r: RecurringExpense) {
+    if (!user) return;
+    const uid = user.uid;
+    try {
+      await deleteRecurringExpense(uid, r.id);
+      show("Gasto recurrente eliminado", "default", {
+        label: "Deshacer",
+        onClick: () => {
+          restoreRecurringExpense(uid, r).catch((err) => show(err instanceof Error ? err.message : "No se pudo recuperar.", "error"));
+        },
+      });
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo eliminar.", "error");
+      throw err;
+    }
+  }
+
   const grouped = useMemo(() => {
     const past = expenses.filter((e) => e.status !== "future").sort((a, b) => b.date.localeCompare(a.date));
     const future = expenses.filter((e) => e.status === "future").sort((a, b) => a.date.localeCompare(b.date));
@@ -106,6 +145,7 @@ export function Expenses() {
               expenses={grouped.past}
               totals={monthTotals}
               onSelect={setEditingExpense}
+              onDelete={handleDeleteExpense}
               currency={expenses[0]?.currency}
               currentMonth={currentMonth}
             />
@@ -124,6 +164,7 @@ export function Expenses() {
                   expense={e}
                   onClick={() => setEditingExpense(e)}
                   onMarkDone={() => handleMarkDone(e)}
+                  onDelete={() => handleDeleteExpense(e)}
                 />
               ))}
             </div>
@@ -170,20 +211,25 @@ export function Expenses() {
                 recurring.map((r) => {
                   const doneThisMonth = r.lastCompletedMonth === currentMonth;
                   return (
-                    <div key={r.id} className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleRecurringDone(r)}
-                        aria-label={doneThisMonth ? "Marcar como no hecho este mes" : "Marcar como hecho este mes"}
-                        aria-pressed={doneThisMonth}
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 active:scale-95 ${
-                          doneThisMonth
-                            ? "border-positive bg-positive text-white"
-                            : "border-neutral-300 text-transparent dark:border-neutral-600"
-                        }`}
-                      >
-                        <Check size={15} strokeWidth={3} />
-                      </button>
+                    <SwipeToDelete
+                      key={r.id}
+                      onDelete={() => handleDeleteRecurring(r)}
+                      leading={
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRecurringDone(r)}
+                            aria-label={doneThisMonth ? "Marcar como no hecho este mes" : "Marcar como hecho este mes"}
+                            aria-pressed={doneThisMonth}
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 active:scale-95 ${
+                              doneThisMonth
+                                ? "border-positive bg-positive text-white"
+                                : "border-neutral-300 text-transparent dark:border-neutral-600"
+                            }`}
+                          >
+                            <Check size={15} strokeWidth={3} />
+                          </button>
+                      }
+                    >
                       <button
                         onClick={() => setEditingRecurring(r)}
                         className="flex w-full min-w-0 flex-1 items-center gap-3 surface rounded-[22px] p-3.5 text-left"
@@ -200,7 +246,7 @@ export function Expenses() {
                         </div>
                         <span className="font-semibold tabular-nums">{formatCurrency(r.amount, r.currency)}</span>
                       </button>
-                    </div>
+                    </SwipeToDelete>
                   );
                 })
               )}
@@ -225,12 +271,14 @@ function MonthlyList({
   expenses,
   totals,
   onSelect,
+  onDelete,
   currency,
   currentMonth,
 }: {
   expenses: PersonalExpense[];
   totals: Map<string, number>;
   onSelect: (e: PersonalExpense) => void;
+  onDelete: (e: PersonalExpense) => Promise<void>;
   currency?: string;
   currentMonth: string;
 }) {
@@ -260,7 +308,7 @@ function MonthlyList({
         >
           <div className="stagger flex flex-col gap-2.5 pb-1">
             {items.map((e) => (
-              <PersonalExpenseCard key={e.id} expense={e} onClick={() => onSelect(e)} />
+              <PersonalExpenseCard key={e.id} expense={e} onClick={() => onSelect(e)} onDelete={() => onDelete(e)} />
             ))}
           </div>
         </Collapsible>

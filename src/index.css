@@ -32,7 +32,6 @@
   body {
     @apply bg-surface-light-subtle text-neutral-900 antialiased;
     @apply dark:bg-surface-dark dark:text-neutral-50;
-    font-feature-settings: "cv11", "ss01", "calt";
     letter-spacing: -0.006em;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
@@ -94,6 +93,13 @@
   input[type="date"]::-webkit-calendar-picker-indicator {
     margin-left: 4px;
     padding: 0;
+  }
+
+  /* An empty date field with our own placeholder drawn over it (see
+   * ui/Input): hide the browser's "mm/dd/yyyy" mask until it's focused so
+   * the two don't overlap on desktop. iOS has no such mask to hide. */
+  input[type="date"].date-empty:not(:focus)::-webkit-datetime-edit {
+    opacity: 0;
   }
 
   input,
@@ -237,6 +243,23 @@
 }
 
 @layer utilities {
+  /* Dynamic viewport units, with the classic ones as fallback. On iPhone
+   * Safari `100vh` is the height with the toolbars *hidden*, so while
+   * they're showing a "full-height" element is taller than the screen and
+   * a `90vh` sheet pokes out past the top of it. */
+  .min-h-app {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .h-app {
+    height: 100vh;
+    height: 100dvh;
+  }
+  .max-h-sheet {
+    max-height: 90vh;
+    max-height: 90dvh;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

@@ -2,20 +2,21 @@ import { Check, Repeat } from "lucide-react";
 import { categoryById } from "../../lib/categories";
 import { formatCurrency, formatDate } from "../../lib/format";
 import { Badge } from "../ui/Card";
+import { SwipeToDelete } from "../ui/SwipeToDelete";
 import type { PersonalExpense } from "../../types";
 
 interface Props {
   expense: PersonalExpense;
   onClick?: () => void;
   onMarkDone?: () => void;
+  /** Enables drag-right-to-delete on the card. */
+  onDelete?: () => Promise<void> | void;
 }
 
-export function PersonalExpenseCard({ expense, onClick, onMarkDone }: Props) {
+export function PersonalExpenseCard({ expense, onClick, onMarkDone, onDelete }: Props) {
   const category = categoryById(expense.categoryId);
-  return (
-    <div className="flex items-center gap-2">
-      {onMarkDone && (
-        <button
+  const leading = onMarkDone ? (
+    <button
           type="button"
           onClick={onMarkDone}
           aria-label="Marcar como realizado"
@@ -23,7 +24,9 @@ export function PersonalExpenseCard({ expense, onClick, onMarkDone }: Props) {
         >
           <Check size={15} strokeWidth={3} />
         </button>
-      )}
+  ) : undefined;
+
+  const card = (
       <button
         type="button"
         onClick={onClick}
@@ -54,6 +57,20 @@ export function PersonalExpenseCard({ expense, onClick, onMarkDone }: Props) {
           {expense.status === "future" && <Badge tone="accent">Próximo</Badge>}
         </div>
       </button>
+  );
+
+  if (onDelete) {
+    return (
+      <SwipeToDelete onDelete={onDelete} leading={leading}>
+        {card}
+      </SwipeToDelete>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      {leading}
+      {card}
     </div>
   );
 }

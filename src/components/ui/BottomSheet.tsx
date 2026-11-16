@@ -32,7 +32,7 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="glass-sheet relative flex max-h-[90vh] w-full animate-slide-up flex-col overflow-hidden rounded-t-[32px] border-b-0 shadow-sheet sm:max-w-md sm:animate-scale-in sm:rounded-[32px] sm:border-b"
+        className="glass-sheet relative flex max-h-sheet w-full animate-slide-up flex-col overflow-hidden rounded-t-[32px] border-b-0 shadow-sheet sm:max-w-md sm:animate-scale-in sm:rounded-[32px] sm:border-b"
       >
         <div className="flex shrink-0 items-center justify-center pt-2.5 sm:hidden">
           <div className="h-1 w-9 rounded-full bg-neutral-900/15 dark:bg-white/20" />

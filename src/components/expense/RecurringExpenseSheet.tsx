@@ -157,6 +157,7 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
         <Input
           label="Fecha de finalización (opcional)"
           type="date"
+          placeholder="Sin fecha de fin"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
         />

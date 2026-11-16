@@ -9,7 +9,7 @@ import { Button } from "../ui/Button";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useDebts } from "../../hooks/useDebts";
-import { setDebtProgress } from "../../services/debts.service";
+import { deleteDebt, restoreDebt, setDebtProgress } from "../../services/debts.service";
 import { isSettled, sortDebts, summarizeDebts } from "../../domain/debts";
 import { todayISO } from "../../domain/date";
 import { formatCurrency } from "../../lib/format";
@@ -44,10 +44,34 @@ export function DebtsTab() {
     }
   }
 
+  async function handleDelete(debt: Debt) {
+    if (!user) return;
+    const uid = user.uid;
+    try {
+      await deleteDebt(uid, debt.id);
+      show("Eliminado", "default", {
+        label: "Deshacer",
+        onClick: () => {
+          restoreDebt(uid, debt).catch((err) => show(err instanceof Error ? err.message : "No se pudo recuperar.", "error"));
+        },
+      });
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo eliminar.", "error");
+      throw err; // lets the row slide back into place
+    }
+  }
+
   const list = (items: Debt[]) => (
     <div className="stagger flex flex-col gap-2.5">
       {items.map((d) => (
-        <DebtCard key={d.id} debt={d} today={today} onClick={() => setEditing(d.id)} onToggleSettled={() => handleToggle(d)} />
+        <DebtCard
+          key={d.id}
+          debt={d}
+          today={today}
+          onClick={() => setEditing(d.id)}
+          onToggleSettled={() => handleToggle(d)}
+          onDelete={() => handleDelete(d)}
+        />
       ))}
     </div>
   );

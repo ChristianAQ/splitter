@@ -8,6 +8,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
+  Timestamp,
   updateDoc,
   type Unsubscribe,
 } from "firebase/firestore";
@@ -110,6 +112,22 @@ export async function setDebtProgress(uid: string, id: string, paidAmount: numbe
 export async function deleteDebt(uid: string, id: string) {
   try {
     await deleteDoc(doc(col(uid), id));
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
+/** Undo for a delete: writes it back under its original id, repayments and
+ * settled state included. */
+export async function restoreDebt(uid: string, debt: Debt) {
+  try {
+    const { id, createdAt, updatedAt: _updatedAt, settledAt, ...fields } = debt;
+    await setDoc(doc(col(uid), id), {
+      ...fields,
+      settledAt: settledAt === undefined ? undefined : Timestamp.fromMillis(settledAt),
+      createdAt: Timestamp.fromMillis(createdAt),
+      updatedAt: serverTimestamp(),
+    });
   } catch (error) {
     throw toFriendlyError(error);
   }

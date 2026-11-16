@@ -1,6 +1,7 @@
 import { Lock } from "lucide-react";
 import { categoryById } from "../../lib/categories";
 import { formatCurrency, formatDate } from "../../lib/format";
+import { SwipeToDelete } from "../ui/SwipeToDelete";
 import type { GroupExpense, GroupMember } from "../../types";
 
 interface Props {
@@ -8,15 +9,18 @@ interface Props {
   members: Map<string, GroupMember>;
   currentUid: string;
   onClick?: () => void;
+  /** Enables drag-right-to-delete. Only pass it for expenses the current
+   * user created — nobody else is allowed to delete them. */
+  onDelete?: () => Promise<void> | void;
 }
 
-export function GroupExpenseCard({ expense, members, currentUid, onClick }: Props) {
+export function GroupExpenseCard({ expense, members, currentUid, onClick, onDelete }: Props) {
   const category = categoryById(expense.categoryId);
   const payer = members.get(expense.paidBy);
   const isCreator = expense.createdBy === currentUid;
   const myShare = expense.splits.find((s) => s.uid === currentUid)?.amount ?? 0;
 
-  return (
+  const card = (
     <button
       type="button"
       onClick={onClick}
@@ -48,4 +52,6 @@ export function GroupExpenseCard({ expense, members, currentUid, onClick }: Prop
       </div>
     </button>
   );
+
+  return onDelete ? <SwipeToDelete onDelete={onDelete}>{card}</SwipeToDelete> : card;
 }

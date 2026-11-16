@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 import { Badge } from "../ui/Card";
+import { SwipeToDelete } from "../ui/SwipeToDelete";
 import { dueLabel, dueState, isSettled, remainingAmount } from "../../domain/debts";
 import { DEBT_KIND_META, debtRelation, debtTitle } from "../../lib/debts";
 import { formatCurrency, formatDate } from "../../lib/format";
@@ -10,9 +11,10 @@ interface Props {
   today: string;
   onClick: () => void;
   onToggleSettled: () => void;
+  onDelete: () => Promise<void> | void;
 }
 
-export function DebtCard({ debt, today, onClick, onToggleSettled }: Props) {
+export function DebtCard({ debt, today, onClick, onToggleSettled, onDelete }: Props) {
   const meta = DEBT_KIND_META[debt.kind];
   const settled = isSettled(debt);
   const remaining = remainingAmount(debt);
@@ -25,23 +27,26 @@ export function DebtCard({ debt, today, onClick, onToggleSettled }: Props) {
     debt.kind === "reminder" ? debt.notes : [debtRelation(debt), debt.concept].filter(Boolean).join(" · ");
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={onToggleSettled}
-        aria-label={settled ? "Volver a marcar como pendiente" : "Marcar como saldado"}
-        aria-pressed={settled}
-        className={`pressable flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
-          settled ? "border-positive bg-positive text-white" : "border-neutral-300 text-transparent dark:border-neutral-600"
-        }`}
-      >
-        <Check size={15} strokeWidth={3} />
-      </button>
-
+    <SwipeToDelete
+      onDelete={onDelete}
+      leading={
+        <button
+          type="button"
+          onClick={onToggleSettled}
+          aria-label={settled ? "Volver a marcar como pendiente" : "Marcar como saldado"}
+          aria-pressed={settled}
+          className={`pressable flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 ${
+            settled ? "border-positive bg-positive text-white" : "border-neutral-300 text-transparent dark:border-neutral-600"
+          }`}
+        >
+          <Check size={15} strokeWidth={3} />
+        </button>
+      }
+    >
       <button
         type="button"
         onClick={onClick}
-        className={`surface pressable relative min-w-0 flex-1 overflow-hidden rounded-[22px] p-3.5 text-left ${settled ? "opacity-60" : ""}`}
+        className={`surface pressable relative block w-full overflow-hidden rounded-[22px] p-3.5 text-left ${settled ? "opacity-60" : ""}`}
       >
         <div className="flex items-center gap-3">
           <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${meta.chip}`}>
@@ -77,6 +82,6 @@ export function DebtCard({ debt, today, onClick, onToggleSettled }: Props) {
           </div>
         )}
       </button>
-    </div>
+    </SwipeToDelete>
   );
 }

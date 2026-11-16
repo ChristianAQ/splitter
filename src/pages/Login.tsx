@@ -83,7 +83,7 @@ export function Login() {
 
   return (
     <div
-      className="flex min-h-screen flex-col justify-center px-6"
+      className="flex min-h-app flex-col justify-center px-6"
       // Added to (not replacing) the vertical padding: as an inline style these
       // used to override `py-10` and leave the form flush against the edges.
       style={{ paddingTop: "calc(env(safe-area-inset-top) + 2.5rem)", paddingBottom: "calc(env(safe-area-inset-bottom) + 2.5rem)" }}

@@ -8,6 +8,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
+  Timestamp,
   updateDoc,
   type Unsubscribe,
 } from "firebase/firestore";
@@ -99,6 +101,16 @@ export async function setRecurringCompletedThisMonth(uid: string, id: string, mo
       lastCompletedMonth: done ? month : deleteField(),
       updatedAt: serverTimestamp(),
     });
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
+/** Undo for a delete: writes it back under its original id. */
+export async function restoreRecurringExpense(uid: string, recurring: RecurringExpense) {
+  try {
+    const { id, createdAt, updatedAt: _updatedAt, ...fields } = recurring;
+    await setDoc(doc(col(uid), id), { ...fields, createdAt: Timestamp.fromMillis(createdAt), updatedAt: serverTimestamp() });
   } catch (error) {
     throw toFriendlyError(error);
   }

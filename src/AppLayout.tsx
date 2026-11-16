@@ -20,8 +20,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // `overflow-x: clip`, not `hidden`: a card dragged off to the right
+  // (swipe-to-delete) must not make the page itself pannable sideways on
+  // iPhone, but `hidden` would turn this into a scroll container and break
+  // the window-level scrolling everything else relies on.
   return (
-    <div className="min-h-screen">
+    <div className="min-h-app overflow-x-clip">
       <SwipeableTabTransition>
         <main className="pb-24">{children}</main>
       </SwipeableTabTransition>

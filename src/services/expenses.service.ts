@@ -99,3 +99,12 @@ export async function deleteGroupExpense(groupId: string, expenseId: string) {
     throw toFriendlyError(error);
   }
 }
+
+/** Undo for the soft delete above. Creator only, like every other edit. */
+export async function restoreGroupExpense(groupId: string, expenseId: string) {
+  try {
+    await updateDoc(doc(col(groupId), expenseId), { deleted: false, updatedAt: serverTimestamp() });
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
