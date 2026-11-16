@@ -15,6 +15,14 @@ interface Props {
 }
 
 const EXIT_MS = 240;
+
+// iPhone/iPod, and iPad (which reports itself as a Mac but has a touch screen).
+const IS_IOS =
+  typeof navigator !== "undefined" &&
+  (/iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
+// <input> types that don't bring up the on-screen keyboard.
+const NON_TEXT_INPUT_TYPES = new Set(["checkbox", "radio", "range", "color", "file", "image", "button", "submit", "reset", "date", "time", "month", "week", "datetime-local"]);
 const SNAP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 // A downward drag is taken over once it has moved this far...
 const DRAG_SLOP = 6;
@@ -93,58 +101,136 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Keep the sheet inside the part of the screen that's actually visible.
-  // On iPhone the on-screen keyboard doesn't resize the page: it slides
-  // over it, and Safari then shoves the whole page upward to reveal the
-  // focused field — which dragged this (bottom-anchored) sheet up with it,
-  // half off the top of the screen and with a gap underneath. Instead the
-  // sheet's frame is pinned to the *visual* viewport: when the keyboard
-  // opens the frame shrinks to the space above it, the sheet rests on top
-  // of the keyboard with its footer still showing, and the form scrolls
-  // inside it.
+  // Keyboard handling, which on iPhone (above all as an installed app) is
+  // most of the work of a sheet with a form in it. The keyboard there
+  // doesn't resize the page — it slides over it — and WebKit then:
+  //   1. pans the whole page upward to reveal the focused field, dragging
+  //      this bottom-anchored sheet up with it; and
+  //   2. frequently *leaves* the page panned after the keyboard goes away
+  //      (pressing Intro, tapping elsewhere), so everything fixed sits too
+  //      high and a strip of the page shows underneath it;
+  // and it doesn't reliably send the viewport events that would let a page
+  // react to either.
+  //
+  // So, while a sheet is up:
+  //   - its frame is pinned to the *visual* viewport (the part of the
+  //     screen not under the keyboard), re-measured every frame rather
+  //     than on events, so it always ends exactly at the keyboard's top
+  //     edge — or at the screen's, the moment the keyboard is gone;
+  //   - any pan WebKit applies to the page itself is undone on the spot;
+  //   - fields are focused in a way that doesn't trigger the pan in the
+  //     first place, and are scrolled into view inside the sheet instead.
   useEffect(() => {
     if (!mounted) return;
     const viewport = window.visualViewport;
     const frame = frameRef.current;
-    if (!viewport || !frame) return;
+    const sheet = sheetRef.current;
+    if (!frame || !sheet) return;
 
+    const pageScrollY = window.scrollY;
+    const applied = { height: -1, top: -1, keyboard: false };
     let raf = 0;
     let revealTimer: ReturnType<typeof setTimeout> | undefined;
 
-    function apply() {
-      const keyboardOpen = window.innerHeight - viewport!.height > 120;
-      frame!.style.height = `${viewport!.height}px`;
-      frame!.style.transform = `translate3d(0, ${viewport!.offsetTop}px, 0)`;
-      frame!.dataset.keyboard = String(keyboardOpen);
-
-      // The field being typed in may now be under the fold of the (shorter)
-      // sheet: bring it to the middle of what's left.
+    function reveal(field: Element | null) {
       clearTimeout(revealTimer);
       revealTimer = setTimeout(() => {
         const scroller = scrollRef.current;
-        const field = document.activeElement;
-        if (!scroller || !(field instanceof HTMLElement) || !scroller.contains(field)) return;
+        if (!scroller || !(field instanceof HTMLElement) || !scroller.contains(field) || document.activeElement !== field) return;
         const f = field.getBoundingClientRect();
         const s = scroller.getBoundingClientRect();
         if (f.top < s.top + 12 || f.bottom > s.bottom - 12) {
           scroller.scrollBy({ top: f.top - s.top - (s.height - f.height) / 2, behavior: "smooth" });
         }
-      }, 240);
+      }, 60);
     }
 
-    function schedule() {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(apply);
+    function sync() {
+      raf = requestAnimationFrame(sync);
+
+      // The page behind must not move while the sheet is open. If WebKit
+      // has scrolled it (to reveal a field, or left it scrolled after the
+      // keyboard closed), put it back.
+      if (Math.abs(window.scrollY - pageScrollY) > 0.5) window.scrollTo(0, pageScrollY);
+
+      const height = viewport ? viewport.height : window.innerHeight;
+      const top = viewport ? viewport.offsetTop : 0;
+      if (Math.abs(height - applied.height) < 0.5 && Math.abs(top - applied.top) < 0.5) return;
+
+      const keyboard = window.innerHeight - height > 120;
+      applied.height = height;
+      applied.top = top;
+      frame!.style.height = `${height}px`;
+      frame!.style.transform = top ? `translate3d(0, ${top}px, 0)` : "";
+      frame!.dataset.keyboard = String(keyboard);
+      // Keyboard just finished opening (or changed size): make sure the
+      // field being typed in is inside what's left of the sheet.
+      if (keyboard) reveal(document.activeElement);
+      applied.keyboard = keyboard;
+    }
+    sync();
+
+    // Focusing a text field without letting Safari pan the page to it: for
+    // the instant of the focus call the field is moved far off-screen, so
+    // there is nowhere sensible for Safari to pan to and it leaves the
+    // page alone. (The technique React Aria uses for the same problem.)
+    const opensKeyboard = (el: EventTarget | null): el is HTMLElement =>
+      (el instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(el.type)) || el instanceof HTMLTextAreaElement;
+
+    function focusWithoutPanning(field: HTMLElement) {
+      field.style.transform = "translateY(-2000px)";
+      field.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        field.style.transform = "";
+      });
     }
 
-    apply();
-    viewport.addEventListener("resize", schedule);
-    viewport.addEventListener("scroll", schedule);
+    function onTouchEnd(e: TouchEvent) {
+      const target = e.target;
+      // Only a plain tap on a field that isn't focused yet; a tap inside
+      // the focused one is the user placing the caret.
+      if (!IS_IOS || !opensKeyboard(target) || target === document.activeElement || !e.cancelable || tapMoved) return;
+      e.preventDefault();
+      focusWithoutPanning(target);
+    }
+
+    let tapMoved = false;
+    const onTouchStart = () => {
+      tapMoved = false;
+    };
+    const onTouchMove = () => {
+      tapMoved = true;
+    };
+
+    function onFocusIn(e: FocusEvent) {
+      if (!opensKeyboard(e.target)) return;
+      if (IS_IOS) {
+        // Covers focus that didn't come from a tap handled above (the
+        // amount field's autofocus, the keyboard's next/previous arrows).
+        const field = e.target;
+        field.style.transform = "translateY(-2000px)";
+        requestAnimationFrame(() => {
+          field.style.transform = "";
+          reveal(field);
+        });
+      } else {
+        reveal(e.target);
+      }
+    }
+
+    sheet.addEventListener("touchstart", onTouchStart, { passive: true });
+    sheet.addEventListener("touchmove", onTouchMove, { passive: true });
+    sheet.addEventListener("touchend", onTouchEnd, { passive: false });
+    sheet.addEventListener("focusin", onFocusIn);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(revealTimer);
-      viewport.removeEventListener("resize", schedule);
-      viewport.removeEventListener("scroll", schedule);
+      sheet.removeEventListener("touchstart", onTouchStart);
+      sheet.removeEventListener("touchmove", onTouchMove);
+      sheet.removeEventListener("touchend", onTouchEnd);
+      sheet.removeEventListener("focusin", onFocusIn);
+      // Hand the page back exactly where it was.
+      if (Math.abs(window.scrollY - pageScrollY) > 0.5) window.scrollTo(0, pageScrollY);
     };
   }, [mounted]);
 
@@ -272,7 +358,7 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       />
       <div
         ref={frameRef}
-        className="group pointer-events-none absolute inset-x-0 top-0 flex h-full items-end justify-center transition-[height] duration-200 ease-out sm:items-center"
+        className="group pointer-events-none absolute inset-x-0 top-0 flex h-full items-end justify-center sm:items-center"
       >
       <div
         ref={sheetRef}

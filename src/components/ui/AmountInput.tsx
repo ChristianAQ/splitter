@@ -62,6 +62,10 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
           id={id}
           ref={inputRef}
           inputMode="decimal"
+          enterKeyHint="done"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+          }}
           placeholder="0"
           value={value.replace(".", ",")}
           onChange={(e) => handleChange(e.target.value)}

@@ -5,7 +5,13 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // Deployed to GitHub Pages at https://<user>.github.io/splitter/
 // Change `base` if the repo name or hosting path differs.
+// Shown at the bottom of Perfil. An installed PWA keeps running the build it
+// has cached until it's fully closed and reopened, so "is this the new
+// version yet?" needs an answer you can read off the screen.
+const BUILD_ID = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
+
 export default defineConfig({
+  define: { __BUILD_ID__: JSON.stringify(BUILD_ID) },
   base: "/splitter/",
   plugins: [
     react(),

@@ -51,10 +51,19 @@ export const Input = forwardRef<HTMLInputElement, Props>(
             id={inputId}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
+            {...rest}
+            // "Intro" on a field that isn't part of a <form> (every sheet in
+            // the app) had no defined behaviour; make it the obvious one:
+            // done with this field, put the keyboard away. Inside a real
+            // form (Login) it's left alone so it still submits.
+            enterKeyHint={rest.type === "date" ? undefined : "done"}
+            onKeyDown={(e) => {
+              rest.onKeyDown?.(e);
+              if (e.key === "Enter" && !e.defaultPrevented && !e.currentTarget.form) e.currentTarget.blur();
+            }}
             className={`h-12 w-full rounded-2xl field px-4 text-[16px] text-neutral-900 outline-none transition-colors placeholder:text-neutral-400 focus:border-accent focus:ring-2 focus:ring-accent-100 dark:text-neutral-50 dark:placeholder:text-neutral-500 dark:focus:ring-accent-900/40 ${
               error ? "!border-negative" : ""
             } ${showDatePlaceholder ? "date-empty peer" : ""} ${className}`}
-            {...rest}
           />
           {showDatePlaceholder && (
             <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[16px] text-neutral-400 peer-focus:hidden dark:text-neutral-500">

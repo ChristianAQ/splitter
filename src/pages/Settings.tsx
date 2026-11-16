@@ -281,7 +281,7 @@ export function Settings() {
             </Card>
           </section>
 
-          <p className="pb-2 text-center text-xs text-neutral-500 dark:text-neutral-400">Splitter</p>
+          <p className="pb-2 text-center text-xs text-neutral-500 dark:text-neutral-400">Splitter · versión {__BUILD_ID__}</p>
         </div>
       </PageContainer>
 
