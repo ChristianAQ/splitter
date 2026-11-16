@@ -35,44 +35,27 @@ export function focusWithoutPanning(field: HTMLElement) {
 // ---------------------------------------------------------------------------
 
 let locks = 0;
-let lockedAtY = 0;
-let previousBodyStyle: Partial<CSSStyleDeclaration> = {};
+let previousOverflow = "";
 
 /**
  * Stops the page behind a sheet from scrolling. Returns the function that
  * releases it; nested locks (a confirm dialog over a sheet) are counted.
  *
- * On iOS `overflow: hidden` on <body> isn't enough: the document can still
- * be scrolled by WebKit itself when the keyboard opens, and that scroll is
- * what gets left behind when it closes. Taking <body> out of the flow with
- * `position: fixed` leaves nothing that *can* scroll; the offset keeps the
- * page looking exactly where it was.
+ * Deliberately just `overflow: hidden`, and deliberately NOT the usual iOS
+ * recipe of taking <body> out of the flow with `position: fixed`. Installed
+ * on an iPhone home screen (translucent status bar), the area this app can
+ * lay out in is one status bar shorter than the screen, and WebKit only
+ * lets fixed-position content use the whole screen while the *document* is
+ * at least screen-tall. A fixed <body> contributes no height, the document
+ * shrinks to that shorter area, and every fixed element — the sheet, the
+ * tab bar — ends a status bar's height above the bottom edge, where it then
+ * stays. (See also the `html` min-height in index.css.)
  */
 export function lockPageScroll(): () => void {
   locks += 1;
   if (locks === 1) {
-    const body = document.body;
-    lockedAtY = window.scrollY;
-    previousBodyStyle = {
-      overflow: body.style.overflow,
-      position: body.style.position,
-      top: body.style.top,
-      left: body.style.left,
-      right: body.style.right,
-      width: body.style.width,
-    };
-    if (!IS_IOS) {
-      body.style.overflow = "hidden";
-    } else {
-      // No `overflow: hidden` here: <body> is exactly one screen tall
-      // (index.css), so clipping it would cut off everything below the
-      // first screenful of the page showing through behind the sheet.
-      body.style.position = "fixed";
-      body.style.top = `${-lockedAtY}px`;
-      body.style.left = "0";
-      body.style.right = "0";
-      body.style.width = "100%";
-    }
+    previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
   }
 
   let released = false;
@@ -80,13 +63,12 @@ export function lockPageScroll(): () => void {
     if (released) return;
     released = true;
     locks -= 1;
-    if (locks > 0) return;
-    Object.assign(document.body.style, previousBodyStyle);
-    if (IS_IOS) window.scrollTo(0, lockedAtY);
+    if (locks === 0) document.body.style.overflow = previousOverflow;
   };
 }
 
-/** Where the page is "really" scrolled to, lock or no lock. */
-export function pageScrollY(): number {
-  return locks > 0 && IS_IOS ? lockedAtY : window.scrollY;
-}
+/** True when running as an app added to the iPhone/iPad home screen. */
+export const IS_IOS_STANDALONE =
+  IS_IOS &&
+  typeof window !== "undefined" &&
+  ((navigator as Navigator & { standalone?: boolean }).standalone === true || window.matchMedia("(display-mode: standalone)").matches);

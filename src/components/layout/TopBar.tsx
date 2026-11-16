@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { OfflineBanner } from "../ui/ErrorState";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
-import { pageScrollY } from "../../lib/ios";
 
 interface Props {
   title: ReactNode;
@@ -18,12 +17,10 @@ const ROW_STYLE = { paddingTop: "calc(env(safe-area-inset-top) + 14px)" };
 export function TopBar({ title, subtitle, onBack, right }: Props) {
   const navigate = useNavigate();
   const online = useOnlineStatus();
-  const [scrolled, setScrolled] = useState(() => pageScrollY() > 4);
+  const [scrolled, setScrolled] = useState(() => window.scrollY > 4);
 
   useEffect(() => {
-    // pageScrollY (not window.scrollY): while a sheet is open on iPhone the
-    // page is pinned in place and the window itself reports 0.
-    const update = () => setScrolled(pageScrollY() > 4);
+    const update = () => setScrolled(window.scrollY > 4);
     update();
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);

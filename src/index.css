@@ -29,6 +29,19 @@
     height: 100%;
   }
 
+  /* Added to an iPhone home screen (translucent status bar), "100%" of the
+   * viewport is one status bar shorter than the screen, and WebKit only
+   * extends fixed-position content to the real bottom edge while the
+   * document itself is at least as tall as the screen. Whenever it wasn't
+   * — a page with little on it, or a sheet open — the tab bar and sheets
+   * stopped short, floating above an empty strip.
+   * So the document is never shorter than the screen: --screen-height is
+   * the device's actual height, set in main.tsx for installed iOS only;
+   * without it this adds the top inset, which is zero in a browser tab. */
+  html {
+    min-height: max(100%, var(--screen-height, calc(100% + env(safe-area-inset-top))));
+  }
+
   body {
     @apply bg-surface-light-subtle text-neutral-900 antialiased;
     @apply dark:bg-surface-dark dark:text-neutral-50;
@@ -303,21 +316,16 @@
 }
 
 @layer utilities {
-  /* Dynamic viewport units, with the classic ones as fallback. On iPhone
-   * Safari `100vh` is the height with the toolbars *hidden*, so while
-   * they're showing a "full-height" element is taller than the screen and
-   * a `90vh` sheet pokes out past the top of it. */
+  /* Full-height app shell. Plain `vh` on purpose: `dvh` tracks the area
+   * that's visible right now, which as an installed iOS app is the short
+   * one — see the note on `html` above. */
   .min-h-app {
     min-height: 100vh;
-    min-height: 100dvh;
+    min-height: max(100vh, var(--screen-height, 0px));
   }
   .h-app {
     height: 100vh;
-    height: 100dvh;
-  }
-  .max-h-sheet {
-    max-height: 90vh;
-    max-height: 90dvh;
+    height: max(100vh, var(--screen-height, 0px));
   }
 
   .no-scrollbar::-webkit-scrollbar {

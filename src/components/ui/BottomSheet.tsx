@@ -123,6 +123,9 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
     const sheet = sheetRef.current;
     if (!frame || !sheet) return;
 
+    // Where the page behind was scrolled to when the sheet opened — it
+    // must still be there when the sheet closes.
+    const pageY = window.scrollY;
     const applied = { height: -1, top: -1, keyboard: false };
     let raf = 0;
     let revealTimer: ReturnType<typeof setTimeout> | undefined;
@@ -145,9 +148,8 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
 
       // The page behind must not move while the sheet is open. If WebKit
       // has scrolled the window anyway (to reveal a field, or left it
-      // scrolled after the keyboard closed), put it back. With the body
-      // locked in place (see lockPageScroll) the right value is always 0.
-      if (IS_IOS && window.scrollY !== 0) window.scrollTo(0, 0);
+      // scrolled after the keyboard closed), put it back.
+      if (IS_IOS && Math.abs(window.scrollY - pageY) > 0.5) window.scrollTo(0, pageY);
 
       const height = viewport ? viewport.height : window.innerHeight;
       const top = viewport ? viewport.offsetTop : 0;
@@ -156,8 +158,13 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       const keyboard = window.innerHeight - height > 120;
       applied.height = height;
       applied.top = top;
-      frame!.style.height = `${height}px`;
-      frame!.style.transform = top ? `translate3d(0, ${top}px, 0)` : "";
+      // Only while the keyboard is up. At rest the frame is simply the
+      // full fixed layer (CSS): the visual viewport's reported height
+      // isn't trustworthy enough to position by when nothing is covering
+      // the screen — as an installed app it can come back a status bar
+      // short, which would lift the whole sheet off the bottom edge.
+      frame!.style.height = keyboard ? `${height}px` : "";
+      frame!.style.transform = keyboard && top ? `translate3d(0, ${top}px, 0)` : "";
       frame!.dataset.keyboard = String(keyboard);
       // Keyboard just finished opening (or changed size): make sure the
       // field being typed in is inside what's left of the sheet.
@@ -206,8 +213,8 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
         if (opensKeyboard(document.activeElement)) return;
         applied.height = -1;
         if (IS_IOS) {
-          window.scrollTo(0, 1);
-          window.scrollTo(0, 0);
+          window.scrollTo(0, pageY + 1);
+          window.scrollTo(0, pageY);
         }
       }, 60);
     }
