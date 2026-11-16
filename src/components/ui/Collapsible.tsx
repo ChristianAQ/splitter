@@ -12,7 +12,7 @@ interface Props {
 // tailwind.config.ts's slide-up/scale-in animations) — animating
 // grid-template-rows (rather than max-height) lets the section grow/shrink
 // to its exact content height with no fixed cap to guess at.
-const EASE = "ease-[cubic-bezier(0.32,0.72,0,1)]";
+const EASE = "ease-[cubic-bezier(0.22,1,0.36,1)]";
 
 /** A section header that expands/collapses its content with a smooth
  * height + fade transition — used to let the Grupos page's sections
@@ -30,11 +30,11 @@ export function Collapsible({ title, defaultOpen = true, headerRight, children }
           className="flex min-w-0 flex-1 items-center gap-1.5 py-0.5 text-left active:opacity-60"
         >
           <ChevronDown
-            size={16}
-            strokeWidth={2.75}
+            size={14}
+            strokeWidth={2.6}
             className={`shrink-0 text-neutral-400 transition-transform duration-300 ${EASE} ${open ? "" : "-rotate-90"}`}
           />
-          <h2 className="truncate text-sm font-bold text-neutral-500 dark:text-neutral-400">{title}</h2>
+          <h2 className="eyebrow truncate">{title}</h2>
         </button>
         {headerRight}
       </div>

@@ -37,7 +37,7 @@ export function SplitSelector({
           onClick={() => onMethodChange("equal")}
           className={`flex-1 rounded-2xl border py-2.5 text-sm font-semibold ${
             method === "equal"
-              ? "border-accent bg-accent-50 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300"
+              ? "border-accent bg-accent/10 text-accent-700 dark:bg-accent/20 dark:text-accent-300"
               : "border-neutral-200 text-neutral-500 dark:border-neutral-700"
           }`}
         >
@@ -48,7 +48,7 @@ export function SplitSelector({
           onClick={() => onMethodChange("amount")}
           className={`flex-1 rounded-2xl border py-2.5 text-sm font-semibold ${
             method === "amount"
-              ? "border-accent bg-accent-50 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300"
+              ? "border-accent bg-accent/10 text-accent-700 dark:bg-accent/20 dark:text-accent-300"
               : "border-neutral-200 text-neutral-500 dark:border-neutral-700"
           }`}
         >
@@ -56,7 +56,7 @@ export function SplitSelector({
         </button>
       </div>
 
-      <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
+      <ul className="flex flex-col divide-y divide-black/[0.06] dark:divide-white/[0.08]">
         {participants.map((p) => {
           const share = equalPreview?.splits.find((s) => s.uid === p.uid)?.amount;
           return (
@@ -73,7 +73,7 @@ export function SplitSelector({
                   placeholder="0.00"
                   value={amounts[p.uid] ?? ""}
                   onChange={(e) => onAmountChange(p.uid, e.target.value)}
-                  className="w-24 rounded-lg border border-neutral-200 bg-white px-2 py-1.5 text-right text-sm font-semibold tabular-nums outline-none focus:border-accent dark:border-neutral-700 dark:bg-neutral-900"
+                  className="w-24 rounded-lg field px-2 py-1.5 text-right text-sm font-semibold tabular-nums outline-none focus:border-accent"
                 />
               )}
             </li>

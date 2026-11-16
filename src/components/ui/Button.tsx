@@ -10,17 +10,16 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: "bg-accent text-white active:bg-accent-600 disabled:bg-accent-300",
-  secondary:
-    "bg-neutral-100 text-neutral-900 active:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-50 dark:active:bg-neutral-700",
-  ghost: "bg-transparent text-accent active:bg-accent-50 dark:active:bg-accent-900/30",
-  danger: "bg-negative text-white active:bg-red-700 disabled:bg-red-300",
+  primary: "bg-accent text-white shadow-[0_8px_20px_-10px_rgb(var(--accent-600)/0.9)] disabled:opacity-45 disabled:shadow-none",
+  secondary: "well well-press text-neutral-900 dark:text-neutral-50 disabled:opacity-45",
+  ghost: "bg-transparent text-accent active:bg-accent/10 disabled:opacity-45",
+  danger: "bg-negative text-white disabled:opacity-45",
 };
 
 const SIZE_CLASSES: Record<Size, string> = {
-  md: "h-11 px-4 text-[15px] rounded-2xl",
-  lg: "h-14 px-6 text-base rounded-2xl",
-  icon: "h-11 w-11 rounded-full",
+  md: "h-11 px-4 text-[15px] rounded-full",
+  lg: "h-14 px-6 text-base rounded-full",
+  icon: "h-10 w-10 rounded-full",
 };
 
 export const Button = forwardRef<HTMLButtonElement, Props>(
@@ -29,7 +28,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`inline-flex items-center justify-center gap-2 font-semibold transition-colors duration-150 select-none disabled:cursor-not-allowed active:scale-[0.97] transition-transform ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
+        className={`pressable inline-flex select-none items-center justify-center gap-2 font-semibold disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className}`}
         {...rest}
       >
         {loading && (

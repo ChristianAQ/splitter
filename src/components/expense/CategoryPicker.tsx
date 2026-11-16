@@ -21,7 +21,7 @@ export function CategoryPicker({ value, onChange }: Props) {
             className={`flex flex-col items-center gap-1 rounded-2xl border py-3 text-xs font-medium transition-colors ${
               selected
                 ? "text-neutral-900 dark:text-white"
-                : "border-neutral-200 bg-white text-neutral-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+                : "field text-neutral-600 dark:text-neutral-300"
             }`}
           >
             <cat.icon size={20} strokeWidth={1.8} style={{ color: cat.color }} />

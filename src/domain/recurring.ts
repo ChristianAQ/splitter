@@ -1,5 +1,5 @@
 import type { RecurringExpense } from "../types";
-import { addDays, addMonthsClamped, compareISO, formatISO, parseISO } from "./date";
+import { addDays, addMonthsClamped, compareISO, daysInMonth, formatISO, parseISO } from "./date";
 
 /**
  * Returns every occurrence date of `recurring` that falls within
@@ -70,7 +70,10 @@ export function occurrencesInRange(
   let guard = 0;
   while (guard < 200) {
     guard += 1;
-    const occurrence = new Date(Date.UTC(year, start.getUTCMonth(), start.getUTCDate()));
+    // Clamped like the monthly case: a Feb 29 start lands on Feb 28 in
+    // non-leap years instead of rolling over into March 1.
+    const day = Math.min(start.getUTCDate(), daysInMonth(year, start.getUTCMonth()));
+    const occurrence = new Date(Date.UTC(year, start.getUTCMonth(), day));
     const iso = formatISO(occurrence);
     if (compareISO(iso, effectiveEnd) > 0) break;
     if (compareISO(iso, rangeStart) >= 0 && compareISO(iso, recurring.startDate) >= 0) {

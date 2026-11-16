@@ -12,8 +12,32 @@ export function formatISO(date: Date): ISODate {
   return date.toISOString().slice(0, 10);
 }
 
+/** Calendar date of a moment *as the user sees it* (device timezone).
+ * `formatISO` above is for the UTC-anchored dates this module does its
+ * arithmetic on; using it for "now" reports yesterday's date during the
+ * first hour(s) after local midnight anywhere east of Greenwich. */
+export function localISO(date: Date): ISODate {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function todayISO(): ISODate {
-  return formatISO(new Date());
+  return localISO(new Date());
+}
+
+/** "YYYY-MM" shifted by `delta` months — pure string/integer math, so it
+ * can't overflow the way `Date#setMonth` does on the 29th-31st. */
+export function shiftMonth(month: string, delta: number): string {
+  const [y, m] = month.split("-").map(Number);
+  const index = y * 12 + (m - 1) + delta;
+  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
+}
+
+/** Whole days from `from` to `to` (negative if `to` is earlier). */
+export function daysBetween(from: ISODate, to: ISODate): number {
+  return Math.round((parseISO(to).getTime() - parseISO(from).getTime()) / 86_400_000);
 }
 
 export function daysInMonth(year: number, monthIndex0: number): number {

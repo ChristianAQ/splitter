@@ -83,8 +83,10 @@ export function Login() {
 
   return (
     <div
-      className="flex min-h-screen flex-col justify-center px-6 py-10"
-      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="flex min-h-screen flex-col justify-center px-6"
+      // Added to (not replacing) the vertical padding: as an inline style these
+      // used to override `py-10` and leave the form flush against the edges.
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 2.5rem)", paddingBottom: "calc(env(safe-area-inset-bottom) + 2.5rem)" }}
     >
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 text-center">
@@ -129,9 +131,9 @@ export function Login() {
         </form>
 
         <div className="my-5 flex items-center gap-3">
-          <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
+          <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
           <span className="text-xs font-medium text-neutral-400">o</span>
-          <div className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
+          <div className="h-px flex-1 bg-black/10 dark:bg-white/10" />
         </div>
 
         <Button

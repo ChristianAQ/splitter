@@ -1,79 +1,68 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { Home, WalletMinimal, Users, ChartColumn, Settings, type LucideIcon } from "lucide-react";
 
-const ITEMS: { to: string; label: string; icon: LucideIcon; end: boolean }[] = [
-  { to: "/", label: "Inicio", icon: Home, end: true },
-  { to: "/gastos", label: "Gastos", icon: WalletMinimal, end: false },
-  { to: "/grupos", label: "Grupos", icon: Users, end: false },
-  { to: "/estadisticas", label: "Estadísticas", icon: ChartColumn, end: false },
-  { to: "/perfil", label: "Perfil", icon: Settings, end: false },
+const ITEMS: { to: string; label: string; icon: LucideIcon; also?: string[] }[] = [
+  { to: "/", label: "Inicio", icon: Home },
+  { to: "/gastos", label: "Gastos", icon: WalletMinimal },
+  // Amigos is reached from Grupos and has no tab of its own.
+  { to: "/grupos", label: "Grupos", icon: Users, also: ["/amigos"] },
+  { to: "/estadisticas", label: "Estadísticas", icon: ChartColumn },
+  { to: "/perfil", label: "Perfil", icon: Settings },
 ];
 
+function matches(pathname: string, item: (typeof ITEMS)[number]) {
+  if (item.to === "/") return pathname === "/";
+  return [item.to, ...(item.also ?? [])].some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/** Floating glass tab bar. One shared highlight glides between tabs; which
+ * tab is "active" is computed here once (not per-NavLink) so the highlight
+ * and the icon it sits behind can never disagree — they used to on
+ * /amigos, where the pill fell back to Inicio while no tab was lit. */
 export function BottomNav() {
-  const location = useLocation();
-  const activeIndex = Math.max(
-    ITEMS.findIndex((item) => (item.end ? location.pathname === item.to : location.pathname.startsWith(item.to))),
-    0
-  );
+  const { pathname } = useLocation();
+  const activeIndex = ITEMS.findIndex((item) => matches(pathname, item));
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-neutral-200 bg-white/90 backdrop-blur-lg dark:border-neutral-800 dark:bg-surface-dark/90"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3"
+      style={{ paddingBottom: "max(calc(env(safe-area-inset-bottom) - 8px), 10px)" }}
       aria-label="Navegación principal"
     >
-      <div className="relative flex">
-        {/* Shared sliding pill: a single element that glides between tabs
-         * instead of each tab popping its own background in/out. */}
-        <div
-          className="pointer-events-none absolute inset-y-0 left-0 z-0 w-1/5 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          style={{ transform: `translateX(${activeIndex * 100}%)` }}
-          aria-hidden
-        >
-          <div className="mx-auto mt-2.5 h-8 w-8 rounded-full bg-accent" />
-        </div>
+      {/* Content scrolling past the bar dissolves into the page color
+       * instead of peeking out, sharp, in the gap below a floating pill. */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 bottom-0 -top-8 bg-gradient-to-t from-surface-light-subtle from-35% to-transparent dark:from-surface-dark"
+      />
+      <div className="glass pointer-events-auto relative mx-auto flex max-w-md rounded-[30px] p-1.5">
+        {activeIndex >= 0 && (
+          <div
+            className="pointer-events-none absolute inset-y-1.5 left-1.5 transition-transform duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{ width: "calc((100% - 0.75rem) / 5)", transform: `translateX(${activeIndex * 100}%)` }}
+            aria-hidden
+          >
+            <div className="h-full w-full rounded-[24px] bg-accent/[0.13] dark:bg-accent/25" />
+          </div>
+        )}
 
-        {ITEMS.map((item) => {
-          const isGroups = item.to === "/grupos";
+        {ITEMS.map((item, i) => {
+          const active = i === activeIndex;
           return (
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors active:scale-95 ${
-                  isActive
-                    ? "text-accent"
-                    : isGroups
-                      ? "text-accent/80 dark:text-accent/90"
-                      : "text-neutral-400 dark:text-neutral-500"
-                }`
-              }
+              aria-current={active ? "page" : undefined}
+              className={`relative z-10 flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-[24px] py-2 text-[10.5px] font-medium transition-colors duration-200 active:opacity-70 ${
+                active ? "text-accent-700 dark:text-accent-200" : "text-neutral-500 dark:text-neutral-400"
+              }`}
             >
-              {({ isActive }) => (
-                <>
-                  {/* Active page: the shared pill behind provides the accent
-                   * background; this span just keeps the icon on top of it.
-                   * Grupos when inactive: outlined ring only, so it reads as
-                   * "the main feature" without being mistaken for "you are here". */}
-                  <span
-                    className={
-                      isActive
-                        ? "relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-white"
-                        : isGroups
-                          ? "relative z-10 flex h-8 w-8 items-center justify-center rounded-full ring-2 ring-accent/40 text-accent/80"
-                          : "relative z-10 flex h-8 w-8 items-center justify-center"
-                    }
-                  >
-                    <item.icon
-                      size={isActive || isGroups ? 20 : 23}
-                      strokeWidth={isActive ? 2.3 : 1.8}
-                      className={`transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${isActive ? "scale-110" : "scale-100"}`}
-                    />
-                  </span>
-                  <span className={isGroups && !isActive ? "font-bold" : undefined}>{item.label}</span>
-                </>
-              )}
+              <item.icon
+                size={22}
+                strokeWidth={active ? 2.2 : 1.8}
+                className={`transition-transform duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] ${active ? "-translate-y-px scale-105" : ""}`}
+              />
+              <span className={`max-w-full truncate px-0.5 ${active ? "font-semibold" : ""}`}>{item.label}</span>
             </NavLink>
           );
         })}

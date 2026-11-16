@@ -31,18 +31,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         className="fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 px-4 pointer-events-none"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 88px)" }}
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 96px)" }}
       >
         {toasts.map((t) => (
           <div
             key={t.id}
             role="status"
-            className={`animate-slide-up pointer-events-auto max-w-sm rounded-2xl px-4 py-3 text-sm font-medium shadow-sheet ${
+            className={`animate-slide-up pointer-events-auto max-w-sm rounded-full px-4 py-2.5 text-sm font-medium shadow-sheet backdrop-blur-xl ${
               t.variant === "success"
-                ? "bg-positive text-white"
+                ? "bg-positive/90 text-white"
                 : t.variant === "error"
-                  ? "bg-negative text-white"
-                  : "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
+                  ? "bg-negative/90 text-white"
+                  : "bg-neutral-900/85 text-white dark:bg-white/90 dark:text-neutral-900"
             }`}
           >
             {t.message}

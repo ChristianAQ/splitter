@@ -1,14 +1,14 @@
 import { useEffect, useId, useRef } from "react";
 import type { Currency } from "../../types";
 
-// BottomSheet's slide-up animation runs for 0.22s (see index.css). Focusing
+// BottomSheet's slide-up animation runs for 0.34s (see tailwind.config.ts). Focusing
 // natively (via the `autoFocus` HTML attribute) fires the instant the input
 // mounts, i.e. mid-animation — iOS then opens the keyboard and computes the
 // scroll-into-view position against the sheet's still-animating layout,
 // landing the viewport at an arbitrary mid-scroll position instead of the
 // top. Delaying the focus call until just after the animation settles fixes
 // this without touching the animation itself.
-const AUTOFOCUS_DELAY_MS = 300;
+const AUTOFOCUS_DELAY_MS = 380;
 
 const CURRENCY_SYMBOL: Record<Currency, string> = { EUR: "€", USD: "$", GBP: "£" };
 

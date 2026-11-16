@@ -44,13 +44,13 @@ export function Stats() {
     <>
       <TopBar title="Estadísticas" />
       <PageContainer>
-        <div className="mb-5 flex gap-1 overflow-x-auto no-scrollbar rounded-2xl bg-white p-1 shadow-card dark:bg-surface-dark-subtle">
+        <div className="well no-scrollbar mb-5 flex gap-1 overflow-x-auto rounded-full p-1">
           <button
             onClick={() => setScope("personal")}
-            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+            className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
               scope === "personal"
-                ? "bg-accent text-white"
-                : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
+                ? "bg-white text-neutral-900 shadow-[0_1px_2px_rgb(20_22_40/0.08),0_6px_14px_-8px_rgb(20_22_40/0.35)] dark:bg-white/[0.16] dark:text-white dark:shadow-none"
+                : "text-neutral-500 dark:text-neutral-400"
             }`}
           >
             Personal
@@ -61,10 +61,10 @@ export function Stats() {
               <button
                 key={g.id}
                 onClick={() => setScope(g.id)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${
                   scope === g.id
-                    ? "bg-accent text-white"
-                    : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
+                    ? "bg-white text-neutral-900 shadow-[0_1px_2px_rgb(20_22_40/0.08),0_6px_14px_-8px_rgb(20_22_40/0.35)] dark:bg-white/[0.16] dark:text-white dark:shadow-none"
+                    : "text-neutral-500 dark:text-neutral-400"
                 }`}
               >
                 <GroupIcon size={15} strokeWidth={2} />
@@ -175,7 +175,7 @@ function PersonalStats({
   return (
     <div className="flex flex-col gap-4">
       <Card>
-        <p className="mb-3 text-sm font-bold text-neutral-500 dark:text-neutral-400">Últimos 6 meses</p>
+        <p className="mb-3 eyebrow">Últimos 6 meses</p>
         <BarChart
           bars={bars}
           formatValue={(v) => formatCurrency(v, currency)}
@@ -196,7 +196,7 @@ function PersonalStats({
       {isCurrentMonth && recurring.length > 0 && (
         <Card>
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Gastos fijos de este mes</p>
+            <p className="eyebrow">Gastos fijos de este mes</p>
             <Link to="/gastos?tab=recurrentes" className="text-sm font-semibold text-accent">
               Ver
             </Link>
@@ -210,7 +210,7 @@ function PersonalStats({
       )}
       {selectedCategorySlices.length > 0 ? (
         <Card>
-          <p className="mb-3 text-sm font-bold text-neutral-500 dark:text-neutral-400">Por categoría ({selectedMonthLabel.toLowerCase()})</p>
+          <p className="mb-3 eyebrow">Por categoría ({selectedMonthLabel.toLowerCase()})</p>
           <CategoryBreakdown slices={selectedCategorySlices} currency={currency} />
         </Card>
       ) : (
@@ -270,7 +270,7 @@ function GroupStats({ groupId }: { groupId: string }) {
 
       {mostActive && (
         <Card className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300">
             <Trophy size={20} strokeWidth={1.8} />
           </span>
           <div>
@@ -282,7 +282,7 @@ function GroupStats({ groupId }: { groupId: string }) {
 
       <Card>
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Gasto por persona</p>
+          <p className="eyebrow">Gasto por persona</p>
           <div className="flex gap-4 text-xs font-medium text-neutral-400">
             <span>Pagado</span>
             <span>Le tocaba</span>
@@ -302,12 +302,12 @@ function GroupStats({ groupId }: { groupId: string }) {
       </Card>
 
       <Card>
-        <p className="mb-3 text-sm font-bold text-neutral-500 dark:text-neutral-400">Por categoría</p>
+        <p className="mb-3 eyebrow">Por categoría</p>
         <CategoryBreakdown slices={categorySlices} currency={group.currency} />
       </Card>
 
       <Card>
-        <p className="mb-2 text-sm font-bold text-neutral-500 dark:text-neutral-400">Balances</p>
+        <p className="mb-2 eyebrow">Balances</p>
         <div className="flex flex-col gap-1.5 text-sm">
           {balances.map((b) => {
             const m = activeMembers.find((x) => x.uid === b.uid);

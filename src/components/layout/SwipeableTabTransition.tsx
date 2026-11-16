@@ -17,7 +17,8 @@ const TABS: { path: string; Component: ComponentType }[] = [
 const RECOGNIZE_THRESHOLD = 10;
 const DIRECTION_RATIO = 1.5;
 const COMMIT_FRACTION = 0.2;
-const SETTLE_MS = 220;
+const SETTLE_MS = 260;
+const SETTLE_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 // Extra hold after navigating, with the already-loaded preview still covering
 // the screen, before handing off to the freshly-mounted real page — that
 // fresh mount re-subscribes to its data from scratch and briefly shows its
@@ -47,7 +48,10 @@ interface DragState {
   settling: boolean;
 }
 
-const SLIDE_BG = "bg-surface-light-subtle dark:bg-surface-dark";
+// No background of their own: both slides are see-through and travel side by
+// side over the app's fixed ambient backdrop (index.css, body::before), which
+// stays put while the pages move across it.
+const SLIDE_BG = "";
 
 /** Instagram-style paging: dragging horizontally slides the current page
  * out while the real destination page (mounted live, not a placeholder)
@@ -178,7 +182,7 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
                 position: "relative",
                 zIndex: 10,
                 transform: `translateX(${drag.dx}px)`,
-                transition: drag.settling ? `transform ${SETTLE_MS}ms ease-out` : "none",
+                transition: drag.settling ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : "none",
               }
             : undefined
         }
@@ -196,7 +200,7 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
             overflow: "hidden",
             pointerEvents: "none",
             transform: `translateX(${previewX}px)`,
-            transition: drag?.settling ? `transform ${SETTLE_MS}ms ease-out` : "none",
+            transition: drag?.settling ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : "none",
           }}
         >
           <previewTarget.Component />

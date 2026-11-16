@@ -24,7 +24,7 @@ export function CategoryBreakdown({ slices, currency = "EUR" }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+      <div className="flex h-3 w-full overflow-hidden rounded-full well">
         {sorted.map((slice) => (
           <div
             key={slice.categoryId}

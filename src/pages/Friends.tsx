@@ -111,7 +111,7 @@ export function Friends() {
               {error && <p className="text-sm font-medium text-negative">{error}</p>}
 
               {preview && (
-                <div className="flex items-center gap-3 rounded-2xl bg-accent-50 p-3.5 dark:bg-accent-900/20">
+                <div className="flex items-center gap-3 rounded-2xl bg-accent/10 p-3.5 dark:bg-accent/20">
                   <Avatar name={preview.name} color={preview.color} photoUrl={preview.photoUrl} size="sm" />
                   <p className="text-sm">
                     Vas a añadir a <span className="font-semibold">{preview.name}</span> como amigo
@@ -139,7 +139,7 @@ export function Friends() {
               <EmptyState icon={UserPlus} title="Sin amigos todavía" description="Añade a alguien con su código para poder incluirlo en tus grupos sin invitación." />
             ) : (
               <Card>
-                <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
+                <ul className="flex flex-col divide-y divide-black/[0.06] dark:divide-white/[0.08]">
                   {friends.map((f) => (
                     <li key={f.uid} className="flex items-center gap-3 py-2.5">
                       <Avatar name={f.name} color={f.color} photoUrl={f.photoUrl} size="sm" />
@@ -147,7 +147,7 @@ export function Friends() {
                       <button
                         onClick={() => setRemoving(f)}
                         aria-label={`Eliminar a ${f.name} de tus amigos`}
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 active:bg-neutral-100 dark:active:bg-neutral-800"
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-neutral-400 well-press"
                       >
                         <UserX size={16} strokeWidth={2.1} />
                       </button>

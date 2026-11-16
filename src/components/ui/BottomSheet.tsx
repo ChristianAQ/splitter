@@ -13,38 +13,39 @@ export function BottomSheet({ open, onClose, title, children }: Props) {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <div
-        className="absolute inset-0 bg-black/40 animate-fade-in"
-        onClick={onClose}
-        aria-hidden
-      />
+      <div className="absolute inset-0 animate-fade-in bg-neutral-950/35 backdrop-blur-[3px]" onClick={onClose} aria-hidden />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-3xl bg-white shadow-sheet animate-slide-up dark:bg-surface-dark-subtle sm:max-w-md sm:rounded-3xl sm:animate-scale-in"
+        className="glass-sheet relative flex max-h-[90vh] w-full animate-slide-up flex-col overflow-hidden rounded-t-[32px] border-b-0 shadow-sheet sm:max-w-md sm:animate-scale-in sm:rounded-[32px] sm:border-b"
       >
-        <div className="flex shrink-0 items-center justify-center pt-3 sm:hidden">
-          <div className="h-1.5 w-10 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+        <div className="flex shrink-0 items-center justify-center pt-2.5 sm:hidden">
+          <div className="h-1 w-9 rounded-full bg-neutral-900/15 dark:bg-white/20" />
         </div>
         {title && (
           <div className="flex shrink-0 items-center justify-between px-5 pb-2 pt-3">
-            <h2 className="text-lg font-bold">{title}</h2>
+            <h2 className="text-[19px] font-semibold tracking-tight">{title}</h2>
             <button
               onClick={onClose}
               aria-label="Cerrar"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 active:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400"
+              className="well well-press pressable flex h-8 w-8 items-center justify-center rounded-full text-neutral-500 dark:text-neutral-400"
             >
-              <X size={18} strokeWidth={2.25} />
+              <X size={16} strokeWidth={2.4} />
             </button>
           </div>
         )}

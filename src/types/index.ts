@@ -66,6 +66,11 @@ export interface UserProfile {
   // firestore.rules' top comment), and Storage now requires Blaze for a new
   // bucket. Absent means "show initials on the color swatch" (see Avatar).
   photoUrl?: string;
+  // Groups this user has put away for themselves ("Archivar para mí") —
+  // unlike Group.archivedAt, which the admin sets and closes the group for
+  // everyone, this only moves the group out of *my* active lists and can be
+  // undone at any time.
+  archivedGroupIds?: string[];
   createdAt: EpochMillis;
 }
 
@@ -117,6 +122,35 @@ export interface RecurringExpense {
   active: boolean;
   notes?: string;
   lastCompletedMonth?: string; // "YYYY-MM" of the most recent month checked off
+  createdAt: EpochMillis;
+  updatedAt: EpochMillis;
+}
+
+// ---------------------------------------------------------------------------
+// Debts & reminders ("Deudas" tab)
+// ---------------------------------------------------------------------------
+
+/** "owe": money I borrowed and have to give back. "owed": money I lent and
+ * am waiting to get back. "reminder": a payment I must not forget that
+ * isn't owed to anyone in particular (a fine, a deposit, a bill...). */
+export type DebtKind = "owe" | "owed" | "reminder";
+
+/** Private to its owner — `users/{uid}/debts/{id}`. Deliberately separate
+ * from PersonalExpense: borrowing or lending isn't spending, so none of
+ * this counts towards monthly totals or statistics. */
+export interface Debt {
+  id: string;
+  ownerId: string;
+  kind: DebtKind;
+  person?: string; // who I owe / who owes me; unused for reminders
+  concept?: string;
+  amount: number; // original amount, always positive
+  paidAmount: number; // returned so far (partial repayments); 0..amount
+  currency: Currency;
+  date: ISODate; // when the money changed hands / the reminder was noted
+  dueDate?: ISODate; // absent = "when I can"
+  notes?: string;
+  settledAt?: EpochMillis; // set once fully returned/paid
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
 }

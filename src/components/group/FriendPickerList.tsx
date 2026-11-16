@@ -21,7 +21,7 @@ export function FriendPickerList({ friends, selected, onToggle }: Props) {
             type="button"
             onClick={() => onToggle(f.uid)}
             className={`flex items-center gap-3 rounded-2xl border-2 p-3 text-left ${
-              isSelected ? "border-accent bg-accent-50 dark:bg-accent-900/20" : "border-transparent bg-neutral-50 dark:bg-neutral-800/60"
+              isSelected ? "border-accent bg-accent/10 dark:bg-accent/20" : "border-transparent well"
             }`}
           >
             <Avatar name={f.name} color={f.color} photoUrl={f.photoUrl} size="sm" />

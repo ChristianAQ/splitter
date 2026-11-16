@@ -98,7 +98,7 @@ export function CreateGroupSheet({ open, onClose }: Props) {
                 className={`flex h-11 w-11 items-center justify-center rounded-2xl border-2 ${
                   icon === key
                     ? "border-accent text-accent"
-                    : "border-transparent bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+                    : "border-transparent well text-neutral-500 dark:text-neutral-400"
                 }`}
               >
                 <Icon size={20} strokeWidth={1.8} />
@@ -121,7 +121,7 @@ export function CreateGroupSheet({ open, onClose }: Props) {
                 type="button"
                 onClick={() => setCurrency(c)}
                 className={`flex-1 rounded-2xl border py-2.5 text-sm font-semibold ${
-                  currency === c ? "border-accent bg-accent-50 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300" : "border-neutral-200 text-neutral-500 dark:border-neutral-700"
+                  currency === c ? "border-accent bg-accent/10 text-accent-700 dark:bg-accent/20 dark:text-accent-300" : "border-neutral-200 text-neutral-500 dark:border-neutral-700"
                 }`}
               >
                 {c}

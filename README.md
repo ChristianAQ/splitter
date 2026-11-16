@@ -22,7 +22,13 @@ sensible vive en `firestore.rules`; ver §4.
 - Autenticación por email/contraseña, perfil de usuario.
 - Gastos personales: crear/editar/eliminar, categorías, gastos futuros.
 - Gastos recurrentes (motor de próximas ocurrencias — ver §5).
+- Deudas y pendientes (pestaña «Deudas» de Gastos): dinero que debes, que
+  te deben, o un pago que no quieres olvidar — con fecha límite opcional
+  («cuando se pueda»), devoluciones parciales y aviso de vencidas en Inicio.
+  No cuentan como gasto ni entran en las estadísticas.
 - Grupos: crear, invitar por código, unirse, miembros, colores.
+- Archivar un grupo solo para ti (cualquier miembro, reversible) — distinto
+  de «Cerrar el grupo para todos», que solo puede hacer el admin.
 - Gastos de grupo: reparto igual y por importe exacto, validación de sumas.
 - Regla "solo el creador edita/elimina", **aplicada en Firestore Security
   Rules**, no solo en el frontend.
@@ -91,7 +97,7 @@ La lógica financiera (`src/domain/`) es la parte más importante de la
 aplicación y **no importa nada de Firebase ni de React** — son funciones
 puras (`splitEqual`, `computeBalances`, `optimizeSettlement`,
 `occurrencesInRange`...) que reciben datos y devuelven datos. Esto permite:
-1. Testearla exhaustivamente sin mocks (`npm run test`, 31 tests).
+1. Testearla exhaustivamente sin mocks (`npm run test`, 54 tests).
 2. Reutilizarla igual en cualquier punto de la app sin duplicar la lógica
    de reparto o de balances.
 3. Que un cliente manipulado nunca sea la fuente de verdad: el cliente
@@ -106,6 +112,7 @@ puras (`splitEqual`, `computeBalances`, `optimizeSettlement`,
 users/{uid}
 users/{uid}/personalExpenses/{expenseId}
 users/{uid}/recurringExpenses/{recurringId}
+users/{uid}/debts/{debtId}                → privado, misma regla que el resto de users/{uid}/**
 
 inviteCodes/{code}                        → { groupId, groupName, icon, color }
 groups/{groupId}                          → memberIds: string[] (denormalizado)
@@ -215,7 +222,7 @@ cambiar.
 
 ## 5. Lógica financiera (`src/domain/`)
 
-Todo cubierto por tests (`npm run test`, 31 tests, 4 ficheros):
+Todo cubierto por tests (`npm run test`, 54 tests, 6 ficheros):
 
 - **`split.ts`** — reparto igual (con reparto exacto del céntimo sobrante,
   nunca se "pierde" un céntimo) y reparto por importe exacto (valida que
@@ -228,6 +235,9 @@ Todo cubierto por tests (`npm run test`, 31 tests, 4 ficheros):
   *(nº de miembros con saldo distinto de cero) − 1* transferencias, que es
   el estándar de facto en este tipo de apps (el óptimo exacto es un
   problema NP-difícil de partición).
+- **`debts.ts`** — importe pendiente de una deuda (con devoluciones
+  parciales), estado de vencimiento, totales «debes / te deben» y orden de
+  la lista (vencidas primero, las sin fecha al final).
 - **`recurring.ts`** — genera las fechas de ocurrencia de un gasto
   recurrente dentro de un rango, respetando periodicidad
   (semanal/mensual/anual), día del mes con *clamp* de fin de mes (día 31

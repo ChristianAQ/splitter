@@ -15,6 +15,8 @@ import {
   removeMember,
   renameMember,
 } from "../../services/groups.service";
+import { setGroupArchivedForMe } from "../../services/users.service";
+import { formatCurrency } from "../../lib/format";
 import type { Group, GroupMember } from "../../types";
 
 interface Props {
@@ -22,9 +24,13 @@ interface Props {
   onClose: () => void;
   group: Group;
   members: GroupMember[];
+  /** Whether the signed-in user has this group in their personal archive. */
+  archivedForMe: boolean;
+  /** Their net balance in the group, to warn before archiving with debts open. */
+  myBalance: number;
 }
 
-export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
+export function GroupSettingsSheet({ open, onClose, group, members, archivedForMe, myBalance }: Props) {
   const { user } = useAuth();
   const { show } = useToast();
   const navigate = useNavigate();
@@ -32,6 +38,7 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
   const isArchived = Boolean(group.archivedAt);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState(false);
+  const [confirmArchiveForMe, setConfirmArchiveForMe] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<GroupMember | null>(null);
   const [renamingUid, setRenamingUid] = useState<string | null>(null);
@@ -60,15 +67,38 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
     }
   }
 
+  // Fires from both Enter and blur. Leaving the field empty or unchanged
+  // just closes it — it used to either stay stuck in edit mode (empty) or
+  // write and toast a no-op rename (unchanged); and since pressing Enter
+  // also blurs the input as it unmounts, the mode is cleared up front so
+  // the second call finds nothing to do.
   async function handleRename(uid: string) {
-    if (!renameValue.trim()) return;
+    if (renamingUid !== uid) return;
+    const next = renameValue.trim();
+    const current = members.find((m) => m.uid === uid)?.name;
+    setRenamingUid(null);
+    if (!next || next === current) return;
     try {
-      await renameMember(group.id, uid, renameValue.trim());
+      await renameMember(group.id, uid, next);
       show("Nombre actualizado", "success");
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo renombrar.", "error");
+    }
+  }
+
+  async function handleArchiveForMe(archived: boolean) {
+    if (!user) return;
+    setBusy(true);
+    try {
+      await setGroupArchivedForMe(user.uid, group.id, archived);
+      show(archived ? "Grupo archivado" : "El grupo vuelve a estar activo", "success");
+      onClose();
+      if (archived) navigate("/grupos");
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo actualizar.", "error");
     } finally {
-      setRenamingUid(null);
+      setBusy(false);
+      setConfirmArchiveForMe(false);
     }
   }
 
@@ -137,8 +167,8 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
         <div className="flex flex-col gap-6 pb-2 pt-1">
           <section>
             <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Código de invitación</p>
-            <div className="flex items-center gap-2 rounded-2xl bg-neutral-50 p-3.5 dark:bg-neutral-800/60">
-              <span className="flex-1 text-xl font-bold tracking-[0.2em]">{group.inviteCode}</span>
+            <div className="flex items-center gap-2 well rounded-[18px] p-3.5">
+              <span className="flex-1 text-xl font-semibold tracking-[0.2em]">{group.inviteCode}</span>
               <Button size="icon" variant="secondary" onClick={handleCopyCode} aria-label="Copiar código">
                 <Copy size={17} strokeWidth={2.1} />
               </Button>
@@ -161,7 +191,7 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
 
           <section>
             <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Participantes</p>
-            <ul className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
+            <ul className="flex flex-col divide-y divide-black/[0.06] dark:divide-white/[0.08]">
               {members.map((m) => (
                 <li key={m.uid} className="flex items-center gap-3 py-2.5">
                   <Avatar name={m.name} color={m.color} photoUrl={m.photoUrl} size="sm" />
@@ -172,7 +202,7 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
                       onChange={(e) => setRenameValue(e.target.value)}
                       onBlur={() => handleRename(m.uid)}
                       onKeyDown={(e) => e.key === "Enter" && handleRename(m.uid)}
-                      className="flex-1 rounded-lg border border-accent bg-white px-2 py-1 text-sm dark:bg-neutral-900"
+                      className="flex-1 rounded-lg field !border-accent px-2 py-1 text-sm outline-none"
                     />
                   ) : (
                     <span className="flex-1 truncate text-sm font-medium">
@@ -204,6 +234,21 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
           </section>
 
           <section className="flex flex-col gap-2">
+            {!isArchived &&
+              (archivedForMe ? (
+                <Button variant="secondary" onClick={() => handleArchiveForMe(false)} disabled={busy}>
+                  Desarchivar
+                </Button>
+              ) : (
+                <>
+                  <Button variant="secondary" onClick={() => setConfirmArchiveForMe(true)}>
+                    Archivar para mí
+                  </Button>
+                  <p className="-mt-0.5 mb-1 px-1 text-xs text-neutral-400">
+                    Lo quita de tus grupos activos. Los demás lo siguen viendo igual y puedes recuperarlo cuando quieras.
+                  </p>
+                </>
+              ))}
             {isArchived ? (
               isAdmin && (
                 <Button variant="danger" onClick={() => setConfirmDelete(true)}>
@@ -211,11 +256,11 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
                 </Button>
               )
             ) : isAdmin ? (
-              <Button variant="secondary" onClick={() => setConfirmArchive(true)}>
-                Archivar grupo
+              <Button variant="ghost" className="!text-negative" onClick={() => setConfirmArchive(true)}>
+                Cerrar el grupo para todos
               </Button>
             ) : (
-              <Button variant="secondary" onClick={() => setConfirmLeave(true)}>
+              <Button variant="ghost" className="!text-negative" onClick={() => setConfirmLeave(true)}>
                 Salir del grupo
               </Button>
             )}
@@ -229,15 +274,17 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
         description="Dejarás de ver los gastos nuevos de este grupo. Tu historial de gastos y pagos se conservará."
         confirmLabel="Salir"
         destructive
+        busy={busy}
         onConfirm={handleLeave}
         onCancel={() => setConfirmLeave(false)}
       />
       <ConfirmDialog
         open={confirmArchive}
-        title="¿Archivar grupo?"
-        description="El grupo dejará de aparecer activo para todos los miembros. Nada se elimina — podrás eliminarlo del todo después si quieres."
-        confirmLabel="Archivar"
+        title="¿Cerrar el grupo para todos?"
+        description="Quedará archivado y en solo lectura para todos los miembros, y no se puede reabrir. Si solo quieres dejar de verlo tú, usa «Archivar para mí»."
+        confirmLabel="Cerrar grupo"
         destructive
+        busy={busy}
         onConfirm={handleArchive}
         onCancel={() => setConfirmArchive(false)}
       />
@@ -247,17 +294,32 @@ export function GroupSettingsSheet({ open, onClose, group, members }: Props) {
         description="Se borrarán sus gastos, pagos e historial para siempre. Esta acción no se puede deshacer."
         confirmLabel="Eliminar"
         destructive
+        busy={busy}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}
-      >
-        {busy && <p className="mt-2 text-sm text-neutral-500">Eliminando…</p>}
-      </ConfirmDialog>
+      />
+      <ConfirmDialog
+        open={confirmArchiveForMe}
+        title="¿Archivar este grupo?"
+        description={
+          Math.abs(myBalance) < 0.005
+            ? "Estás al día en este grupo. Pasará a «Archivado» y podrás recuperarlo cuando quieras."
+            : myBalance < 0
+              ? `Ojo: aún debes ${formatCurrency(-myBalance, group.currency)} en este grupo. Puedes archivarlo igualmente; la deuda seguirá ahí.`
+              : `Aún te deben ${formatCurrency(myBalance, group.currency)} en este grupo. Puedes archivarlo igualmente; el saldo seguirá ahí.`
+        }
+        confirmLabel="Archivar"
+        busy={busy}
+        onConfirm={() => handleArchiveForMe(true)}
+        onCancel={() => setConfirmArchiveForMe(false)}
+      />
       <ConfirmDialog
         open={Boolean(confirmRemove)}
         title={`¿Expulsar a ${confirmRemove?.name}?`}
         description="Dejará de ver los gastos nuevos del grupo. Su historial se conservará."
         confirmLabel="Expulsar"
         destructive
+        busy={busy}
         onConfirm={handleRemove}
         onCancel={() => setConfirmRemove(null)}
       />

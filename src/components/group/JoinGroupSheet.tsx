@@ -89,7 +89,7 @@ export function JoinGroupSheet({ open, onClose }: Props) {
         {error && <p className="text-sm font-medium text-negative">{error}</p>}
 
         {preview && (
-          <div className="flex items-center gap-3 rounded-2xl bg-accent-50 p-3.5 dark:bg-accent-900/20">
+          <div className="flex items-center gap-3 rounded-2xl bg-accent/10 p-3.5 dark:bg-accent/20">
             <div
               className="flex h-11 w-11 items-center justify-center rounded-2xl"
               style={{ backgroundColor: `${preview.color}33`, color: preview.color }}

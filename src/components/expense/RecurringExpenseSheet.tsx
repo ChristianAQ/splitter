@@ -132,7 +132,7 @@ export function RecurringExpenseSheet({ open, onClose, recurring }: Props) {
                 onClick={() => setPeriodicity(p)}
                 className={`flex-1 rounded-2xl border py-2.5 text-sm font-semibold ${
                   periodicity === p
-                    ? "border-accent bg-accent-50 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300"
+                    ? "border-accent bg-accent/10 text-accent-700 dark:bg-accent/20 dark:text-accent-300"
                     : "border-neutral-200 text-neutral-500 dark:border-neutral-700"
                 }`}
               >

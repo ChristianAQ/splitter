@@ -23,7 +23,7 @@ export function GroupCard({ groupId, name, icon, color, balance, currency, archi
   return (
     <Link
       to={`/grupos/${groupId}`}
-      className={`flex items-center gap-3.5 rounded-2xl bg-white p-4 shadow-card active:scale-[0.99] transition-transform dark:bg-surface-dark-subtle ${
+      className={`flex items-center gap-3.5 surface rounded-[22px] p-4 pressable ${
         archived ? "opacity-70" : ""
       }`}
     >

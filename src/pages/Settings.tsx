@@ -119,7 +119,7 @@ export function Settings() {
             />
             <div className="flex flex-col items-center gap-3 px-6 pb-7">
               <div className="relative -mt-12">
-                <div className="rounded-full ring-4 ring-white dark:ring-surface-dark-subtle">
+                <div className="rounded-full ring-4 ring-white/70 dark:ring-white/10">
                   <Avatar name={profile.name} color={profile.color} photoUrl={profile.photoUrl} size="xl" />
                 </div>
                 <button
@@ -167,7 +167,7 @@ export function Settings() {
                     type="button"
                     onClick={handleSaveName}
                     aria-label="Guardar nombre"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-positive-light text-positive active:scale-90 dark:bg-positive/15 dark:text-positive-dark"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-positive/10 text-positive active:scale-90 dark:bg-positive/15 dark:text-positive-dark"
                   >
                     <Check size={16} strokeWidth={2.5} />
                   </button>
@@ -175,7 +175,7 @@ export function Settings() {
                     type="button"
                     onClick={handleCancelName}
                     aria-label="Cancelar"
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 active:scale-90 dark:bg-neutral-800 dark:text-neutral-400"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full well text-neutral-500 active:scale-90 dark:text-neutral-400"
                   >
                     <X size={16} strokeWidth={2.5} />
                   </button>
@@ -183,7 +183,7 @@ export function Settings() {
               ) : (
                 <button
                   onClick={() => setEditingName(true)}
-                  className="flex items-center gap-1.5 rounded-full px-2 py-0.5 active:bg-neutral-100 dark:active:bg-neutral-800"
+                  className="flex items-center gap-1.5 rounded-full px-2 py-0.5 well-press"
                 >
                   <h1 className="text-lg font-bold">{profile.name}</h1>
                   {savingName ? (
@@ -198,15 +198,15 @@ export function Settings() {
           </Card>
 
           <section>
-            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Tu código de amigo</h2>
+            <h2 className="mb-2 px-1 eyebrow">Tu código de amigo</h2>
             <FriendCodeCard />
             <p className="mt-1.5 px-1 text-xs text-neutral-400">Compártelo para que alguien te añada como amigo.</p>
           </section>
 
           <section>
-            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Apariencia</h2>
+            <h2 className="mb-2 px-1 eyebrow">Apariencia</h2>
             <Card>
-              <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
+              <div className="flex flex-col divide-y divide-black/[0.06] dark:divide-white/[0.08]">
                 <div className="pb-4">
                   <SettingLabel icon={Palette}>Color identificativo</SettingLabel>
                   <ColorPicker value={profile.color} onChange={handleColorChange} />
@@ -240,7 +240,7 @@ export function Settings() {
           </section>
 
           <section>
-            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">General</h2>
+            <h2 className="mb-2 px-1 eyebrow">General</h2>
             <Card>
               <SettingLabel icon={Coins}>Moneda</SettingLabel>
               <div className="flex gap-2">
@@ -254,9 +254,9 @@ export function Settings() {
           </section>
 
           <section>
-            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Privacidad</h2>
+            <h2 className="mb-2 px-1 eyebrow">Privacidad</h2>
             <Card className="flex items-start gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-positive-light text-positive dark:bg-positive/15 dark:text-positive-dark">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-positive/10 text-positive dark:bg-positive/15 dark:text-positive-dark">
                 <ShieldCheck size={18} strokeWidth={2.1} />
               </span>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
@@ -267,13 +267,13 @@ export function Settings() {
           </section>
 
           <section>
-            <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Cuenta</h2>
+            <h2 className="mb-2 px-1 eyebrow">Cuenta</h2>
             <Card className="flex flex-col divide-y divide-neutral-100 p-0 dark:divide-neutral-800">
               <button
                 onClick={() => setConfirmSignOut(true)}
-                className="flex items-center gap-3 p-4 text-left active:bg-neutral-50 dark:active:bg-neutral-800/60"
+                className="flex items-center gap-3 p-4 text-left well-press"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300">
                   <LogOut size={15} strokeWidth={2.1} />
                 </span>
                 <span className="text-sm font-semibold">Cerrar sesión</span>
@@ -302,7 +302,7 @@ export function Settings() {
 function SettingLabel({ icon: Icon, children }: { icon: typeof Palette; children: ReactNode }) {
   return (
     <p className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-600 dark:text-neutral-300">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300">
         <Icon size={14} strokeWidth={2.1} />
       </span>
       {children}
@@ -316,7 +316,7 @@ function SegmentButton({ active, onClick, children }: { active: boolean; onClick
       onClick={onClick}
       className={`flex-1 rounded-2xl border py-2.5 text-sm font-semibold transition-colors ${
         active
-          ? "border-accent bg-accent-50 text-accent-700 dark:bg-accent-900/30 dark:text-accent-300"
+          ? "border-accent bg-accent/10 text-accent-700 dark:bg-accent/20 dark:text-accent-300"
           : "border-neutral-200 text-neutral-500 dark:border-neutral-700"
       }`}
     >

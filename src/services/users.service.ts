@@ -1,4 +1,4 @@
-import { deleteField, doc, onSnapshot, updateDoc, type Unsubscribe } from "firebase/firestore";
+import { arrayRemove, arrayUnion, deleteField, doc, onSnapshot, updateDoc, type Unsubscribe } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
@@ -23,6 +23,7 @@ export function subscribeUserProfile(
         theme: data.theme,
         accentColor: data.accentColor,
         photoUrl: data.photoUrl,
+        archivedGroupIds: Array.isArray(data.archivedGroupIds) ? data.archivedGroupIds : [],
         createdAt: tsToMillis(data.createdAt),
       });
     },
@@ -45,6 +46,19 @@ export async function updateUserProfile(
     const payload: Record<string, unknown> = { ...rest };
     if (photoUrl !== undefined) payload.photoUrl = photoUrl === null ? deleteField() : photoUrl;
     await updateDoc(doc(db, "users", uid), payload);
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}
+
+/** Personal, reversible archive: only touches the caller's own profile, so
+ * any member can do it (no admin rights needed) and nobody else's view of
+ * the group changes. */
+export async function setGroupArchivedForMe(uid: string, groupId: string, archived: boolean) {
+  try {
+    await updateDoc(doc(db, "users", uid), {
+      archivedGroupIds: archived ? arrayUnion(groupId) : arrayRemove(groupId),
+    });
   } catch (error) {
     throw toFriendlyError(error);
   }

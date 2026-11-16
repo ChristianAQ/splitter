@@ -46,7 +46,7 @@ export function RecurringBudgetCard({ recurring, month, uid, currency }: Props) 
       {hasAvailable ? (
         <div
           className={`rounded-xl2 p-4 ${
-            positive ? "bg-positive-light dark:bg-positive/15" : "bg-negative-light dark:bg-negative/15"
+            positive ? "bg-positive/10 dark:bg-positive/15" : "bg-negative/10 dark:bg-negative/15"
           }`}
         >
           <p className={`text-xs font-semibold ${positive ? "text-positive dark:text-positive-dark" : "text-negative dark:text-negative-dark"}`}>

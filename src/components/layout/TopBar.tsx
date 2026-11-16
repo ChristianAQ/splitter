@@ -11,7 +11,7 @@ interface Props {
   right?: ReactNode;
 }
 
-const ROW_CLASSNAME = "flex items-center gap-3 px-4 pb-3";
+const ROW_CLASSNAME = "mx-auto flex max-w-lg items-center gap-3 px-4 pb-5";
 const ROW_STYLE = { paddingTop: "calc(env(safe-area-inset-top) + 14px)" };
 
 export function TopBar({ title, subtitle, onBack, right }: Props) {
@@ -26,14 +26,14 @@ export function TopBar({ title, subtitle, onBack, right }: Props) {
           <button
             onClick={() => navigate(-1)}
             aria-label="Volver"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-neutral-600 shadow-card active:scale-95 dark:bg-neutral-800 dark:text-neutral-300"
+            className="well well-press pressable flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-700 dark:text-neutral-200"
           >
             <ArrowLeft size={19} strokeWidth={2.25} />
           </button>
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[22px] font-bold tracking-tight">{title}</h1>
-          {subtitle && <p className="mt-0.5 truncate text-sm font-medium text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
+          <h1 className={`truncate font-semibold tracking-[-0.03em] ${onBack ? "text-[20px]" : "text-[24px]"}`}>{title}</h1>
+          {subtitle && <p className="truncate text-[13px] text-neutral-500 dark:text-neutral-400">{subtitle}</p>}
         </div>
         {right}
       </div>
@@ -55,7 +55,15 @@ export function TopBar({ title, subtitle, onBack, right }: Props) {
        * this same fixed stack (rather than as a separate sticky sibling in
        * AppLayout, as it used to be) so the two can never overlap: both
        * stack tops are always in sync since they share one spacer. */}
-      <header className="fixed inset-x-0 top-0 z-30 bg-surface-light-subtle/90 backdrop-blur-lg dark:bg-surface-dark/90">
+      <header
+        className="fixed inset-x-0 top-0 z-30 bg-surface-light-subtle/55 backdrop-blur-2xl backdrop-saturate-150 dark:bg-surface-dark/55"
+        // Fades the frosted strip out at its lower edge instead of ending
+        // on a hard line — content scrolls up *into* the blur.
+        style={{
+          WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 14px), transparent)",
+          maskImage: "linear-gradient(to bottom, black calc(100% - 14px), transparent)",
+        }}
+      >
         {stack}
       </header>
     </>

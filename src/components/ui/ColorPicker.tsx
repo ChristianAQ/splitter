@@ -37,7 +37,7 @@ export function ColorPicker({ value, onChange }: Props) {
         <div
           aria-hidden
           className={`flex h-9 w-9 items-center justify-center rounded-full border-2 ${
-            isCustom ? "border-neutral-900 dark:border-white" : "border-transparent bg-neutral-100 dark:bg-neutral-800"
+            isCustom ? "border-neutral-900 dark:border-white" : "border-transparent well"
           }`}
           style={isCustom ? { backgroundColor: value } : undefined}
         >

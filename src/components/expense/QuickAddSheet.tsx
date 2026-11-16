@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, User, UserPlus } from "lucide-react";
+import { ChevronRight, HandCoins, User, UserPlus } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { useGroups } from "../../hooks/useGroups";
 import { groupIconComponent } from "../../lib/groupIcons";
 import { PersonalExpenseSheet } from "./PersonalExpenseSheet";
+import { DebtSheet } from "../debt/DebtSheet";
 import { GroupExpenseSheetLauncher } from "./GroupExpenseSheetLauncher";
 
 interface Props {
@@ -18,7 +19,7 @@ interface Props {
 export function QuickAddSheet({ open, onClose }: Props) {
   const { groups } = useGroups();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"choose" | "personal" | string>("choose");
+  const [mode, setMode] = useState<"choose" | "personal" | "debt" | string>("choose");
 
   function handleClose() {
     setMode("choose");
@@ -28,6 +29,9 @@ export function QuickAddSheet({ open, onClose }: Props) {
   if (mode === "personal") {
     return <PersonalExpenseSheet open onClose={handleClose} />;
   }
+  if (mode === "debt") {
+    return <DebtSheet open onClose={handleClose} />;
+  }
   if (mode !== "choose") {
     return <GroupExpenseSheetLauncher groupId={mode} onClose={handleClose} />;
   }
@@ -36,23 +40,34 @@ export function QuickAddSheet({ open, onClose }: Props) {
     <BottomSheet open={open} onClose={onClose} title="Añadir gasto">
       <div className="flex flex-col gap-5 pb-2">
         <div>
-          <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Personal</h2>
-          <button
-            onClick={() => setMode("personal")}
-            className="flex w-full items-center gap-3 rounded-2xl border-2 border-accent-100 bg-accent-50/60 p-4 text-left active:bg-accent-50 dark:border-accent-900/40 dark:bg-accent-900/10 dark:active:bg-accent-900/20"
-          >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-100 text-accent dark:bg-accent-900/40 dark:text-accent-300">
-              <User size={19} strokeWidth={1.8} />
-            </span>
-            <div>
-              <p className="font-semibold">Gasto personal</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Solo tuyo, en tu zona privada</p>
-            </div>
-          </button>
+          <h2 className="mb-2 px-1 eyebrow">Personal</h2>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setMode("personal")}
+              className="pressable flex w-full items-center gap-3 rounded-[22px] border border-accent/25 bg-accent/[0.08] p-4 text-left"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/15 text-accent dark:bg-accent/25 dark:text-accent-300">
+                <User size={19} strokeWidth={1.8} />
+              </span>
+              <div>
+                <p className="font-semibold">Gasto personal</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Solo tuyo, en tu zona privada</p>
+              </div>
+            </button>
+            <button onClick={() => setMode("debt")} className="well well-press pressable flex w-full items-center gap-3 rounded-[22px] p-4 text-left">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-300">
+                <HandCoins size={19} strokeWidth={1.8} />
+              </span>
+              <div>
+                <p className="font-semibold">Préstamo o pago pendiente</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">Dinero que debes, que te deben o que no quieres olvidar</p>
+              </div>
+            </button>
+          </div>
         </div>
 
         <div>
-          <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-neutral-400">Grupos</h2>
+          <h2 className="mb-2 px-1 eyebrow">Grupos</h2>
           {groups.length === 0 ? (
             <button
               type="button"
@@ -62,7 +77,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
               }}
               className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 p-4 text-left active:bg-neutral-50 dark:border-neutral-700 dark:active:bg-neutral-800/60"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full well text-neutral-500 dark:text-neutral-400">
                 <UserPlus size={19} strokeWidth={1.8} />
               </span>
               <div className="min-w-0 flex-1">
@@ -79,7 +94,7 @@ export function QuickAddSheet({ open, onClose }: Props) {
                   <button
                     key={g.id}
                     onClick={() => setMode(g.id)}
-                    className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-4 text-left active:bg-neutral-100 dark:bg-neutral-800/60 dark:active:bg-neutral-800"
+                    className="flex items-center gap-3 well rounded-[18px] p-4 text-left well-press"
                   >
                     <span
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"

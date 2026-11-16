@@ -27,7 +27,7 @@ export function PersonalExpenseCard({ expense, onClick, onMarkDone }: Props) {
       <button
         type="button"
         onClick={onClick}
-        className="flex w-full min-w-0 flex-1 items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card active:scale-[0.99] transition-transform dark:bg-surface-dark-subtle"
+        className="flex w-full min-w-0 flex-1 items-center gap-3 surface rounded-[22px] p-3.5 text-left pressable"
       >
         <div
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"

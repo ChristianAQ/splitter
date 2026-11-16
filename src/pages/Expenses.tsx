@@ -11,6 +11,8 @@ import { CardListSkeleton } from "../components/ui/Skeleton";
 import { Collapsible } from "../components/ui/Collapsible";
 import { EmptyState } from "../components/ui/EmptyState";
 import { Button } from "../components/ui/Button";
+import { Segmented } from "../components/ui/Segmented";
+import { DebtsTab } from "../components/debt/DebtsTab";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
@@ -21,9 +23,15 @@ import { formatCurrency, formatMonth } from "../lib/format";
 import { todayISO } from "../domain/date";
 import type { PersonalExpense, RecurringExpense } from "../types";
 
-type Tab = "pasados" | "proximos" | "recurrentes";
+type Tab = "pasados" | "proximos" | "recurrentes" | "deudas";
 
-const TABS: Tab[] = ["pasados", "proximos", "recurrentes"];
+const TAB_OPTIONS: [Tab, string][] = [
+  ["pasados", "Hechos"],
+  ["proximos", "Próximos"],
+  ["recurrentes", "Fijos"],
+  ["deudas", "Deudas"],
+];
+const TABS = TAB_OPTIONS.map(([key]) => key);
 
 const PERIODICITY_LABEL: Record<string, string> = { weekly: "Semanal", monthly: "Mensual", yearly: "Anual" };
 
@@ -86,27 +94,7 @@ export function Expenses() {
         }
       />
       <PageContainer>
-        <div className="mb-5 flex gap-1 rounded-2xl bg-white p-1 shadow-card dark:bg-surface-dark-subtle">
-          {(
-            [
-              ["pasados", "Realizados"],
-              ["proximos", "Próximos"],
-              ["recurrentes", "Recurrentes"],
-            ] as [Tab, string][]
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors ${
-                tab === key
-                  ? "bg-accent text-white"
-                  : "text-neutral-500 active:bg-neutral-100 dark:text-neutral-400 dark:active:bg-neutral-800"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Segmented options={TAB_OPTIONS} value={tab} onChange={setTab} className="mb-5" label="Secciones de gastos" />
 
         {tab === "pasados" &&
           (loading ? (
@@ -129,7 +117,7 @@ export function Expenses() {
           ) : grouped.future.length === 0 ? (
             <EmptyState icon={Calendar} title="Sin gastos próximos" description="Los gastos con fecha futura aparecerán aquí." />
           ) : (
-            <div className="flex flex-col gap-2.5">
+            <div className="stagger flex flex-col gap-2.5">
               {grouped.future.map((e) => (
                 <PersonalExpenseCard
                   key={e.id}
@@ -151,12 +139,12 @@ export function Expenses() {
             />
 
             <div className="mt-1 flex items-center justify-between">
-              <h2 className="text-sm font-bold text-neutral-500 dark:text-neutral-400">Tus gastos recurrentes</h2>
+              <h2 className="eyebrow">Tus gastos recurrentes</h2>
               {recurring.length > 0 && (
                 <button
                   onClick={() => setEditingRecurring(null)}
                   aria-label="Nuevo gasto recurrente"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-50 text-accent active:scale-95 dark:bg-accent-900/30 dark:text-accent-300"
+                  className="flex h-8 w-8 items-center justify-center rounded-full pressable bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300"
                 >
                   <Plus size={17} strokeWidth={2.5} />
                 </button>
@@ -198,9 +186,9 @@ export function Expenses() {
                       </button>
                       <button
                         onClick={() => setEditingRecurring(r)}
-                        className="flex w-full min-w-0 flex-1 items-center gap-3 rounded-2xl bg-white p-3.5 text-left shadow-card dark:bg-surface-dark-subtle"
+                        className="flex w-full min-w-0 flex-1 items-center gap-3 surface rounded-[22px] p-3.5 text-left"
                       >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full well text-neutral-500 dark:text-neutral-400">
                           <Repeat size={17} strokeWidth={1.8} />
                         </span>
                         <div className="min-w-0 flex-1">
@@ -219,6 +207,8 @@ export function Expenses() {
             </div>
           </div>
         )}
+
+        {tab === "deudas" && <DebtsTab />}
       </PageContainer>
 
       <PersonalExpenseSheet open={Boolean(editingExpense)} onClose={() => setEditingExpense(null)} expense={editingExpense ?? undefined} />
@@ -268,7 +258,7 @@ function MonthlyList({
             </span>
           }
         >
-          <div className="flex flex-col gap-2.5 pb-1">
+          <div className="stagger flex flex-col gap-2.5 pb-1">
             {items.map((e) => (
               <PersonalExpenseCard key={e.id} expense={e} onClick={() => onSelect(e)} />
             ))}

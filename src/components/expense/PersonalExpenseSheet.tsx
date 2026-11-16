@@ -55,7 +55,7 @@ export function PersonalExpenseSheet({ open, onClose, expense }: Props) {
       if (expense) {
         await updatePersonalExpense(user.uid, expense.id, {
           amount: amountValue,
-          currency: profile.currency,
+          currency: expense.currency,
           description: description.trim(),
           categoryId: category,
           date,
@@ -100,7 +100,7 @@ export function PersonalExpenseSheet({ open, onClose, expense }: Props) {
   return (
     <BottomSheet open={open} onClose={onClose} title={expense ? "Editar gasto" : "Nuevo gasto"}>
       <div className="flex flex-col gap-5 pb-2 pt-1">
-        <AmountInput value={amount} onChange={setAmount} currency={profile?.currency} autoFocus large />
+        <AmountInput value={amount} onChange={setAmount} currency={expense?.currency ?? profile?.currency} autoFocus large />
         <Input
           label="Descripción"
           placeholder="Ej. Compra semanal"

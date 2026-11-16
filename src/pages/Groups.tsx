@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Link2, Plus, UserPlus, Users } from "lucide-react";
+import { Archive, ArchiveRestore, Link2, Plus, UserPlus, Users } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { GroupCard } from "../components/group/GroupCard";
@@ -14,6 +14,8 @@ import { BottomSheet } from "../components/ui/BottomSheet";
 import { CreateGroupSheet } from "../components/group/CreateGroupSheet";
 import { JoinGroupSheet } from "../components/group/JoinGroupSheet";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { setGroupArchivedForMe } from "../services/users.service";
 import { useGroups } from "../hooks/useGroups";
 import { useGroupsSummary } from "../hooks/useGroupsSummary";
 import { useFriends } from "../hooks/useFriends";
@@ -22,7 +24,8 @@ import type { Friend, Group } from "../types";
 
 export function Groups() {
   const { profile } = useAuth();
-  const { groups, archivedGroups, loading } = useGroups();
+  const { show } = useToast();
+  const { groups, archivedGroups, archivedForMeIds, loading } = useGroups();
   const { friends, loading: friendsLoading } = useFriends();
   const allGroups = useMemo(() => [...groups, ...archivedGroups], [groups, archivedGroups]);
   const summaries = useGroupsSummary(allGroups, profile?.uid);
@@ -46,6 +49,16 @@ export function Groups() {
     };
   }, [groups, summaries]);
 
+  async function handleArchiveForMe(group: Group, archived: boolean) {
+    if (!profile) return;
+    try {
+      await setGroupArchivedForMe(profile.uid, group.id, archived);
+      show(archived ? `«${group.name}» archivado` : `«${group.name}» vuelve a estar activo`, "success");
+    } catch (err) {
+      show(err instanceof Error ? err.message : "No se pudo actualizar.", "error");
+    }
+  }
+
   const sharedGroups = useMemo(
     () => (selectedFriend ? allGroups.filter((g) => g.memberIds.includes(selectedFriend.uid)) : []),
     [allGroups, selectedFriend]
@@ -62,7 +75,7 @@ export function Groups() {
             <Link
               to="/amigos"
               aria-label="Amigos"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-900 active:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-50 dark:active:bg-neutral-700"
+              className="flex h-11 w-11 items-center justify-center well well-press pressable rounded-full text-neutral-900 dark:text-neutral-50"
             >
               <UserPlus size={19} strokeWidth={2.1} />
             </Link>
@@ -107,9 +120,9 @@ export function Groups() {
               ) : friends.length === 0 ? (
                 <Link
                   to="/amigos"
-                  className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-card transition-transform active:scale-[0.98] dark:bg-surface-dark-subtle"
+                  className="flex items-center gap-3 surface rounded-[22px] p-4 pressable"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent dark:bg-accent-900/30 dark:text-accent-300">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent dark:bg-accent/20 dark:text-accent-300">
                     <UserPlus size={18} strokeWidth={2} />
                   </span>
                   <div>
@@ -141,10 +154,10 @@ export function Groups() {
                 <div className="flex flex-col gap-4">
                   {pending.length > 0 && (
                     <div>
-                      <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-neutral-400">
+                      <h3 className="mb-2 eyebrow">
                         Pendientes de liquidar ({pending.length})
                       </h3>
-                      <div className="flex flex-col gap-2.5">
+                      <div className="stagger flex flex-col gap-2.5">
                         {pending.map((g) => (
                           <GroupCard
                             key={g.id}
@@ -162,18 +175,33 @@ export function Groups() {
 
                   {settled.length > 0 && (
                     <div>
-                      <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-neutral-400">Saldados ({settled.length})</h3>
-                      <div className="flex flex-col gap-2.5">
+                      <h3 className="mb-2 eyebrow">Saldados ({settled.length})</h3>
+                      <div className="stagger flex flex-col gap-2.5">
                         {settled.map((g) => (
-                          <GroupCard
-                            key={g.id}
-                            groupId={g.id}
-                            name={g.name}
-                            icon={g.icon}
-                            color={g.color}
-                            balance={summaries[g.id]?.balance ?? 0}
-                            currency={g.currency}
-                          />
+                          <div key={g.id} className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <GroupCard
+                                groupId={g.id}
+                                name={g.name}
+                                icon={g.icon}
+                                color={g.color}
+                                balance={summaries[g.id]?.balance ?? 0}
+                                currency={g.currency}
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              // Not until this group's balance has actually loaded —
+                              // every group reads as "settled" for a moment before.
+                              disabled={!summaries[g.id]}
+                              onClick={() => handleArchiveForMe(g, true)}
+                              aria-label={`Archivar ${g.name}`}
+                              title="Archivar"
+                              className="well well-press pressable flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-500 dark:text-neutral-400"
+                            >
+                              <Archive size={17} strokeWidth={2} />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -186,16 +214,32 @@ export function Groups() {
               <Collapsible title={`Archivado (${archivedGroups.length})`} defaultOpen={false}>
                 <div className="flex flex-col gap-2.5">
                   {archivedGroups.map((g) => (
-                    <GroupCard
-                      key={g.id}
-                      groupId={g.id}
-                      name={g.name}
-                      icon={g.icon}
-                      color={g.color}
-                      balance={summaries[g.id]?.balance ?? 0}
-                      currency={g.currency}
-                      archived
-                    />
+                    <div key={g.id} className="flex items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <GroupCard
+                          groupId={g.id}
+                          name={g.name}
+                          icon={g.icon}
+                          color={g.color}
+                          balance={summaries[g.id]?.balance ?? 0}
+                          currency={g.currency}
+                          archived
+                        />
+                      </div>
+                      {/* Only the personal archive can be undone — a group its
+                       * admin closed for everyone stays closed. */}
+                      {!g.archivedAt && (
+                        <button
+                          type="button"
+                          onClick={() => handleArchiveForMe(g, false)}
+                          aria-label={`Desarchivar ${g.name}`}
+                          title="Desarchivar"
+                          className="well well-press pressable flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-500 dark:text-neutral-400"
+                        >
+                          <ArchiveRestore size={17} strokeWidth={2} />
+                        </button>
+                      )}
+                    </div>
                   ))}
                 </div>
               </Collapsible>
@@ -220,7 +264,7 @@ export function Groups() {
                     key={g.id}
                     to={`/grupos/${g.id}`}
                     onClick={() => setSelectedFriend(null)}
-                    className="flex items-center gap-3 rounded-2xl bg-neutral-50 p-3.5 transition-transform active:scale-[0.98] dark:bg-neutral-800/60"
+                    className="flex items-center gap-3 well rounded-[18px] p-3.5 pressable"
                   >
                     <span
                       className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl"
@@ -229,7 +273,7 @@ export function Groups() {
                       <GroupIcon size={18} strokeWidth={1.8} />
                     </span>
                     <p className="flex-1 truncate font-semibold">{g.name}</p>
-                    {g.archivedAt && <Badge>Archivado</Badge>}
+                    {(g.archivedAt || archivedForMeIds.has(g.id)) && <Badge>Archivado</Badge>}
                   </Link>
                 );
               })

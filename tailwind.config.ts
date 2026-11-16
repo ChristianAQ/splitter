@@ -48,8 +48,8 @@ export default {
         negative: { DEFAULT: "#E11D48", light: "#FFE4E6", dark: "#FB7185" },
         surface: {
           light: "#FFFFFF",
-          "light-subtle": "#F4F5F8",
-          dark: "#12141C",
+          "light-subtle": "#F3F4F8",
+          dark: "#0D0E14",
           "dark-subtle": "#1A1D27",
         },
       },
@@ -65,9 +65,10 @@ export default {
         "safe-bottom": "env(safe-area-inset-bottom)",
       },
       animation: {
-        "slide-up": "slide-up 0.22s cubic-bezier(0.32, 0.72, 0, 1)",
-        "fade-in": "fade-in 0.15s ease-out",
-        "scale-in": "scale-in 0.15s cubic-bezier(0.32, 0.72, 0, 1)",
+        "slide-up": "slide-up 0.34s cubic-bezier(0.22, 1, 0.36, 1)",
+        "fade-in": "fade-in 0.2s ease-out",
+        "scale-in": "scale-in 0.24s cubic-bezier(0.22, 1, 0.36, 1)",
+        rise: "rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both",
       },
       keyframes: {
         "slide-up": {
@@ -79,7 +80,7 @@ export default {
           to: { opacity: "1" },
         },
         "scale-in": {
-          from: { opacity: "0", transform: "scale(0.96)" },
+          from: { opacity: "0", transform: "scale(0.94)" },
           to: { opacity: "1", transform: "scale(1)" },
         },
       },

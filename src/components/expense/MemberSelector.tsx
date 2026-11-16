@@ -19,7 +19,7 @@ export function MemberSelector({ members, selected, onToggle }: Props) {
               type="button"
               onClick={() => onToggle(m.uid)}
               aria-pressed={checked}
-              className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 active:bg-neutral-100 dark:active:bg-neutral-800"
+              className="flex w-full items-center justify-between rounded-xl px-2 py-2.5 well-press"
             >
               <UserColorIndicator name={m.name} color={m.color} photoUrl={m.photoUrl} size="sm" />
               <span
@@ -50,7 +50,7 @@ export function PayerSelector({ members, value, onChange }: { members: GroupMemb
             onClick={() => onChange(m.uid)}
             aria-pressed={selected}
             className={`flex shrink-0 flex-col items-center gap-1 rounded-2xl border px-3 py-2 text-xs font-medium ${
-              selected ? "border-accent bg-accent-50 dark:bg-accent-900/30" : "border-transparent"
+              selected ? "border-accent bg-accent/10 dark:bg-accent/20" : "border-transparent"
             }`}
           >
             {m.photoUrl ? (

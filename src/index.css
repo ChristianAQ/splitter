@@ -32,8 +32,34 @@
   body {
     @apply bg-surface-light-subtle text-neutral-900 antialiased;
     @apply dark:bg-surface-dark dark:text-neutral-50;
+    font-feature-settings: "cv11", "ss01", "calt";
+    letter-spacing: -0.006em;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Ambient backdrop: three very soft pools of the user's accent color,
+   * pinned to the viewport behind everything. It's what the translucent
+   * surfaces below (.surface/.glass) actually let through — without
+   * something behind them, "transparent" cards just look flat grey.
+   * A fixed pseudo-element rather than `background-attachment: fixed`,
+   * which iOS Safari doesn't honor. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(65% 38% at 8% -4%, rgb(var(--accent-400) / 0.26), transparent 72%),
+      radial-gradient(55% 34% at 104% 22%, rgb(var(--accent-300) / 0.2), transparent 70%),
+      radial-gradient(80% 42% at 40% 108%, rgb(var(--accent-500) / 0.13), transparent 72%);
+  }
+  .dark body::before {
+    background:
+      radial-gradient(65% 38% at 8% -4%, rgb(var(--accent-500) / 0.24), transparent 72%),
+      radial-gradient(55% 34% at 104% 22%, rgb(var(--accent-700) / 0.22), transparent 70%),
+      radial-gradient(80% 42% at 40% 108%, rgb(var(--accent-600) / 0.12), transparent 72%);
   }
 
   /* Native rubber-band bounce at the top/bottom of the page (the default
@@ -93,6 +119,120 @@
       transition-duration: 0.001ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+@layer components {
+  /* Everyday card: translucent, hairline edge, no blur. Used for anything
+   * that repeats down a list — backdrop-filter on dozens of scrolling
+   * elements is what makes glass UIs stutter on phones, so the blur is
+   * kept for the few fixed layers below. */
+  .surface {
+    background-color: rgb(255 255 255 / 0.66);
+    border: 1px solid rgb(255 255 255 / 0.75);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.6) inset,
+      0 10px 28px -18px rgb(20 22 40 / 0.28);
+  }
+  .dark .surface {
+    background-color: rgb(255 255 255 / 0.055);
+    border-color: rgb(255 255 255 / 0.075);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset;
+  }
+
+  /* Real frosted glass, for the layers that float over scrolling content:
+   * top bar, tab bar, sheets, dialogs, the hero card. */
+  .glass {
+    background-color: rgb(255 255 255 / 0.62);
+    border: 1px solid rgb(255 255 255 / 0.7);
+    -webkit-backdrop-filter: blur(26px) saturate(1.7);
+    backdrop-filter: blur(26px) saturate(1.7);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.7) inset,
+      0 18px 40px -22px rgb(20 22 40 / 0.35);
+  }
+  .dark .glass {
+    background-color: rgb(24 26 36 / 0.62);
+    border-color: rgb(255 255 255 / 0.09);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.06) inset,
+      0 18px 40px -22px rgb(0 0 0 / 0.7);
+  }
+  /* Sheets and dialogs sit on a dimmed scrim and hold forms, so they're
+   * denser than .glass — legibility first, the blur is just a hint. */
+  .glass-sheet {
+    background-color: rgb(250 250 252 / 0.9);
+    border: 1px solid rgb(255 255 255 / 0.8);
+    -webkit-backdrop-filter: blur(30px) saturate(1.6);
+    backdrop-filter: blur(30px) saturate(1.6);
+  }
+  .dark .glass-sheet {
+    background-color: rgb(22 24 33 / 0.88);
+    border-color: rgb(255 255 255 / 0.08);
+  }
+
+  /* Tinted inset: icon chips, secondary buttons, rows inside a card or
+   * sheet. A wash of the text color instead of a fixed grey, so it reads
+   * correctly on top of any of the surfaces above. */
+  .well {
+    background-color: rgb(20 22 40 / 0.05);
+  }
+  .dark .well {
+    background-color: rgb(255 255 255 / 0.075);
+  }
+  .well-press:active {
+    background-color: rgb(20 22 40 / 0.1);
+  }
+  .dark .well-press:active {
+    background-color: rgb(255 255 255 / 0.13);
+  }
+
+  .field {
+    background-color: rgb(255 255 255 / 0.7);
+    border: 1px solid rgb(20 22 40 / 0.1);
+  }
+  .dark .field {
+    background-color: rgb(0 0 0 / 0.22);
+    border-color: rgb(255 255 255 / 0.1);
+  }
+
+  /* Small-caps style section label used above lists. */
+  .eyebrow {
+    @apply text-[13px] font-semibold text-neutral-500 dark:text-neutral-400;
+    letter-spacing: -0.005em;
+  }
+
+  /* Lists fade/slide in one row after another instead of popping in as a
+   * block. Children opt in by position; anything past the 8th arrives
+   * with the 8th so long lists don't take forever to settle. */
+  .stagger > * {
+    animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger > *:nth-child(2) { animation-delay: 35ms; }
+  .stagger > *:nth-child(3) { animation-delay: 70ms; }
+  .stagger > *:nth-child(4) { animation-delay: 105ms; }
+  .stagger > *:nth-child(5) { animation-delay: 140ms; }
+  .stagger > *:nth-child(6) { animation-delay: 175ms; }
+  .stagger > *:nth-child(7) { animation-delay: 210ms; }
+  .stagger > *:nth-child(n + 8) { animation-delay: 245ms; }
+
+  .pressable {
+    transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.18s ease-out;
+  }
+  .pressable:active {
+    transform: scale(0.975);
+    opacity: 0.86;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
