@@ -1,3 +1,4 @@
+import { focusWithoutPanning } from "../../lib/ios";
 import { useEffect, useId, useRef } from "react";
 import type { Currency } from "../../types";
 
@@ -30,7 +31,9 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
 
   useEffect(() => {
     if (!autoFocus) return;
-    const timer = setTimeout(() => inputRef.current?.focus(), AUTOFOCUS_DELAY_MS);
+    const timer = setTimeout(() => {
+      if (inputRef.current) focusWithoutPanning(inputRef.current);
+    }, AUTOFOCUS_DELAY_MS);
     return () => clearTimeout(timer);
   }, [autoFocus]);
 

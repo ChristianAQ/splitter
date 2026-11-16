@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { OfflineBanner } from "../ui/ErrorState";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
+import { pageScrollY } from "../../lib/ios";
 
 interface Props {
   title: ReactNode;
@@ -11,12 +12,22 @@ interface Props {
   right?: ReactNode;
 }
 
-const ROW_CLASSNAME = "mx-auto flex max-w-lg items-center gap-3 px-4 pb-5";
+const ROW_CLASSNAME = "mx-auto flex max-w-lg items-center gap-3 px-4 pb-3";
 const ROW_STYLE = { paddingTop: "calc(env(safe-area-inset-top) + 14px)" };
 
 export function TopBar({ title, subtitle, onBack, right }: Props) {
   const navigate = useNavigate();
   const online = useOnlineStatus();
+  const [scrolled, setScrolled] = useState(() => pageScrollY() > 4);
+
+  useEffect(() => {
+    // pageScrollY (not window.scrollY): while a sheet is open on iPhone the
+    // page is pinned in place and the window itself reports 0.
+    const update = () => setScrolled(pageScrollY() > 4);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
 
   const stack = (
     <>
@@ -55,16 +66,26 @@ export function TopBar({ title, subtitle, onBack, right }: Props) {
        * this same fixed stack (rather than as a separate sticky sibling in
        * AppLayout, as it used to be) so the two can never overlap: both
        * stack tops are always in sync since they share one spacer. */}
-      <header
-        className="fixed inset-x-0 top-0 z-30 bg-surface-light-subtle/55 backdrop-blur-2xl backdrop-saturate-150 dark:bg-surface-dark/55"
-        // Fades the frosted strip out at its lower edge instead of ending
-        // on a hard line — content scrolls up *into* the blur.
-        style={{
-          WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 14px), transparent)",
-          maskImage: "linear-gradient(to bottom, black calc(100% - 14px), transparent)",
-        }}
-      >
-        {stack}
+      <header className="fixed inset-x-0 top-0 z-30">
+        {/* Frosted backing, only once something has scrolled underneath:
+         * at the top of the page the header is just part of the page (the
+         * ambient backdrop runs through it uninterrupted); scrolled, it
+         * turns nearly opaque so list text passing behind can't ghost
+         * through the title. Kept on its own layers — no mask on a
+         * backdrop-filter element, which browsers render inconsistently. */}
+        <div
+          aria-hidden
+          className={`absolute inset-0 bg-surface-light-subtle/[0.93] backdrop-blur-xl backdrop-saturate-150 transition-opacity duration-200 dark:bg-surface-dark/[0.93] ${
+            scrolled ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        <div
+          aria-hidden
+          className={`pointer-events-none absolute inset-x-0 top-full h-4 bg-gradient-to-b from-surface-light-subtle/[0.93] to-transparent transition-opacity duration-200 dark:from-surface-dark/[0.93] ${
+            scrolled ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        <div className="relative">{stack}</div>
       </header>
     </>
   );

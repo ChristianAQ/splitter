@@ -17,7 +17,12 @@ document.addEventListener("focusout", () => {
   setTimeout(() => {
     const active = document.activeElement;
     if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return; // moved to another field
-    window.scrollTo(window.scrollX, window.scrollY);
+    if (document.body.style.position === "fixed") return; // a sheet is open and handles this itself
+    // A real 1px round trip, not a scroll "to where we already are" —
+    // the latter is a no-op WebKit is free to ignore.
+    const y = window.scrollY;
+    window.scrollTo(0, y + 1);
+    window.scrollTo(0, y);
   }, 80);
 });
 

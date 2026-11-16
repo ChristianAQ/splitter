@@ -1,3 +1,4 @@
+import { focusWithoutPanning } from "../../lib/ios";
 import { forwardRef, useEffect, useId, useRef, type InputHTMLAttributes } from "react";
 
 // Sheets using this field mount as soon as they open (see BottomSheet),
@@ -30,7 +31,9 @@ export const Input = forwardRef<HTMLInputElement, Props>(
 
     useEffect(() => {
       if (!autoFocus) return;
-      const timer = setTimeout(() => inputRef.current?.focus(), AUTOFOCUS_DELAY_MS);
+      const timer = setTimeout(() => {
+        if (inputRef.current) focusWithoutPanning(inputRef.current);
+      }, AUTOFOCUS_DELAY_MS);
       return () => clearTimeout(timer);
     }, [autoFocus]);
 

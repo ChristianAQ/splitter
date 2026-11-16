@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { focusWithoutPanning, IS_IOS, lockPageScroll } from "../../lib/ios";
 
 interface Props {
   open: boolean;
@@ -16,14 +17,13 @@ interface Props {
 
 const EXIT_MS = 240;
 
-// iPhone/iPod, and iPad (which reports itself as a Mac but has a touch screen).
-const IS_IOS =
-  typeof navigator !== "undefined" &&
-  (/iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
-
 // <input> types that don't bring up the on-screen keyboard.
 const NON_TEXT_INPUT_TYPES = new Set(["checkbox", "radio", "range", "color", "file", "image", "button", "submit", "reset", "date", "time", "month", "week", "datetime-local"]);
-const SNAP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+// Springs back with a slight overshoot — the "it's elastic, it just has
+// nowhere to go" feel, instead of sliding stiffly back into place.
+const SPRING = "420ms cubic-bezier(0.34, 1.45, 0.64, 1)";
+// How far the sheet will stretch when pulled past its limits.
+const RUBBER_MAX_PX = 46;
 // A downward drag is taken over once it has moved this far...
 const DRAG_SLOP = 6;
 // ...and on release dismisses the sheet if it travelled this fraction of
@@ -85,11 +85,7 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
 
   useEffect(() => {
     if (!mounted) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
+    return lockPageScroll();
   }, [mounted]);
 
   useEffect(() => {
@@ -127,7 +123,6 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
     const sheet = sheetRef.current;
     if (!frame || !sheet) return;
 
-    const pageScrollY = window.scrollY;
     const applied = { height: -1, top: -1, keyboard: false };
     let raf = 0;
     let revealTimer: ReturnType<typeof setTimeout> | undefined;
@@ -149,9 +144,10 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       raf = requestAnimationFrame(sync);
 
       // The page behind must not move while the sheet is open. If WebKit
-      // has scrolled it (to reveal a field, or left it scrolled after the
-      // keyboard closed), put it back.
-      if (Math.abs(window.scrollY - pageScrollY) > 0.5) window.scrollTo(0, pageScrollY);
+      // has scrolled the window anyway (to reveal a field, or left it
+      // scrolled after the keyboard closed), put it back. With the body
+      // locked in place (see lockPageScroll) the right value is always 0.
+      if (IS_IOS && window.scrollY !== 0) window.scrollTo(0, 0);
 
       const height = viewport ? viewport.height : window.innerHeight;
       const top = viewport ? viewport.offsetTop : 0;
@@ -177,14 +173,6 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
     const opensKeyboard = (el: EventTarget | null): el is HTMLElement =>
       (el instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(el.type)) || el instanceof HTMLTextAreaElement;
 
-    function focusWithoutPanning(field: HTMLElement) {
-      field.style.transform = "translateY(-2000px)";
-      field.focus({ preventScroll: true });
-      requestAnimationFrame(() => {
-        field.style.transform = "";
-      });
-    }
-
     function onTouchEnd(e: TouchEvent) {
       const target = e.target;
       // Only a plain tap on a field that isn't focused yet; a tap inside
@@ -202,26 +190,33 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       tapMoved = true;
     };
 
+    // However the field got focus (a tap, autofocus, the keyboard's
+    // next/previous arrows), make sure it ends up visible in the sheet.
     function onFocusIn(e: FocusEvent) {
-      if (!opensKeyboard(e.target)) return;
-      if (IS_IOS) {
-        // Covers focus that didn't come from a tap handled above (the
-        // amount field's autofocus, the keyboard's next/previous arrows).
-        const field = e.target;
-        field.style.transform = "translateY(-2000px)";
-        requestAnimationFrame(() => {
-          field.style.transform = "";
-          reveal(field);
-        });
-      } else {
-        reveal(e.target);
-      }
+      if (opensKeyboard(e.target)) reveal(e.target);
+    }
+
+    // Keyboard gone and no other field took over: WebKit sometimes keeps
+    // rendering the page where the keyboard had pushed it while reporting
+    // that nothing is scrolled. Forgetting what was last applied makes the
+    // next frames re-apply the frame from scratch, and the 1px round trip
+    // is the nudge that makes WebKit lay the page out again.
+    function onFocusOut() {
+      setTimeout(() => {
+        if (opensKeyboard(document.activeElement)) return;
+        applied.height = -1;
+        if (IS_IOS) {
+          window.scrollTo(0, 1);
+          window.scrollTo(0, 0);
+        }
+      }, 60);
     }
 
     sheet.addEventListener("touchstart", onTouchStart, { passive: true });
     sheet.addEventListener("touchmove", onTouchMove, { passive: true });
     sheet.addEventListener("touchend", onTouchEnd, { passive: false });
     sheet.addEventListener("focusin", onFocusIn);
+    sheet.addEventListener("focusout", onFocusOut);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(revealTimer);
@@ -229,8 +224,7 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       sheet.removeEventListener("touchmove", onTouchMove);
       sheet.removeEventListener("touchend", onTouchEnd);
       sheet.removeEventListener("focusin", onFocusIn);
-      // Hand the page back exactly where it was.
-      if (Math.abs(window.scrollY - pageScrollY) > 0.5) window.scrollTo(0, pageScrollY);
+      sheet.removeEventListener("focusout", onFocusOut);
     };
   }, [mounted]);
 
@@ -243,12 +237,16 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
     if (!sheet) return;
 
     const g = { active: false, dragging: false, ignored: false, startX: 0, startY: 0, offset: 0, lastY: 0, lastT: 0, velocity: 0 };
+
+    // Resistance that grows with distance and levels off at RUBBER_MAX_PX:
+    // the first few pixels follow the finger, then it gets harder.
+    const rubber = (distance: number) => RUBBER_MAX_PX * (1 - 1 / (distance / (RUBBER_MAX_PX * 1.6) + 1));
     let resetTimer: ReturnType<typeof setTimeout> | undefined;
 
     function paint(offset: number, transition: string) {
       const backdrop = backdropRef.current;
       sheet!.style.transition = transition ? `transform ${transition}` : "none";
-      sheet!.style.transform = offset > 0 ? `translate3d(0, ${offset}px, 0)` : "";
+      sheet!.style.transform = offset !== 0 ? `translate3d(0, ${offset}px, 0)` : "";
       if (backdrop) {
         backdrop.style.transition = transition ? `opacity ${transition}` : "none";
         backdrop.style.opacity = offset > 0 ? String(1 - Math.min(offset / sheet!.offsetHeight, 1) * 0.85) : "";
@@ -278,23 +276,27 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       if (!g.dragging) {
         if (Math.abs(dx) < DRAG_SLOP && Math.abs(dy) < DRAG_SLOP) return;
         const scroller = scrollRef.current;
-        const insideScrolledContent =
-          scroller !== null && e.target instanceof Node && scroller.contains(e.target) && scroller.scrollTop > 0;
-        // Sideways (a row of chips), upwards (scrolling the form), or
-        // downwards while the content still has somewhere to scroll back
-        // to: all the content's business, not the sheet's.
-        if (Math.abs(dx) > Math.abs(dy) || dy < 0 || insideScrolledContent || !e.cancelable) {
+        const inContent = scroller !== null && e.target instanceof Node && scroller.contains(e.target);
+        const canScrollBack = inContent && scroller.scrollTop > 0;
+        const canScrollOn = inContent && scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 1;
+        // Sideways (a row of chips), or in a direction the content itself
+        // can still scroll: the content's business, not the sheet's.
+        if (Math.abs(dx) > Math.abs(dy) || (dy > 0 && canScrollBack) || (dy < 0 && canScrollOn) || !e.cancelable) {
           g.ignored = true;
           return;
         }
+        // Everything else moves the sheet: down to dismiss it, or — with
+        // nothing (left) to scroll — up against a rubber band, so the
+        // gesture gets an answer instead of the sheet sitting there inert.
         g.dragging = true;
         g.startY = t.clientY; // start from here so the sheet doesn't jump by the slop
         // Dragging the sheet away with the keyboard up: put the keyboard away too.
-        if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+        if (dy > 0 && document.activeElement instanceof HTMLElement) document.activeElement.blur();
       }
 
       if (e.cancelable) e.preventDefault();
-      g.offset = Math.max(0, t.clientY - g.startY);
+      const raw = t.clientY - g.startY;
+      g.offset = raw >= 0 ? raw : -rubber(-raw);
       const dt = e.timeStamp - g.lastT;
       if (dt > 0) g.velocity = (t.clientY - g.lastY) / dt;
       g.lastY = t.clientY;
@@ -311,8 +313,8 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       const farEnough = g.offset > Math.min(height * DISMISS_FRACTION, DISMISS_MAX_PX);
       const flicked = g.velocity > DISMISS_VELOCITY && g.offset > 24;
 
-      if (!farEnough && !flicked) {
-        paint(0, `320ms ${SNAP_EASE}`);
+      if (g.offset <= 0 || (!farEnough && !flicked)) {
+        paint(0, SPRING);
         return;
       }
 
@@ -325,7 +327,7 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
         resetTimer = setTimeout(() => {
           if (openRef.current) {
             draggedAway.current = false;
-            paint(0, `320ms ${SNAP_EASE}`);
+            paint(0, SPRING);
           }
         }, 300);
       }, 200);
@@ -365,10 +367,17 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
         role="dialog"
         aria-modal="true"
         aria-label={content.title}
-        className={`glass-sheet pointer-events-auto relative flex max-h-[92%] w-full flex-col overflow-hidden rounded-t-[32px] border-b-0 shadow-sheet sm:max-w-md sm:rounded-[32px] sm:border-b ${
+        className={`pointer-events-auto relative flex max-h-[92%] w-full flex-col sm:max-w-md ${
           closing ? "animate-sheet-out sm:animate-scale-out" : "animate-slide-up sm:animate-scale-in"
         }`}
       >
+        {/* More sheet below the sheet. Whenever it sits higher than the
+         * bottom edge — stretched upward against the rubber band, the
+         * overshoot of a spring-back, or iOS having nudged things around
+         * the keyboard — what shows underneath is this, not a strip of
+         * the page behind. */}
+        <div aria-hidden className="sheet-bleed absolute inset-x-0 top-[calc(100%-1px)] h-[70vh] sm:hidden" />
+        <div className="glass-sheet relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-[32px] border-b-0 shadow-sheet sm:rounded-[32px] sm:border-b">
         {/* Handle + header: a generous grab area for dragging the sheet. */}
         <div className="shrink-0 touch-none">
           <div className="flex items-center justify-center pb-1 pt-2.5 sm:hidden">
@@ -406,6 +415,7 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
             {content.footer}
           </div>
         )}
+        </div>
       </div>
       </div>
     </div>

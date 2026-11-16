@@ -182,12 +182,19 @@
    * backdrop-filter and an animated transform intermittently loses its
    * corner clipping — square corners flashing through. */
   .glass-sheet {
-    background-color: rgb(250 250 252 / 0.96);
+    background-color: rgb(250 250 252 / 0.97);
     border: 1px solid rgb(255 255 255 / 0.8);
   }
   .dark .glass-sheet {
-    background-color: rgb(24 26 35 / 0.96);
+    background-color: rgb(24 26 35 / 0.97);
     border-color: rgb(255 255 255 / 0.08);
+  }
+  /* Same fill as the sheet, continuing below it (see BottomSheet). */
+  .sheet-bleed {
+    background-color: rgb(250 250 252 / 0.97);
+  }
+  .dark .sheet-bleed {
+    background-color: rgb(24 26 35 / 0.97);
   }
 
   /* Home's headline card. The accent glow is painted as part of the card's
@@ -250,7 +257,11 @@
    * block. Children opt in by position; anything past the 8th arrives
    * with the 8th so long lists don't take forever to settle. */
   .stagger > * {
-    animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+    /* `backwards`, not `both`: hold the starting frame during the delay,
+     * but let go once finished — an animation that keeps holding its last
+     * frame keeps overriding `transform`, and the row's own press/drag
+     * transforms would silently stop working. */
+    animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
   .stagger > *:nth-child(2) { animation-delay: 35ms; }
   .stagger > *:nth-child(3) { animation-delay: 70ms; }
