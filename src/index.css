@@ -177,15 +177,42 @@
   }
   /* Sheets and dialogs sit on a dimmed scrim and hold forms, so they're
    * denser than .glass — legibility first, the blur is just a hint. */
+  /* No backdrop-filter of its own: the scrim behind it is already blurred,
+   * and on iOS Safari a rounded, overflow-hidden element that has both a
+   * backdrop-filter and an animated transform intermittently loses its
+   * corner clipping — square corners flashing through. */
   .glass-sheet {
-    background-color: rgb(250 250 252 / 0.9);
+    background-color: rgb(250 250 252 / 0.96);
     border: 1px solid rgb(255 255 255 / 0.8);
-    -webkit-backdrop-filter: blur(30px) saturate(1.6);
-    backdrop-filter: blur(30px) saturate(1.6);
   }
   .dark .glass-sheet {
-    background-color: rgb(22 24 33 / 0.88);
+    background-color: rgb(24 26 35 / 0.96);
     border-color: rgb(255 255 255 / 0.08);
+  }
+
+  /* Home's headline card. The accent glow is painted as part of the card's
+   * own background rather than with blurred child elements clipped by
+   * `overflow: hidden` + rounded corners: iOS Safari doesn't reliably clip
+   * filtered/composited children to a border radius (worse while the card
+   * is being pressed and scaled), which showed up as square corners
+   * poking out around the card. Nothing here needs clipping at all. */
+  .hero-card {
+    border: 1px solid rgb(255 255 255 / 0.75);
+    background-color: rgb(255 255 255 / 0.7);
+    background-image:
+      radial-gradient(70% 90% at 100% 0%, rgb(var(--accent-400) / 0.32), transparent 70%),
+      radial-gradient(60% 80% at 0% 100%, rgb(var(--accent-300) / 0.22), transparent 70%);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.7) inset,
+      0 18px 40px -24px rgb(var(--accent-700) / 0.45);
+  }
+  .dark .hero-card {
+    border-color: rgb(255 255 255 / 0.09);
+    background-color: rgb(255 255 255 / 0.05);
+    background-image:
+      radial-gradient(70% 90% at 100% 0%, rgb(var(--accent-500) / 0.38), transparent 70%),
+      radial-gradient(60% 80% at 0% 100%, rgb(var(--accent-700) / 0.3), transparent 70%);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset;
   }
 
   /* Tinted inset: icon chips, secondary buttons, rows inside a card or

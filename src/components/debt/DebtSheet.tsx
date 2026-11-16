@@ -8,8 +8,8 @@ import { ConfirmDialog } from "../ui/Modal";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { useFriends } from "../../hooks/useFriends";
-import { createDebt, deleteDebt, setDebtProgress, updateDebt } from "../../services/debts.service";
-import { applyRepayment, isSettled, remainingAmount } from "../../domain/debts";
+import { createDebt, deleteDebt, updateDebt } from "../../services/debts.service";
+import { isSettled } from "../../domain/debts";
 import { addDays, addMonthsClamped, daysInMonth, formatISO, parseISO, todayISO } from "../../domain/date";
 import { DEBT_KIND_OPTIONS } from "../../lib/debts";
 import { formatCurrency } from "../../lib/format";
@@ -67,8 +67,7 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
   const [date, setDate] = useState(todayISO());
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
-  const [repayment, setRepayment] = useState("");
-  const [busy, setBusy] = useState<null | "save" | "progress" | "delete">(null);
+  const [busy, setBusy] = useState<null | "save" | "delete">(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Keyed on the id (not the object): the live subscription hands back a
@@ -77,7 +76,6 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
   const debtId = debt?.id;
   useEffect(() => {
     if (!open) return;
-    setRepayment("");
     setConfirmDelete(false);
     if (debt) {
       setKind(debt.kind);
@@ -144,49 +142,6 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
     }
   }
 
-  async function handleRepayment() {
-    if (!user || !debt) return;
-    const value = parseFloat(repayment);
-    if (!(value > 0)) return;
-    setBusy("progress");
-    try {
-      const next = applyRepayment(debt, value);
-      await setDebtProgress(user.uid, debt.id, next.paidAmount, next.settles);
-      setRepayment("");
-      if (next.settles) {
-        show("Saldado del todo", "success");
-        onClose();
-      } else {
-        show("Devolución apuntada", "success");
-      }
-    } catch (err) {
-      fail(err, "No se pudo apuntar.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function handleToggleSettled() {
-    if (!user || !debt) return;
-    setBusy("progress");
-    try {
-      if (isSettled(debt)) {
-        // Reopening one that was paid back in full would otherwise come
-        // back with nothing left to pay.
-        await setDebtProgress(user.uid, debt.id, debt.paidAmount >= debt.amount ? 0 : debt.paidAmount, false);
-        show("Vuelve a estar pendiente", "success");
-      } else {
-        await setDebtProgress(user.uid, debt.id, debt.paidAmount, true);
-        show("Saldado", "success");
-      }
-      onClose();
-    } catch (err) {
-      fail(err, "No se pudo actualizar.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
   async function handleDelete() {
     if (!user || !debt) return;
     setBusy("delete");
@@ -202,15 +157,13 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
     }
   }
 
-  const settled = debt ? isSettled(debt) : false;
-  const remaining = debt ? remainingAmount(debt) : 0;
 
   return (
     <>
       <BottomSheet
       open={open}
       onClose={onClose}
-      title={debt ? "Editar" : "Apuntar"}
+      title={debt ? "Editar datos" : "Apuntar"}
       footer={
         <div className="flex gap-3">
           {debt && (
@@ -292,50 +245,6 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
           />
           <Input label="Notas (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
-          {debt && (
-            <div className="well flex flex-col gap-3 rounded-[22px] p-4">
-              <div className="flex items-baseline justify-between">
-                <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">{settled ? "Saldado" : "Queda por devolver"}</p>
-                <p className="text-lg font-semibold tabular-nums">{formatCurrency(settled ? 0 : remaining, currency)}</p>
-              </div>
-              {!settled && (
-                <>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-black/[0.07] dark:bg-white/10" aria-hidden>
-                    <div
-                      className="h-full rounded-full bg-accent transition-[width] duration-500"
-                      style={{ width: `${Math.min(debt.paidAmount / debt.amount, 1) * 100}%` }}
-                    />
-                  </div>
-                  <div className="flex items-end gap-2">
-                    <div className="min-w-0 flex-1">
-                      <Input
-                        label="Apuntar una devolución parcial"
-                        inputMode="decimal"
-                        placeholder="0,00"
-                        value={repayment}
-                        onChange={(e) => {
-                          const v = e.target.value.replace(",", ".");
-                          if (/^\d*\.?\d{0,2}$/.test(v)) setRepayment(v);
-                        }}
-                      />
-                    </div>
-                    <Button
-                      variant="secondary"
-                      className="h-12"
-                      onClick={handleRepayment}
-                      loading={busy === "progress"}
-                      disabled={!(parseFloat(repayment) > 0) || busy !== null}
-                    >
-                      Apuntar
-                    </Button>
-                  </div>
-                </>
-              )}
-              <Button variant={settled ? "secondary" : "primary"} onClick={handleToggleSettled} disabled={busy !== null}>
-                {settled ? "Volver a marcar como pendiente" : "Marcar como saldado"}
-              </Button>
-            </div>
-          )}
         </div>
       </BottomSheet>
 

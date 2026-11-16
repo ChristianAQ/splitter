@@ -17,7 +17,8 @@ import { db } from "../lib/firebase";
 import { tsToMillis } from "../lib/firestoreHelpers";
 import { toFriendlyError } from "../lib/errors";
 import { commit } from "../lib/commit";
-import type { Debt, DebtKind } from "../types";
+import type { DebtProgress } from "../domain/debts";
+import type { Debt, DebtKind, DebtPayment } from "../types";
 
 // Lives under users/{uid}/, next to personalExpenses and recurringExpenses,
 // so it's covered by the same owner-only rule and needs no composite index
@@ -35,6 +36,7 @@ function fromSnap(id: string, data: Record<string, unknown>): Debt {
     concept: data.concept as string | undefined,
     amount: data.amount as number,
     paidAmount: (data.paidAmount as number) ?? 0,
+    payments: Array.isArray(data.payments) ? (data.payments as DebtPayment[]) : undefined,
     currency: data.currency as Debt["currency"],
     date: data.date as string,
     dueDate: data.dueDate as string | undefined,
@@ -97,14 +99,18 @@ export async function updateDebt(uid: string, id: string, input: DebtInput) {
   }
 }
 
-/** Records how much has been returned so far; `settled` closes the debt. */
-export async function setDebtProgress(uid: string, id: string, paidAmount: number, settled: boolean) {
+/** Stores the outcome of a repayment / settlement / reopening as computed
+ * by domain/debts.ts (recordPayment, settleDebt, reopenDebt). */
+export async function setDebtProgress(uid: string, id: string, progress: DebtProgress) {
   try {
-    await commit(updateDoc(doc(col(uid), id), {
-      paidAmount,
-      settledAt: settled ? serverTimestamp() : deleteField(),
-      updatedAt: serverTimestamp(),
-    }));
+    await commit(
+      updateDoc(doc(col(uid), id), {
+        paidAmount: progress.paidAmount,
+        payments: progress.payments,
+        settledAt: progress.settled ? serverTimestamp() : deleteField(),
+        updatedAt: serverTimestamp(),
+      })
+    );
   } catch (error) {
     throw toFriendlyError(error);
   }

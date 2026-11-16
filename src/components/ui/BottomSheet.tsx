@@ -9,6 +9,9 @@ interface Props {
   /** Pinned under the scrolling content — the sheet's primary action lives
    * here so it's always on screen, not at the far end of a long form. */
   footer?: ReactNode;
+  /** Sits in the header next to the close button — e.g. "Editar" on a
+   * read-only detail sheet. */
+  headerAction?: ReactNode;
 }
 
 const EXIT_MS = 240;
@@ -34,9 +37,10 @@ const DISMISS_VELOCITY = 0.55; // px per ms
  * the handle, the header, or the content itself once that's scrolled to
  * the top. It follows the finger, then either leaves or springs back.
  */
-export function BottomSheet({ open, onClose, title, children, footer }: Props) {
+export function BottomSheet({ open, onClose, title, children, footer, headerAction }: Props) {
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
+  const frameRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -47,8 +51,8 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
   // Set when a drag has already carried the sheet off screen, so the
   // close that follows doesn't replay an exit animation from the top.
   const draggedAway = useRef(false);
-  const shown = useRef({ title, children, footer });
-  if (open) shown.current = { title, children, footer };
+  const shown = useRef({ title, children, footer, headerAction });
+  if (open) shown.current = { title, children, footer, headerAction };
 
   useEffect(() => {
     if (open) {
@@ -88,6 +92,61 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
+
+  // Keep the sheet inside the part of the screen that's actually visible.
+  // On iPhone the on-screen keyboard doesn't resize the page: it slides
+  // over it, and Safari then shoves the whole page upward to reveal the
+  // focused field — which dragged this (bottom-anchored) sheet up with it,
+  // half off the top of the screen and with a gap underneath. Instead the
+  // sheet's frame is pinned to the *visual* viewport: when the keyboard
+  // opens the frame shrinks to the space above it, the sheet rests on top
+  // of the keyboard with its footer still showing, and the form scrolls
+  // inside it.
+  useEffect(() => {
+    if (!mounted) return;
+    const viewport = window.visualViewport;
+    const frame = frameRef.current;
+    if (!viewport || !frame) return;
+
+    let raf = 0;
+    let revealTimer: ReturnType<typeof setTimeout> | undefined;
+
+    function apply() {
+      const keyboardOpen = window.innerHeight - viewport!.height > 120;
+      frame!.style.height = `${viewport!.height}px`;
+      frame!.style.transform = `translate3d(0, ${viewport!.offsetTop}px, 0)`;
+      frame!.dataset.keyboard = String(keyboardOpen);
+
+      // The field being typed in may now be under the fold of the (shorter)
+      // sheet: bring it to the middle of what's left.
+      clearTimeout(revealTimer);
+      revealTimer = setTimeout(() => {
+        const scroller = scrollRef.current;
+        const field = document.activeElement;
+        if (!scroller || !(field instanceof HTMLElement) || !scroller.contains(field)) return;
+        const f = field.getBoundingClientRect();
+        const s = scroller.getBoundingClientRect();
+        if (f.top < s.top + 12 || f.bottom > s.bottom - 12) {
+          scroller.scrollBy({ top: f.top - s.top - (s.height - f.height) / 2, behavior: "smooth" });
+        }
+      }, 240);
+    }
+
+    function schedule() {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(apply);
+    }
+
+    apply();
+    viewport.addEventListener("resize", schedule);
+    viewport.addEventListener("scroll", schedule);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(revealTimer);
+      viewport.removeEventListener("resize", schedule);
+      viewport.removeEventListener("scroll", schedule);
+    };
+  }, [mounted]);
 
   // Drag down to dismiss. Plain DOM listeners (not React's) because
   // `touchmove` has to be registered as non-passive to be allowed to stop
@@ -204,7 +263,7 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
   const content = shown.current;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-end justify-center sm:items-center ${closing ? "pointer-events-none" : ""}`}>
+    <div className={`fixed inset-0 z-50 ${closing ? "pointer-events-none" : ""}`}>
       <div
         ref={backdropRef}
         className={`absolute inset-0 bg-neutral-950/35 backdrop-blur-[3px] ${closing ? "animate-fade-out" : "animate-fade-in"}`}
@@ -212,11 +271,15 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
         aria-hidden
       />
       <div
+        ref={frameRef}
+        className="group pointer-events-none absolute inset-x-0 top-0 flex h-full items-end justify-center transition-[height] duration-200 ease-out sm:items-center"
+      >
+      <div
         ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-label={content.title}
-        className={`glass-sheet relative flex max-h-sheet w-full flex-col overflow-hidden rounded-t-[32px] border-b-0 shadow-sheet sm:max-w-md sm:rounded-[32px] sm:border-b ${
+        className={`glass-sheet pointer-events-auto relative flex max-h-[92%] w-full flex-col overflow-hidden rounded-t-[32px] border-b-0 shadow-sheet sm:max-w-md sm:rounded-[32px] sm:border-b ${
           closing ? "animate-sheet-out sm:animate-scale-out" : "animate-slide-up sm:animate-scale-in"
         }`}
       >
@@ -226,8 +289,9 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
             <div className="h-1 w-9 rounded-full bg-neutral-900/15 dark:bg-white/20" />
           </div>
           {content.title && (
-            <div className="flex items-center justify-between px-5 pb-2 pt-2 sm:pt-4">
-              <h2 className="text-[19px] font-semibold tracking-tight">{content.title}</h2>
+            <div className="flex items-center gap-1 px-5 pb-2 pt-2 sm:pt-4">
+              <h2 className="min-w-0 flex-1 truncate text-[19px] font-semibold tracking-tight">{content.title}</h2>
+              {content.headerAction}
               <button
                 onClick={onClose}
                 aria-label="Cerrar"
@@ -244,16 +308,19 @@ export function BottomSheet({ open, onClose, title, children, footer }: Props) {
         <div
           ref={scrollRef}
           className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 ${
-            content.footer ? "pb-4" : "pb-[calc(env(safe-area-inset-bottom)+20px)]"
+            content.footer ? "pb-4" : "pb-[calc(env(safe-area-inset-bottom)+20px)] group-data-[keyboard=true]:pb-4"
           }`}
         >
           {content.children}
         </div>
         {content.footer && (
-          <div className="shrink-0 border-t border-black/[0.06] px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 dark:border-white/[0.08]">
+          // With the keyboard up the sheet sits on top of it, not on the
+          // home-indicator strip, so that inset would just be dead space.
+          <div className="shrink-0 border-t border-black/[0.06] px-5 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3 group-data-[keyboard=true]:pb-3 dark:border-white/[0.08]">
             {content.footer}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

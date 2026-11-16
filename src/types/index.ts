@@ -135,6 +135,16 @@ export interface RecurringExpense {
  * isn't owed to anyone in particular (a fine, a deposit, a bill...). */
 export type DebtKind = "owe" | "owed" | "reminder";
 
+/** One repayment recorded against a debt. */
+export interface DebtPayment {
+  amount: number;
+  date: ISODate;
+  at: EpochMillis; // when it was recorded — orders same-day payments
+  /** True for the entry that "pay it all" adds to close the debt, so
+   * reopening can take exactly that one back out. */
+  closing?: boolean;
+}
+
 /** Private to its owner — `users/{uid}/debts/{id}`. Deliberately separate
  * from PersonalExpense: borrowing or lending isn't spending, so none of
  * this counts towards monthly totals or statistics. */
@@ -146,6 +156,9 @@ export interface Debt {
   concept?: string;
   amount: number; // original amount, always positive
   paidAmount: number; // returned so far (partial repayments); 0..amount
+  // The individual repayments behind `paidAmount`. Absent on debts whose
+  // repayments were recorded before this log existed — see paymentsOf().
+  payments?: DebtPayment[];
   currency: Currency;
   date: ISODate; // when the money changed hands / the reminder was noted
   dueDate?: ISODate; // absent = "when I can"

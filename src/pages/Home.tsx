@@ -107,13 +107,9 @@ export function Home() {
         <Link
           to="/estadisticas"
           aria-label="Ver estadísticas del mes"
-          className="glass pressable group relative mb-3 block overflow-hidden rounded-[28px] p-5"
+          className="hero-card pressable group mb-3 block rounded-[28px] p-5"
         >
-          {/* A blurred pool of the accent color inside the glass, so the
-           * card has depth without being a flat gradient block. */}
-          <span aria-hidden className="pointer-events-none absolute -right-12 -top-20 h-48 w-48 rounded-full bg-accent/35 blur-3xl" />
-          <span aria-hidden className="pointer-events-none absolute -bottom-24 -left-10 h-40 w-40 rounded-full bg-accent-300/25 blur-3xl" />
-          <div className="relative">
+          <div>
             <p className="text-[13px] text-neutral-500 dark:text-neutral-400">Gastado en {MONTH_NAME_FORMATTER.format(new Date())}</p>
             <p className="mt-1.5 text-[40px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
               {formatCurrency(thisMonthTotal, currency)}

@@ -5,6 +5,8 @@ import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
 import { PersonalExpenseSheet } from "../components/expense/PersonalExpenseSheet";
+import { ExpenseDetailSheet } from "../components/expense/ExpenseDetailSheet";
+import { RecurringDetailSheet } from "../components/expense/RecurringDetailSheet";
 import { RecurringExpenseSheet } from "../components/expense/RecurringExpenseSheet";
 import { RecurringBudgetCard } from "../components/expense/RecurringBudgetCard";
 import { CardListSkeleton } from "../components/ui/Skeleton";
@@ -48,6 +50,10 @@ export function Expenses() {
   const [searchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
   const [tab, setTab] = useState<Tab>(TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : "pasados");
+  // Tapping a row opens it read-only (ids, looked up live); the edit forms
+  // are only reached from there.
+  const [viewingExpenseId, setViewingExpenseId] = useState<string | null>(null);
+  const [viewingRecurringId, setViewingRecurringId] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<PersonalExpense | null>(null);
   const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null | undefined>(undefined);
   const currentMonth = todayISO().slice(0, 7);
@@ -106,6 +112,9 @@ export function Expenses() {
     }
   }
 
+  const viewingExpense = viewingExpenseId ? expenses.find((e) => e.id === viewingExpenseId) : undefined;
+  const viewingRecurring = viewingRecurringId ? recurring.find((r) => r.id === viewingRecurringId) : undefined;
+
   const grouped = useMemo(() => {
     const past = expenses.filter((e) => e.status !== "future").sort((a, b) => b.date.localeCompare(a.date));
     const future = expenses.filter((e) => e.status === "future").sort((a, b) => a.date.localeCompare(b.date));
@@ -144,7 +153,7 @@ export function Expenses() {
             <MonthlyList
               expenses={grouped.past}
               totals={monthTotals}
-              onSelect={setEditingExpense}
+              onSelect={(e) => setViewingExpenseId(e.id)}
               onDelete={handleDeleteExpense}
               currency={expenses[0]?.currency}
               currentMonth={currentMonth}
@@ -162,7 +171,7 @@ export function Expenses() {
                 <PersonalExpenseCard
                   key={e.id}
                   expense={e}
-                  onClick={() => setEditingExpense(e)}
+                  onClick={() => setViewingExpenseId(e.id)}
                   onMarkDone={() => handleMarkDone(e)}
                   onDelete={() => handleDeleteExpense(e)}
                 />
@@ -231,7 +240,7 @@ export function Expenses() {
                       }
                     >
                       <button
-                        onClick={() => setEditingRecurring(r)}
+                        onClick={() => setViewingRecurringId(r.id)}
                         className="flex w-full min-w-0 flex-1 items-center gap-3 surface rounded-[22px] p-3.5 text-left"
                       >
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full well text-neutral-500 dark:text-neutral-400">
@@ -257,6 +266,32 @@ export function Expenses() {
         {tab === "deudas" && <DebtsTab />}
       </PageContainer>
 
+      <ExpenseDetailSheet
+        open={Boolean(viewingExpense)}
+        onClose={() => setViewingExpenseId(null)}
+        expense={viewingExpense}
+        onEdit={() => {
+          if (viewingExpense) setEditingExpense(viewingExpense);
+          setViewingExpenseId(null);
+        }}
+        onMarkDone={() => {
+          if (viewingExpense) handleMarkDone(viewingExpense);
+          setViewingExpenseId(null);
+        }}
+      />
+      <RecurringDetailSheet
+        open={Boolean(viewingRecurring)}
+        onClose={() => setViewingRecurringId(null)}
+        recurring={viewingRecurring}
+        doneThisMonth={viewingRecurring?.lastCompletedMonth === currentMonth}
+        onToggleDone={() => {
+          if (viewingRecurring) handleToggleRecurringDone(viewingRecurring);
+        }}
+        onEdit={() => {
+          if (viewingRecurring) setEditingRecurring(viewingRecurring);
+          setViewingRecurringId(null);
+        }}
+      />
       <PersonalExpenseSheet open={Boolean(editingExpense)} onClose={() => setEditingExpense(null)} expense={editingExpense ?? undefined} />
       <RecurringExpenseSheet
         open={editingRecurring !== undefined}

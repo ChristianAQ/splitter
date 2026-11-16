@@ -35,6 +35,7 @@ import { BalanceRow } from "../components/group/BalanceRow";
 import { PaymentCard } from "../components/group/PaymentCard";
 import { GroupExpenseCard } from "../components/expense/GroupExpenseCard";
 import { GroupExpenseSheet } from "../components/expense/GroupExpenseSheet";
+import { GroupExpenseDetailSheet } from "../components/expense/GroupExpenseDetailSheet";
 import { GroupSettingsSheet } from "../components/group/GroupSettingsSheet";
 import { AddGroupFriendsSheet } from "../components/group/AddGroupFriendsSheet";
 import { useAuth } from "../context/AuthContext";
@@ -68,6 +69,7 @@ export function GroupDetail() {
   const { friends } = useFriends();
   const { archivedForMeIds } = useGroups();
   const [tab, setTab] = useState<Tab>("resumen");
+  const [viewingExpenseId, setViewingExpenseId] = useState<string | null>(null);
   const [editingExpense, setEditingExpense] = useState<GroupExpense | null>(null);
   const [addingExpense, setAddingExpense] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -137,6 +139,7 @@ export function GroupDetail() {
     );
   }
 
+  const viewingExpense = viewingExpenseId ? expenses.find((e) => e.id === viewingExpenseId) : undefined;
   const myBalance = balances.find((b) => b.uid === user?.uid)?.net ?? 0;
   const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
 
@@ -387,7 +390,7 @@ export function GroupDetail() {
                   expense={e}
                   members={membersById}
                   currentUid={user?.uid ?? ""}
-                  onClick={isArchived ? undefined : () => setEditingExpense(e)}
+                  onClick={() => setViewingExpenseId(e.id)}
                   onDelete={!isArchived && e.createdBy === user?.uid ? () => handleDeleteExpense(e) : undefined}
                 />
               ))}
@@ -486,6 +489,18 @@ export function GroupDetail() {
           ))}
       </PageContainer>
 
+      <GroupExpenseDetailSheet
+        open={Boolean(viewingExpense)}
+        onClose={() => setViewingExpenseId(null)}
+        expense={viewingExpense}
+        members={new Map(members.map((m) => [m.uid, m]))}
+        currentUid={user?.uid ?? ""}
+        canEdit={!isArchived && viewingExpense?.createdBy === user?.uid}
+        onEdit={() => {
+          if (viewingExpense) setEditingExpense(viewingExpense);
+          setViewingExpenseId(null);
+        }}
+      />
       <GroupExpenseSheet
         open={addingExpense}
         onClose={() => setAddingExpense(false)}

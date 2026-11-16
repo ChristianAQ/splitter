@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyRepayment, dueLabel, dueState, remainingAmount, sortDebts, summarizeDebts } from "../debts";
+import { dueLabel, dueState, recordPayment, remainingAmount, reopenDebt, settleDebt, sortDebts, summarizeDebts } from "../debts";
 import { shiftMonth } from "../date";
 import { occurrencesInRange } from "../recurring";
 import type { Debt, RecurringExpense } from "../../types";
@@ -85,12 +85,32 @@ describe("sortDebts", () => {
   });
 });
 
-describe("applyRepayment", () => {
-  it("accumulates partial repayments", () => {
-    expect(applyRepayment(debt({ paidAmount: 30 }), 20)).toEqual({ paidAmount: 50, settles: false });
+describe("recordPayment / settleDebt / reopenDebt", () => {
+  it("logs a partial repayment and keeps the debt open", () => {
+    const next = recordPayment(debt({ amount: 300 }), 100, TODAY, 1000);
+    expect(next).toEqual({ paidAmount: 100, payments: [{ amount: 100, date: TODAY, at: 1000 }], settled: false });
   });
-  it("clamps at the total and settles", () => {
-    expect(applyRepayment(debt({ paidAmount: 90 }), 50)).toEqual({ paidAmount: 100, settles: true });
+  it("clamps an overpayment to what was left and settles", () => {
+    const start = debt({ amount: 300, paidAmount: 250, payments: [{ amount: 250, date: "2026-11-02", at: 1 }] });
+    const next = recordPayment(start, 999, TODAY, 2);
+    expect(next.paidAmount).toBe(300);
+    expect(next.settled).toBe(true);
+    expect(next.payments[1]).toEqual({ amount: 50, date: TODAY, at: 2, closing: true });
+  });
+  it("carries a legacy running total into the log", () => {
+    const next = recordPayment(debt({ amount: 300, paidAmount: 40, createdAt: 5 }), 10, TODAY, 9);
+    expect(next.payments.map((p) => p.amount)).toEqual([40, 10]);
+    expect(next.paidAmount).toBe(50);
+  });
+  it("settling pays off the remainder; reopening takes only that back", () => {
+    const partial = { ...debt({ amount: 300 }), ...recordPayment(debt({ amount: 300 }), 100, TODAY, 1) };
+    const settled = settleDebt(partial, TODAY, 2);
+    expect(settled.paidAmount).toBe(300);
+    const reopened = reopenDebt({ ...partial, ...settled, settledAt: 2 });
+    expect(reopened).toEqual({ paidAmount: 100, payments: [{ amount: 100, date: TODAY, at: 1 }], settled: false });
+  });
+  it("reopening a legacy fully-paid debt starts it over", () => {
+    expect(reopenDebt(debt({ amount: 50, paidAmount: 50, settledAt: 1 }))).toEqual({ paidAmount: 0, payments: [], settled: false });
   });
 });
 

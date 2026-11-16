@@ -1,4 +1,4 @@
-import type { Debt, ISODate } from "../types";
+import type { Debt, DebtPayment, ISODate } from "../types";
 import { daysBetween } from "./date";
 import { fromMinorUnits, toMinorUnits } from "./money";
 
@@ -91,13 +91,60 @@ export function sortDebts(debts: Debt[]): Debt[] {
   });
 }
 
-/** Applies a (partial) repayment, clamped so it can never exceed what's
- * outstanding. Returns the new paidAmount and whether that settles it. */
-export function applyRepayment(debt: Debt, payment: number): { paidAmount: number; settles: boolean } {
-  const totalMinor = toMinorUnits(debt.amount, debt.currency);
-  const paidMinor = Math.min(
-    totalMinor,
-    toMinorUnits(debt.paidAmount, debt.currency) + Math.max(0, toMinorUnits(payment, debt.currency))
+/**
+ * The repayments recorded so far, oldest first. Debts from before the log
+ * existed only have a running total, shown as a single undated-ish entry
+ * (dated when the debt was created) so the history still adds up.
+ */
+export function paymentsOf(debt: Debt): DebtPayment[] {
+  if (debt.payments && debt.payments.length > 0) return [...debt.payments].sort((a, b) => a.at - b.at);
+  if (debt.paidAmount > 0) return [{ amount: debt.paidAmount, date: debt.date, at: debt.createdAt }];
+  return [];
+}
+
+function sumPayments(payments: DebtPayment[], currency: string): number {
+  return fromMinorUnits(
+    payments.reduce((sum, p) => sum + toMinorUnits(p.amount, currency), 0),
+    currency
   );
-  return { paidAmount: fromMinorUnits(paidMinor, debt.currency), settles: paidMinor >= totalMinor };
+}
+
+export interface DebtProgress {
+  paidAmount: number;
+  payments: DebtPayment[];
+  settled: boolean;
+}
+
+/** Records a repayment of `amount`, clamped to what's outstanding (paying
+ * more than is owed just settles it). Settles the debt if nothing is left. */
+export function recordPayment(debt: Debt, amount: number, today: ISODate, now: number): DebtProgress {
+  const remainingMinor = toMinorUnits(remainingAmount(debt), debt.currency);
+  const paidMinor = Math.min(Math.max(0, toMinorUnits(amount, debt.currency)), remainingMinor);
+  const settles = paidMinor >= remainingMinor;
+  const payments = paymentsOf(debt);
+  if (paidMinor > 0) {
+    payments.push({ amount: fromMinorUnits(paidMinor, debt.currency), date: today, at: now, ...(settles ? { closing: true } : {}) });
+  }
+  return { paidAmount: sumPayments(payments, debt.currency), payments, settled: settles };
+}
+
+/** Pays off whatever is left in one go. */
+export function settleDebt(debt: Debt, today: ISODate, now: number): DebtProgress {
+  const progress = recordPayment(debt, remainingAmount(debt), today, now);
+  return { ...progress, settled: true };
+}
+
+/** Undoes a settlement: the closing payment comes back out, earlier
+ * partial repayments stay. */
+export function reopenDebt(debt: Debt): DebtProgress {
+  const payments = paymentsOf(debt).filter((p) => !p.closing);
+  let paidAmount = sumPayments(payments, debt.currency);
+  // A legacy debt settled with the old one-tap check has no closing entry
+  // to remove; if it reads as fully paid, reopening would leave nothing
+  // to pay, so start it over.
+  if (toMinorUnits(paidAmount, debt.currency) >= toMinorUnits(debt.amount, debt.currency)) {
+    paidAmount = 0;
+    payments.length = 0;
+  }
+  return { paidAmount, payments, settled: false };
 }

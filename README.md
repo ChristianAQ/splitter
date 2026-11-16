@@ -43,6 +43,9 @@ sensible vive en `firestore.rules`; ver §4.
 - Iconografía consistente con [lucide-react](https://lucide.dev) en toda la
   navegación y los controles de UI; los emoji se reservan para elecciones
   del usuario (icono de grupo, categorías) donde aportan color/personalidad.
+- Tocar un gasto o una deuda lo abre en solo lectura; «Editar» está aparte,
+  en la cabecera. Las deudas se pagan desde ahí, en parte o del todo, y
+  guardan el historial de pagos.
 - Deslizar un gasto hacia la izquierda para borrarlo (gastos personales,
   recurrentes, deudas y los gastos de grupo que has creado tú), con
   «Deshacer» durante unos segundos — `components/ui/SwipeToDelete.tsx`.

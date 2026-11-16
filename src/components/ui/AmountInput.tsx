@@ -39,6 +39,11 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
   const symbolAfter = currency === "EUR";
   const symbol = <span className="text-neutral-400 dark:text-neutral-500">{CURRENCY_SYMBOL[currency]}</span>;
 
+  // `ch` is the width of a digit; the decimal separator is about half of
+  // that, and counting it as a whole one left a visible hole before "€".
+  const shown = value || "0";
+  const widthInCh = Math.max(shown.replace(".", "").length + (shown.includes(".") ? 0.45 : 0), 1);
+
   function handleChange(raw: string) {
     const normalized = raw.replace(",", ".");
     if (/^\d*\.?\d{0,2}$/.test(normalized)) onChange(normalized);
@@ -63,7 +68,7 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
           size={1}
           // A little slack for the caret; less when the symbol trails the
           // number, or it reads as "0   €" with a hole in the middle.
-          style={{ width: `${Math.max((value || "0").length, 1) + (symbolAfter ? 0.25 : 0.75)}ch` }}
+          style={{ width: `${widthInCh + (symbolAfter ? 0.25 : 0.75)}ch` }}
           // Global `input { font-size: 16px }` (index.css, prevents iOS
           // Safari zooming on focus for normal-sized fields) otherwise
           // overrides this element's inherited text-5xl/text-3xl — an
