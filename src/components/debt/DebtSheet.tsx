@@ -20,6 +20,8 @@ interface Props {
   onClose: () => void;
   debt?: Debt;
   initialKind?: DebtKind;
+  /** Pre-fills who it's with (adding another entry for the same person). */
+  initialPerson?: string;
 }
 
 const COPY: Record<DebtKind, { person: string; concept: string; conceptPlaceholder: string; due: string }> = {
@@ -50,7 +52,7 @@ const KIND_OPTIONS: [DebtKind, string][] = [
   ["owed", "Me deben"],
 ];
 
-export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
+export function DebtSheet({ open, onClose, debt, initialKind = "owe", initialPerson = "" }: Props) {
   const { user, profile } = useAuth();
   const { show } = useToast();
   const { friends } = useFriends();
@@ -82,14 +84,14 @@ export function DebtSheet({ open, onClose, debt, initialKind = "owe" }: Props) {
     } else {
       setKind(initialKind);
       setAmount("");
-      setPerson("");
+      setPerson(initialPerson);
       setConcept("");
       setDate(todayISO());
       setDueDate("");
       setNotes("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, debtId, initialKind]);
+  }, [open, debtId, initialKind, initialPerson]);
 
   const copy = COPY[kind];
   const currency = debt?.currency ?? profile?.currency ?? "EUR";

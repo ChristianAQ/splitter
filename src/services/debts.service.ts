@@ -139,3 +139,23 @@ export async function restoreDebt(uid: string, debt: Debt) {
     throw toFriendlyError(error);
   }
 }
+
+/** Several debts changed by one payment (settling up with a person). */
+export async function setDebtsProgress(uid: string, updates: { debt: Debt; progress: DebtProgress }[]) {
+  try {
+    await commit(
+      Promise.all(
+        updates.map(({ debt, progress }) =>
+          updateDoc(doc(col(uid), debt.id), {
+            paidAmount: progress.paidAmount,
+            payments: progress.payments,
+            settledAt: progress.settled ? serverTimestamp() : deleteField(),
+            updatedAt: serverTimestamp(),
+          })
+        )
+      )
+    );
+  } catch (error) {
+    throw toFriendlyError(error);
+  }
+}

@@ -16,6 +16,7 @@ import { formatCurrency, formatDate } from "../lib/format";
 import { categoryById } from "../lib/categories";
 import { shiftMonth, todayISO } from "../domain/date";
 import { summarizeDebts } from "../domain/debts";
+import { balancesByPerson, netTotals } from "../domain/debtPeople";
 import { summarizeRecurringBudget } from "../domain/budget";
 import { changePercent, dailyAverage } from "../domain/spending";
 import { upcomingPayments, type UpcomingKind } from "../domain/upcoming";
@@ -80,7 +81,12 @@ export function Home() {
 
   const upcoming = useMemo(() => upcomingPayments(expenses, recurring, debts, today), [expenses, recurring, debts, today]);
   const upcomingTotal = upcoming.filter((u) => u.currency === currency).reduce((sum, u) => sum + u.amount, 0);
-  const debtSummary = useMemo(() => summarizeDebts(debts, currency, today), [debts, currency, today]);
+  // What's owed each way after netting per person — the same figures the
+  // Deudas tab shows — plus the counts from the individual entries.
+  const debtSummary = useMemo(
+    () => ({ ...summarizeDebts(debts, currency, today), ...netTotals(balancesByPerson(debts, today), currency) }),
+    [debts, currency, today]
+  );
   const fixed = useMemo(() => summarizeRecurringBudget(recurring, thisMonth, 0), [recurring, thisMonth]);
   const fixedPaid = recurring.filter((r) => r.lastCompletedMonth === thisMonth).length;
 

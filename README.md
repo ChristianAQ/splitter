@@ -28,6 +28,9 @@ sensible vive en `firestore.rules`; ver §4.
 - Fijos: gastos recurrentes que se marcan mes a mes. A cada uno se le puede
   asignar un banco con su color; un resumen totaliza lo que sale de cada
   cuenta y permite filtrar por banco (`domain/banks.ts`).
+- Deudas agrupadas por persona: varias deudas con la misma persona, en
+  cualquier sentido, se suman en un único neto y se saldan con un solo
+  pago, entero o por partes (`domain/debtPeople.ts`).
 - Deudas (pestaña de Gastos): dinero que debes o que te deben — con fecha
   límite opcional («cuando se pueda»), devoluciones parciales con historial
   y aviso de vencidas en Inicio. No cuentan como gasto.
@@ -113,7 +116,7 @@ La lógica financiera (`src/domain/`) es la parte más importante de la
 aplicación y **no importa nada de Firebase ni de React** — son funciones
 puras (`splitEqual`, `computeBalances`, `optimizeSettlement`,
 `occurrencesInRange`...) que reciben datos y devuelven datos. Esto permite:
-1. Testearla exhaustivamente sin mocks (`npm run test`, 78 tests).
+1. Testearla exhaustivamente sin mocks (`npm run test`, 88 tests).
 2. Reutilizarla igual en cualquier punto de la app sin duplicar la lógica
    de reparto o de balances.
 3. Que un cliente manipulado nunca sea la fuente de verdad: el cliente
@@ -238,7 +241,7 @@ cambiar.
 
 ## 5. Lógica financiera (`src/domain/`)
 
-Todo cubierto por tests (`npm run test`, 78 tests, 9 ficheros):
+Todo cubierto por tests (`npm run test`, 88 tests, 10 ficheros):
 
 - **`split.ts`** — reparto igual (con reparto exacto del céntimo sobrante,
   nunca se "pierde" un céntimo) y reparto por importe exacto (valida que
