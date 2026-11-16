@@ -390,15 +390,32 @@ export async function addFriendsToGroup(
     const groupRef = doc(db, "groups", groupId);
     for (const friend of friends) {
       await updateDoc(groupRef, { memberIds: arrayUnion(friend.uid) });
-      const color = await pickFreeColor(groupId);
-      await setDoc(doc(groupRef, "members", friend.uid), {
-        uid: friend.uid,
-        name: friend.name,
-        color,
-        photoUrl: friend.photoUrl,
-        joinedAt: serverTimestamp(),
-        active: true,
-      });
+      const memberRef = doc(groupRef, "members", friend.uid);
+      const [existing, color] = await Promise.all([getDoc(memberRef), pickFreeColor(groupId)]);
+      if (existing.exists()) {
+        // Someone who was in the group before (left or was removed) still
+        // has their member doc, marked inactive. Overwriting it with a
+        // fresh `joinedAt` is rejected by the rules (that field is
+        // immutable), which used to leave them listed in `memberIds` but
+        // inactive — in the group, yet missing from every balance and
+        // picker. Reactivate the existing doc instead, same as
+        // joinGroupByCode does for a self-rejoin.
+        await updateDoc(memberRef, {
+          active: true,
+          name: friend.name,
+          color,
+          photoUrl: friend.photoUrl ?? deleteField(),
+        });
+      } else {
+        await setDoc(memberRef, {
+          uid: friend.uid,
+          name: friend.name,
+          color,
+          photoUrl: friend.photoUrl,
+          joinedAt: serverTimestamp(),
+          active: true,
+        });
+      }
       await logHistory(groupId, "member_joined", adminUid, adminName, `${friend.name} fue añadido al grupo por ${adminName}`);
     }
   } catch (error) {

@@ -1,0 +1,511 @@
+rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// Splitter — Firestore Security Rules
+//
+// Spark-plan friendly: every write in this app is a plain client write
+// validated by these rules — there are NO Cloud Functions in the runtime
+// path (Cloud Functions requires the Blaze billing plan; this app doesn't
+// need it). Operations that would normally need server-side atomicity
+// (creating a group + its first member + its invite code; joining a group;
+// leaving; an admin removing a member; rotating an invite code; adding a
+// friend) are instead modeled as a short sequence of individually-safe
+// client writes, each one narrowly scoped so a manipulated client still
+// can't do anything beyond exactly that one step. See
+// services/groups.service.ts and services/friends.service.ts for the exact
+// write order each flow uses — order matters in a few places (e.g. a
+// leaving member must update their own `members/{uid}` doc *before* being
+// removed from `memberIds`, or `isMember()` would already be false for the
+// second write).
+//
+// Threat model this file defends against:
+//   - A user reading another user's personal data (expenses, debts, profile).
+//   - A user reading/joining a group they don't belong to.
+//   - A user editing or deleting an expense/payment they didn't create,
+//     even if they participate in it.
+//   - A user forging `createdBy`/`paidBy`/`groupId`/amounts/splits on write.
+//   - A user tampering with membership beyond the one narrow operation
+//     they're actually allowed (adding themselves, removing themselves, or
+//     — admin only — adding or removing one other member at a time).
+//   - A user reading group internals (expenses, balances, members) merely by
+//     knowing (or brute-forcing) an invite code (the code only resolves to
+//     a minimal preview; joining still requires the separate memberIds write).
+//   - A user impersonating the group admin (there is no stored `role` field
+//     to forge — "is admin" is always derived from `group.createdBy`, which
+//     is immutable once the group is created).
+//   - A user forging a friend entry in someone else's list under a third
+//     party's identity — a friends/{friendUid} write must either come from
+//     the list's owner or from friendUid itself (see isSelf(friendUid)
+//     below), the same self-keyed-write shape as joining a group.
+//   - A user adding or editing expenses/payments in a group its admin has
+//     closed (archived) — "solo lectura" is enforced here, not just by the
+//     UI hiding the buttons.
+//
+// Known trade-off vs. a Cloud-Functions-backed design: joining still goes
+// through the invite-code preview at the UI layer, but nothing here proves
+// a client actually read a valid code before adding itself to `memberIds`
+// — a `groups/{groupId}` document ID is a high-entropy Firestore auto-ID,
+// so this is judged an acceptable trade-off for a zero-backend, Spark-plan
+// architecture. Upgrading to Blaze and adding a `joinGroupByCode` Cloud
+// Function later would close that gap without changing anything else here.
+// The same trade-off applies to friendCodes below.
+// ---------------------------------------------------------------------------
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function groupDoc(groupId) {
+      return get(/databases/$(database)/documents/groups/$(groupId));
+    }
+
+    function isMember(groupId) {
+      return isSignedIn() &&
+        request.auth.uid in groupDoc(groupId).data.memberIds;
+    }
+
+    function isGroupAdmin(groupId) {
+      return isSignedIn() &&
+        groupDoc(groupId).data.createdBy == request.auth.uid;
+    }
+
+    // A group is archived once `archivedAt` is set — used to gate the one
+    // truly destructive operation in this app (permanently deleting a
+    // group and its subcollections) behind "already archived", so deletion
+    // is never a single accidental step: active -> archived -> deleted.
+    // Also what makes a closed group read-only for expenses and payments.
+    function isArchivedGroup(groupId) {
+      return groupDoc(groupId).data.get('archivedAt', null) != null;
+    }
+
+    // Safe even when `field` is absent on one or both sides (e.g. optional
+    // fields like `description`/`archivedAt`) — plain `data[field]` access
+    // throws on a missing key, `.get(field, default)` does not.
+    function unchanged(field) {
+      return request.resource.data.get(field, null) == resource.data.get(field, null);
+    }
+
+    function isPositiveAmount(value) {
+      return value is number && value > 0 && value < 10000000;
+    }
+
+    // `newList` is `oldList` plus exactly one new element, `addedUid`.
+    function isSingleAddition(oldList, newList, addedUid) {
+      return newList.size() == oldList.size() + 1
+        && newList.hasAll(oldList)
+        && addedUid in newList
+        && !(addedUid in oldList);
+    }
+
+    // Same shape as isSingleAddition, but for callers (the group admin
+    // adding a friend) who aren't the added uid themselves, so there's no
+    // fixed value to check identity against — only that exactly one net
+    // new uid showed up. Who that uid is allowed to be is constrained
+    // separately by the members/{memberUid} create rule below.
+    function isSingleAdditionOfAny(oldList, newList) {
+      return newList.size() == oldList.size() + 1 && newList.hasAll(oldList);
+    }
+
+    // `newList` is `oldList` with exactly one element removed (whichever).
+    function isSingleRemoval(oldList, newList) {
+      return newList.size() == oldList.size() - 1
+        && oldList.hasAll(newList);
+    }
+
+    // Every field except `memberIds` stays exactly as it was — used by the
+    // join/leave/remove branches of the groups/{groupId} update rule so
+    // those narrow operations can never smuggle in a rename, a re-themed
+    // group, or a forged invite code alongside the membership change.
+    function onlyMemberIdsChanged() {
+      return unchanged('createdBy') && unchanged('inviteCode') && unchanged('name')
+        && unchanged('description') && unchanged('icon') && unchanged('color')
+        && unchanged('currency') && unchanged('createdAt') && unchanged('archivedAt');
+    }
+
+    // Uno de los diez valores de ACCENT_COLOR_PALETTE (lib/accentColors.ts).
+    // El campo es opcional (los perfiles antiguos no lo tienen), pero si está
+    // presente debe ser uno de los que ofrece el selector.
+    function isValidAccentColor() {
+      return !('accentColor' in request.resource.data)
+        || request.resource.data.accentColor in
+          ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#EF4444', '#8B5CF6', '#14B8A6', '#F97316', '#06B6D4'];
+    }
+
+    // `archivedGroupIds` — los grupos que el usuario ha archivado solo para
+    // sí mismo (services/users.service.ts, setGroupArchivedForMe). Opcional;
+    // si está, es una lista de tamaño razonable.
+    function isValidArchivedGroupIds() {
+      return !('archivedGroupIds' in request.resource.data)
+        || (request.resource.data.archivedGroupIds is list
+          && request.resource.data.archivedGroupIds.size() <= 500);
+    }
+
+    // Shared by create and update of users/{uid}/debts/{debtId}.
+    // `paidAmount` (lo devuelto hasta ahora) is deliberately not capped at
+    // `amount` here: the two are edited by separate writes, and the client
+    // already clamps what's outstanding at zero.
+    function isValidDebt() {
+      return request.resource.data.kind in ['owe', 'owed', 'reminder']
+        && isPositiveAmount(request.resource.data.amount)
+        && request.resource.data.paidAmount is number
+        && request.resource.data.paidAmount >= 0
+        && request.resource.data.paidAmount < 10000000
+        && request.resource.data.currency in ['EUR', 'USD', 'GBP'];
+    }
+
+    // -----------------------------------------------------------------
+    // Users
+    // -----------------------------------------------------------------
+    match /users/{uid} {
+      allow read: if isSelf(uid);
+      allow create: if isSelf(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.currency in ['EUR', 'USD', 'GBP']
+        && request.resource.data.theme in ['light', 'dark', 'system']
+        && isValidAccentColor()
+        && isValidArchivedGroupIds();
+      allow update: if isSelf(uid)
+        && unchanged('uid')
+        && unchanged('email')
+        && unchanged('createdAt')
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60
+        && request.resource.data.currency in ['EUR', 'USD', 'GBP']
+        && request.resource.data.theme in ['light', 'dark', 'system']
+        && isValidAccentColor()
+        && isValidArchivedGroupIds();
+      allow delete: if isSelf(uid);
+
+      match /personalExpenses/{expenseId} {
+        allow read: if isSelf(uid);
+        allow create: if isSelf(uid)
+          && request.resource.data.ownerId == uid
+          && isPositiveAmount(request.resource.data.amount)
+          && request.resource.data.status in ['future', 'pending', 'done'];
+        allow update: if isSelf(uid)
+          && unchanged('ownerId')
+          && unchanged('createdAt')
+          && isPositiveAmount(request.resource.data.amount)
+          && request.resource.data.status in ['future', 'pending', 'done'];
+        allow delete: if isSelf(uid);
+      }
+
+      match /recurringExpenses/{recurringId} {
+        allow read: if isSelf(uid);
+        allow create: if isSelf(uid)
+          && request.resource.data.ownerId == uid
+          && isPositiveAmount(request.resource.data.amount)
+          && request.resource.data.periodicity in ['weekly', 'monthly', 'yearly'];
+        // `periodicity` is re-checked here too: it used to be validated only
+        // on create, so an update could store any value and leave the
+        // recurrence engine with a period it doesn't know.
+        allow update: if isSelf(uid)
+          && unchanged('ownerId')
+          && unchanged('createdAt')
+          && isPositiveAmount(request.resource.data.amount)
+          && request.resource.data.periodicity in ['weekly', 'monthly', 'yearly'];
+        allow delete: if isSelf(uid);
+      }
+
+      // Deudas y pendientes (pestaña «Deudas» de Gastos): dinero que debo,
+      // que me deben, o un pago que no quiero olvidar. Estrictamente
+      // privado del propietario, como el resto de users/{uid}/**.
+      // See services/debts.service.ts.
+      match /debts/{debtId} {
+        allow read: if isSelf(uid);
+        allow create: if isSelf(uid)
+          && request.resource.data.ownerId == uid
+          && isValidDebt();
+        allow update: if isSelf(uid)
+          && unchanged('ownerId')
+          && unchanged('createdAt')
+          && isValidDebt();
+        allow delete: if isSelf(uid);
+      }
+
+      // Denormalized snapshots of other users, added mutually with no
+      // accept step — see services/friends.service.ts's addFriendByCode,
+      // which makes exactly the two writes this rule allows: the owner's
+      // own copy (isSelf(uid), same as any other owned subcollection) and
+      // the matching entry inside the *other* user's list, keyed by the
+      // writer's own uid (isSelf(friendUid)) — the same self-keyed-write-
+      // into-someone-else's-collection shape as a group member joining via
+      // groups/{groupId}/members/{memberUid} below.
+      match /friends/{friendUid} {
+        allow read: if isSelf(uid);
+        allow create: if (isSelf(uid) || isSelf(friendUid))
+          && request.resource.data.uid == friendUid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 60;
+        // Un amigo puede actualizar su propia entrada denormalizada dondequiera
+        // que esté cacheada — mismo mecanismo de "propagar cambio de perfil" que
+        // profileSync.service.ts ya usa para los miembros de grupo, aquí
+        // apuntando a friends/{miUid} en la lista de cada amigo.
+        allow update: if isSelf(friendUid)
+          && unchanged('uid')
+          && unchanged('addedAt')
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 60;
+        allow delete: if isSelf(uid);
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // Invite code preview — deliberately minimal fields only (name/icon/
+    // color, never expenses/balances/members). Only the group's own
+    // creator can mint or rotate its code.
+    // -----------------------------------------------------------------
+    match /inviteCodes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && groupDoc(request.resource.data.groupId).data.createdBy == request.auth.uid;
+      allow update: if false; // rotate = create the new code, then delete the old one
+      allow delete: if isSignedIn()
+        && groupDoc(resource.data.groupId).data.createdBy == request.auth.uid;
+    }
+
+    // -----------------------------------------------------------------
+    // Friend code preview — now keyed by the owner's own uid instead of a
+    // random document id (the "code" someone shares to be added as a
+    // friend IS their uid, so no separate lookup step or collision
+    // handling is needed). Same trust model as inviteCodes: deliberately
+    // minimal fields only (uid/name/color), readable by any signed-in user
+    // so a code can be previewed without read access to the real
+    // users/{uid} profile doc. `update` is real (not `if false`) because
+    // ensureFriendCode() is an idempotent create-or-merge called every time
+    // Amigos/Perfil opens — after the first call this is a Firestore
+    // "update", not a "create" — and propagateProfileToFriends() also
+    // keeps this doc in sync on rename/recolor.
+    // -----------------------------------------------------------------
+    match /friendCodes/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isSelf(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60;
+      allow update: if isSelf(uid)
+        && unchanged('uid')
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 60;
+      allow delete: if false;
+    }
+
+    // -----------------------------------------------------------------
+    // Groups
+    // -----------------------------------------------------------------
+    match /groups/{groupId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.memberIds;
+
+      // The creator makes the group directly; it starts with exactly one
+      // member (themselves). Their `members/{uid}` doc and the group's
+      // `inviteCodes/{code}` doc are separate, sequential writes right
+      // after this one (see services/groups.service.ts) — not bundled into
+      // one batch, so each can safely `get()` this document once it's
+      // actually committed.
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80
+        && request.resource.data.currency in ['EUR', 'USD', 'GBP']
+        && request.resource.data.inviteCode is string
+        && request.resource.data.inviteCode.size() >= 6;
+
+      allow update: if isSignedIn() && (
+        // The admin edits group settings (name/description/icon/color/
+        // invite code/archived state). `memberIds` is untouchable even for
+        // the admin — it only ever changes via the narrower branches below.
+        // `currency` and `inviteCode` keep the same constraints they had
+        // on create: before, an update could set the currency to anything
+        // or blank out the invite code.
+        (resource.data.createdBy == request.auth.uid
+          && unchanged('createdBy') && unchanged('memberIds') && unchanged('createdAt')
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80
+          && request.resource.data.currency in ['EUR', 'USD', 'GBP']
+          && request.resource.data.inviteCode is string
+          && request.resource.data.inviteCode.size() >= 6)
+
+        // Joining: any signed-in user may add exactly themselves to
+        // `memberIds` on a non-archived group, touching nothing else on the
+        // document. There's deliberately no pre-read here — the group's
+        // `read` rule requires already being a member, so the client can't
+        // `get()` this document before joining; it just attempts this
+        // narrow write directly and treats a permission-denied as "already
+        // a member" (see services/groups.service.ts).
+        || (onlyMemberIdsChanged()
+          && resource.data.get('archivedAt', null) == null
+          && isSingleAddition(resource.data.memberIds, request.resource.data.memberIds, request.auth.uid))
+
+        // Admin adds a friend (or a member without an account) directly —
+        // services/groups.service.ts's addFriendsToGroup/addGhostMember —
+        // same "add exactly one uid, nothing else changes" shape as
+        // joining above, except the caller is the group's own creator
+        // adding someone who isn't them, so there's no fixed identity to
+        // check the added uid against here (that's enforced instead by the
+        // members/{memberUid} create rule below, at the point the actual
+        // member doc gets written for that uid).
+        || (onlyMemberIdsChanged()
+          && resource.data.get('archivedAt', null) == null
+          && resource.data.createdBy == request.auth.uid
+          && isSingleAdditionOfAny(resource.data.memberIds, request.resource.data.memberIds))
+
+        // Leaving or being removed: exactly one uid drops out of
+        // `memberIds`, and it's either the caller themselves (leaving,
+        // regardless of who else remains) or, if the caller is the group's
+        // admin and remains a member afterward, any single other member
+        // (expelling).
+        || (onlyMemberIdsChanged()
+          && isSingleRemoval(resource.data.memberIds, request.resource.data.memberIds)
+          && (
+            (request.auth.uid in resource.data.memberIds && !(request.auth.uid in request.resource.data.memberIds))
+            || (resource.data.createdBy == request.auth.uid && request.auth.uid in request.resource.data.memberIds)
+          ))
+      );
+
+      // Permanent delete — admin-only, and only once the group is already
+      // archived. Archiving stays the reversible-ish, non-destructive step
+      // (update); this is the one genuinely irreversible operation in the
+      // app, so it's gated behind an explicit prior archive rather than
+      // reachable directly from an active group. See
+      // services/groups.service.ts's deleteGroup for the cascade this
+      // backs — subcollection docs must be deleted *before* this doc,
+      // since their own delete rules below re-check isGroupAdmin()/
+      // isArchivedGroup() against this same document.
+      allow delete: if isGroupAdmin(groupId) && resource.data.get('archivedAt', null) != null;
+
+      match /members/{memberUid} {
+        allow read: if isSignedIn() && request.auth.uid in groupDoc(groupId).data.memberIds;
+
+        // The member doc for `memberUid` may be created once `memberUid`
+        // is already listed in the group's memberIds — true right after
+        // the creator makes the group (memberIds == [creator]), right
+        // after a self-join (services/groups.service.ts's
+        // joinGroupByCode adds to memberIds *before* writing this doc),
+        // and right after the admin adds a friend (addFriendsToGroup does
+        // the same memberIds-first ordering). Either the member
+        // themselves or the group's admin may be the one performing the
+        // write — there's no stored `role` field to forge: "is admin" is
+        // always derived from `group.createdBy`, checked live wherever it
+        // matters.
+        allow create: if request.resource.data.uid == memberUid
+          && memberUid in groupDoc(groupId).data.memberIds
+          && (isSelf(memberUid) || isGroupAdmin(groupId));
+
+        // A member may update their own name/color (this is also how a
+        // profile-wide name/color change in Settings propagates into every
+        // group they're in — see services/profileSync.service.ts) or mark
+        // themselves inactive (leaving, written before the memberIds
+        // removal — see note at the top of this file). The admin may
+        // additionally rename/recolor or reactivate/deactivate any member
+        // (expelling, or re-adding someone who had left).
+        allow update: if isMember(groupId)
+          && unchanged('uid')
+          && unchanged('joinedAt')
+          && (isSelf(memberUid) || isGroupAdmin(groupId));
+
+        // Only reachable once the group is archived and permanently
+        // deleted — see the groups/{groupId} delete rule above and
+        // services/groups.service.ts's deleteGroup cascade, which deletes
+        // this doc before the parent group doc.
+        allow delete: if isGroupAdmin(groupId) && isArchivedGroup(groupId);
+      }
+
+      match /expenses/{expenseId} {
+        allow read: if isMember(groupId);
+
+        allow create: if isMember(groupId)
+          && !isArchivedGroup(groupId)
+          && request.resource.data.groupId == groupId
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.paidBy in groupDoc(groupId).data.memberIds
+          && isPositiveAmount(request.resource.data.amount)
+          && request.resource.data.splitMethod in ['equal', 'amount']
+          && request.resource.data.participants is list
+          && request.resource.data.participants.size() > 0
+          && request.resource.data.deleted == false;
+
+        // Only the creator may edit — including the "delete" (soft-delete
+        // via `deleted: true`), which is why this is the only write path.
+        // Not in a closed group: its expenses are frozen as they were.
+        allow update: if isMember(groupId)
+          && !isArchivedGroup(groupId)
+          && resource.data.createdBy == request.auth.uid
+          && unchanged('createdBy')
+          && unchanged('groupId')
+          && unchanged('createdAt')
+          && isPositiveAmount(request.resource.data.amount)
+          && request.resource.data.splitMethod in ['equal', 'amount']
+          && request.resource.data.participants is list
+          && request.resource.data.participants.size() > 0
+          && request.resource.data.deleted is bool;
+
+        // Only reachable as part of the archived-group deletion cascade —
+        // day-to-day removal is the soft-delete above (`deleted: true`),
+        // which preserves the audit trail on a live group.
+        allow delete: if isGroupAdmin(groupId) && isArchivedGroup(groupId);
+      }
+
+      match /payments/{paymentId} {
+        allow read: if isMember(groupId);
+
+        allow create: if isMember(groupId)
+          && !isArchivedGroup(groupId)
+          && request.resource.data.groupId == groupId
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.fromUid in groupDoc(groupId).data.memberIds
+          && request.resource.data.toUid in groupDoc(groupId).data.memberIds
+          && request.resource.data.fromUid != request.resource.data.toUid
+          && isPositiveAmount(request.resource.data.amount)
+          && request.resource.data.status in ['pending', 'confirmed'];
+
+        // Only the creator may revert (soft-delete) or edit status; the
+        // amount/parties of a payment are immutable once recorded — a
+        // wrong payment must be reverted and re-created, never mutated in
+        // place, so the audit trail always matches what actually happened.
+        allow update: if isMember(groupId)
+          && !isArchivedGroup(groupId)
+          && resource.data.createdBy == request.auth.uid
+          && unchanged('createdBy')
+          && unchanged('groupId')
+          && unchanged('fromUid')
+          && unchanged('toUid')
+          && unchanged('amount')
+          && unchanged('createdAt')
+          && request.resource.data.status in ['pending', 'confirmed'];
+
+        // Only reachable as part of the archived-group deletion cascade —
+        // see the groups/{groupId} delete rule above.
+        allow delete: if isGroupAdmin(groupId) && isArchivedGroup(groupId);
+      }
+
+      match /history/{historyId} {
+        allow read: if isMember(groupId);
+        allow create: if isMember(groupId)
+          && request.resource.data.groupId == groupId
+          && request.resource.data.actorId == request.auth.uid;
+        allow update: if false;
+        // Only reachable as part of the archived-group deletion cascade —
+        // see the groups/{groupId} delete rule above.
+        allow delete: if isGroupAdmin(groupId) && isArchivedGroup(groupId);
+      }
+    }
+  }
+}
