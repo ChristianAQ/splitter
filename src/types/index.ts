@@ -149,6 +149,11 @@ export interface RecurringExpense {
   notes?: string;
   bankId?: string; // which of the profile's `banks` this is paid from
   lastCompletedMonth?: string; // "YYYY-MM" of the most recent month checked off
+  // The month for which ticking it off has also been written down as a paid
+  // expense (see setRecurringCompletedThisMonth). Lets the app tell a tick
+  // made before that existed — which still needs its expense — from one
+  // whose expense the user has since deleted on purpose.
+  materializedMonth?: string;
   createdAt: EpochMillis;
   updatedAt: EpochMillis;
 }

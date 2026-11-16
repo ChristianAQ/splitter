@@ -18,6 +18,7 @@ import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
 import { deletePersonalExpense, restorePersonalExpense } from "../services/personalExpenses.service";
+import { syncRecurringTick } from "../services/recurringExpenses.service";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { todayISO } from "../domain/date";
 import type { PersonalExpense } from "../types";
@@ -61,11 +62,19 @@ export function Expenses() {
     if (!user) return;
     const uid = user.uid;
     try {
+      // A fixed expense's recorded payment: deleting it here unticks the
+      // fixed expense for that month too (and undoing ticks it again), so
+      // Fijos and the totals never disagree about whether it was paid.
+      const fixedId = expense.recurringSourceId;
+      const month = expense.date.slice(0, 7);
       await deletePersonalExpense(uid, expense.id);
+      if (fixedId) void syncRecurringTick(uid, fixedId, month, false);
       show("Gasto eliminado", "default", {
         label: "Deshacer",
         onClick: () => {
-          restorePersonalExpense(uid, expense).catch((err) => show(err instanceof Error ? err.message : "No se pudo recuperar.", "error"));
+          restorePersonalExpense(uid, expense)
+            .then(() => (fixedId ? syncRecurringTick(uid, fixedId, month, true) : undefined))
+            .catch((err) => show(err instanceof Error ? err.message : "No se pudo recuperar.", "error"));
         },
       });
     } catch (err) {

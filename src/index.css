@@ -23,6 +23,23 @@
     color-scheme: dark;
   }
 
+  /* Chart series colors, for the few places a chart tells *kinds of thing*
+   * apart by hue (the Variables / Fijos / Grupos split). Blue, orange and
+   * violet in a fixed order: checked for color-blind separation and for
+   * contrast against the card surface in each theme (the dark values are
+   * their own steps, not the light ones reused). Everything else on a chart
+   * is the accent hue, or grey for context. */
+  :root {
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #6250d6;
+  }
+  .dark {
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #9085e9;
+  }
+
   html,
   body,
   #root {

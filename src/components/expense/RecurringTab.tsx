@@ -63,7 +63,7 @@ export function RecurringTab() {
   async function handleToggleDone(r: RecurringExpense) {
     if (!user) return;
     try {
-      await setRecurringCompletedThisMonth(user.uid, r.id, month, r.lastCompletedMonth !== month);
+      await setRecurringCompletedThisMonth(user.uid, r, month, r.lastCompletedMonth !== month, todayISO());
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo actualizar.", "error");
     }

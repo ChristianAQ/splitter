@@ -7,7 +7,7 @@ import { Avatar } from "../components/ui/Avatar";
 import { GroupCard } from "../components/group/GroupCard";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { useAuth } from "../context/AuthContext";
-import { usePersonalExpenses } from "../hooks/usePersonalExpenses";
+import { useSpending } from "../hooks/useSpending";
 import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
 import { useGroups } from "../hooks/useGroups";
 import { useDebts } from "../hooks/useDebts";
@@ -16,7 +16,8 @@ import { formatCurrency, formatDate } from "../lib/format";
 import { categoryById } from "../lib/categories";
 import { shiftMonth, todayISO } from "../domain/date";
 import { summarizeDebts } from "../domain/debts";
-import { recurringSpentForMonth, summarizeRecurringBudget } from "../domain/budget";
+import { summarizeRecurringBudget } from "../domain/budget";
+import { changePercent, dailyAverage } from "../domain/spending";
 import { upcomingPayments, type UpcomingKind } from "../domain/upcoming";
 import type { Currency } from "../types";
 
@@ -47,7 +48,8 @@ const UPCOMING_LINK: Record<UpcomingKind, string> = {
 
 export function Home() {
   const { profile } = useAuth();
-  const { expenses, loading } = usePersonalExpenses();
+  // Same numbers as Estadísticas, by construction: both read useSpending.
+  const { summary, expenses, loading } = useSpending(6);
   const { items: recurring } = useRecurringExpenses();
   const { groups, loading: groupsLoading } = useGroups();
   const { debts } = useDebts();
@@ -59,37 +61,22 @@ export function Home() {
   const lastMonth = shiftMonth(thisMonth, -1);
 
   const spending = useMemo(() => {
-    const months = Array.from({ length: 6 }, (_, i) => shiftMonth(thisMonth, i - 5));
-    const totals: Record<string, number> = Object.fromEntries(months.map((m) => [m, 0]));
-    const byCategory: Record<string, number> = {};
-
-    for (const e of expenses) {
-      if (e.status === "future") continue;
-      const month = e.date.slice(0, 7);
-      if (month in totals) totals[month] += e.amount;
-      if (month === thisMonth) byCategory[e.categoryId] = (byCategory[e.categoryId] ?? 0) + e.amount;
-    }
-    // Fixed expenses ticked off this month count as spent too — they live
-    // in their own collection and never show up in `expenses`.
-    totals[thisMonth] += recurringSpentForMonth(recurring, thisMonth);
-
-    const thisTotal = totals[thisMonth];
-    const lastTotal = totals[lastMonth];
-    const categoryTotal = Object.values(byCategory).reduce((a, b) => a + b, 0);
+    const month = summary.byMonth[thisMonth];
+    const categoryTotal = Object.values(summary.categories[thisMonth]).reduce((x, y) => x + y, 0);
     return {
-      months,
-      totals,
-      thisTotal,
-      lastTotal,
-      delta: lastTotal > 0 ? ((thisTotal - lastTotal) / lastTotal) * 100 : null,
-      dailyAverage: thisTotal / Number(today.slice(8)),
-      categories: Object.entries(byCategory)
-        .sort((a, b) => b[1] - a[1])
+      months: summary.months,
+      totals: Object.fromEntries(summary.months.map((m) => [m, summary.byMonth[m].total])) as Record<string, number>,
+      thisTotal: month.total,
+      lastTotal: summary.byMonth[lastMonth].total,
+      delta: changePercent(month.total, summary.byMonth[lastMonth].total),
+      dailyAverage: dailyAverage(month.total, thisMonth, today),
+      categories: Object.entries(summary.categories[thisMonth])
+        .sort((x, y) => y[1] - x[1])
         .slice(0, 4)
         .map(([id, amount]) => ({ category: categoryById(id), amount, share: categoryTotal > 0 ? amount / categoryTotal : 0 })),
       recent: expenses.filter((e) => e.status !== "future").slice(0, 5),
     };
-  }, [expenses, recurring, thisMonth, lastMonth, today]);
+  }, [summary, expenses, thisMonth, lastMonth, today]);
 
   const upcoming = useMemo(() => upcomingPayments(expenses, recurring, debts, today), [expenses, recurring, debts, today]);
   const upcomingTotal = upcoming.filter((u) => u.currency === currency).reduce((sum, u) => sum + u.amount, 0);
@@ -297,7 +284,7 @@ export function Home() {
                       <span className="w-[86px] text-right text-sm font-semibold tabular-nums">{formatCurrency(amount, currency)}</span>
                     </div>
                     <div className="ml-[42px] mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/[0.06] dark:bg-white/10" aria-hidden>
-                      <div className="h-full rounded-full" style={{ width: `${Math.max(share * 100, 3)}%`, backgroundColor: category.color }} />
+                      <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(share * 100, 3)}%` }} />
                     </div>
                   </div>
                 ))}

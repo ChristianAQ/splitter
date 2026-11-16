@@ -39,7 +39,12 @@ sensible vive en `firestore.rules`; ver §4.
   Rules**, no solo en el frontend.
 - Cálculo de balances y algoritmo de liquidación óptima (mín. transferencias).
 - Registro de pagos, reversión de pagos, historial de grupo append-only.
-- Estadísticas personales y de grupo (gráficos ligeros sin dependencias).
+- Estadísticas personales y de grupo (gráficos propios, sin dependencias):
+  mes a mes con media y proyección, de dónde sale el gasto (variables /
+  fijos / grupos), en qué categorías, y los gastos más grandes. Inicio y
+  Estadísticas comparten una única definición de «gastado»
+  (`domain/spending.ts`); marcar un gasto fijo como pagado lo registra
+  como gasto real, así que entra en el historial.
 - Dashboard con resumen personal + tarjetas de grupo.
 - Cambiar nombre/color en Ajustes se propaga automáticamente a tu ficha en
   todos los grupos donde estás (`services/profileSync.service.ts`).
@@ -108,7 +113,7 @@ La lógica financiera (`src/domain/`) es la parte más importante de la
 aplicación y **no importa nada de Firebase ni de React** — son funciones
 puras (`splitEqual`, `computeBalances`, `optimizeSettlement`,
 `occurrencesInRange`...) que reciben datos y devuelven datos. Esto permite:
-1. Testearla exhaustivamente sin mocks (`npm run test`, 71 tests).
+1. Testearla exhaustivamente sin mocks (`npm run test`, 78 tests).
 2. Reutilizarla igual en cualquier punto de la app sin duplicar la lógica
    de reparto o de balances.
 3. Que un cliente manipulado nunca sea la fuente de verdad: el cliente
@@ -233,7 +238,7 @@ cambiar.
 
 ## 5. Lógica financiera (`src/domain/`)
 
-Todo cubierto por tests (`npm run test`, 71 tests, 8 ficheros):
+Todo cubierto por tests (`npm run test`, 78 tests, 9 ficheros):
 
 - **`split.ts`** — reparto igual (con reparto exacto del céntimo sobrante,
   nunca se "pierde" un céntimo) y reparto por importe exacto (valida que
