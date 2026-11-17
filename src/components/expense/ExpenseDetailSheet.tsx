@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Pencil } from "lucide-react";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Button } from "../ui/Button";
 import { Badge } from "../ui/Card";
@@ -21,6 +21,8 @@ interface Props {
   progress?: PaymentProgress;
   onPayPart?: (amount: number) => Promise<void>;
   onPayAll?: () => Promise<void>;
+  /** Open one of the parts already paid, to correct or delete it. */
+  onOpenPart?: (part: PersonalExpense) => void;
 }
 
 /**
@@ -31,7 +33,7 @@ interface Props {
  * once, or a part at a time, with the same guided step debts use. Every
  * part becomes a real expense on the day it's paid.
  */
-export function ExpenseDetailSheet({ open, onClose, expense, onEdit, progress, onPayPart, onPayAll }: Props) {
+export function ExpenseDetailSheet({ open, onClose, expense, onEdit, progress, onPayPart, onPayAll, onOpenPart }: Props) {
   const [paying, setPaying] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -178,16 +180,24 @@ export function ExpenseDetailSheet({ open, onClose, expense, onEdit, progress, o
         {progress.parts.length > 0 && (
           <div>
             <h4 className="eyebrow mb-2 px-1">Pagos hechos</h4>
-            <ul className="well divide-y divide-black/[0.06] rounded-[22px] px-4 dark:divide-white/[0.08]">
+            <ul className="well divide-y divide-black/[0.06] rounded-[22px] dark:divide-white/[0.08]">
               {[...progress.parts].reverse().map((p) => (
-                <li key={p.id} className="flex items-center justify-between gap-4 py-3 text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">{formatDateLong(p.date)}</span>
-                  <span className="font-semibold tabular-nums">{formatCurrency(p.amount, p.currency)}</span>
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenPart?.(p)}
+                    aria-label={`Corregir el pago de ${formatCurrency(p.amount, p.currency)} del ${formatDateLong(p.date)}`}
+                    className="well-press flex w-full items-center gap-3 px-4 py-3 text-left text-sm first:rounded-t-[22px] last:rounded-b-[22px]"
+                  >
+                    <span className="min-w-0 flex-1 text-neutral-700 dark:text-neutral-200">{formatDateLong(p.date)}</span>
+                    <span className="shrink-0 font-semibold tabular-nums">{formatCurrency(p.amount, p.currency)}</span>
+                    <Pencil size={14} strokeWidth={2.1} className="shrink-0 text-neutral-400 dark:text-neutral-500" aria-hidden />
+                  </button>
                 </li>
               ))}
             </ul>
             <p className="mt-2 px-1 text-xs text-neutral-500 dark:text-neutral-400">
-              Cada pago ya cuenta como gasto en el día en que lo hiciste.
+              Cada pago ya cuenta como gasto en el día en que lo hiciste. Toca uno para corregirlo o quitarlo.
             </p>
           </div>
         )}

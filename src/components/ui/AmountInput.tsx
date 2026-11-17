@@ -42,11 +42,6 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
   const symbolAfter = currency === "EUR";
   const symbol = <span className="text-neutral-400 dark:text-neutral-500">{CURRENCY_SYMBOL[currency]}</span>;
 
-  // `ch` is the width of a digit; the decimal separator is about half of
-  // that, and counting it as a whole one left a visible hole before "€".
-  const shown = value || "0";
-  const widthInCh = Math.max(shown.replace(".", "").length + (shown.includes(".") ? 0.45 : 0), 1);
-
   function handleChange(raw: string) {
     const normalized = raw.replace(",", ".");
     if (/^\d*\.?\d{0,2}$/.test(normalized)) onChange(normalized);
@@ -59,35 +54,47 @@ export function AmountInput({ value, onChange, currency = "EUR", label, autoFocu
           {label}
         </label>
       )}
-      <div className={`flex items-baseline justify-center gap-1 ${large ? "text-5xl" : "text-3xl"} font-semibold tracking-tight tabular-nums`}>
+      <div className={`flex items-baseline justify-center gap-1 ${large ? "text-5xl" : "text-3xl"} font-semibold tracking-tight`}>
         {!symbolAfter && symbol}
-        <input
-          id={id}
-          ref={inputRef}
-          inputMode="decimal"
-          enterKeyHint="done"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-          }}
-          placeholder="0"
-          value={value.replace(".", ",")}
-          onChange={(e) => handleChange(e.target.value)}
-          size={1}
-          // A little slack for the caret; less when the symbol trails the
-          // number, or it reads as "0   €" with a hole in the middle.
-          style={{ width: `${widthInCh + (symbolAfter ? 0.25 : 0.75)}ch` }}
-          // Global `input { font-size: 16px }` (index.css, prevents iOS
-          // Safari zooming on focus for normal-sized fields) otherwise
-          // overrides this element's inherited text-5xl/text-3xl — an
-          // element selector still beats an ancestor's class for
-          // inheritance purposes, so the number renders at a fixed 16px
-          // while the currency symbol next to it renders at full size.
-          // Repeating the same size class directly on the input (higher
-          // specificity than a bare element selector) restores it; both
-          // sizes stay well above 16px, so the zoom-prevention rule's own
-          // purpose isn't undermined here.
-          className={`min-w-0 shrink-0 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-600 ${large ? "text-5xl" : "text-3xl"}`}
-        />
+        {/* The field is exactly as wide as what's typed in it: an invisible
+         * copy of the text sizes the cell and the input fills it. (Sizing
+         * in `ch` assumed every digit is as wide as a "0", which left a
+         * hole before the symbol whenever the amount had 1s in it.) */}
+        <span className="inline-grid">
+          <span aria-hidden className={`invisible col-start-1 row-start-1 whitespace-pre pr-[0.06em] ${large ? "text-5xl" : "text-3xl"}`}>
+            {value.replace(".", ",") || "0"}
+          </span>
+          <input
+            id={id}
+            ref={inputRef}
+            inputMode="decimal"
+            enterKeyHint="done"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+            placeholder="0"
+            // One line tall (`h-[1em]`): browsers won't let a field shrink
+            // below its "normal" line height, which put its digits a few
+            // pixels below the symbol next to it.
+            // No width of its own (`w-0`, and size=1 so browsers don't reserve
+            // one from the font), stretched to the cell (`min-w-full`): the
+            // invisible copy beside it is all that decides how wide it is.
+            size={1}
+            value={value.replace(".", ",")}
+            onChange={(e) => handleChange(e.target.value)}
+            // Global `input { font-size: 16px }` (index.css, prevents iOS
+            // Safari zooming on focus for normal-sized fields) otherwise
+            // overrides this element's inherited text-5xl/text-3xl — an
+            // element selector still beats an ancestor's class for
+            // inheritance purposes, so the number renders at a fixed 16px
+            // while the currency symbol next to it renders at full size.
+            // Repeating the same size class directly on the input (higher
+            // specificity than a bare element selector) restores it; both
+            // sizes stay well above 16px, so the zoom-prevention rule's own
+            // purpose isn't undermined here.
+            className={`col-start-1 row-start-1 h-[1em] w-0 min-w-full bg-transparent p-0 outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-600 ${large ? "text-5xl" : "text-3xl"}`}
+          />
+        </span>
         {symbolAfter && symbol}
       </div>
     </div>

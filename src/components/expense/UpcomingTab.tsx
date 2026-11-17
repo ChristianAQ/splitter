@@ -170,6 +170,10 @@ export function UpcomingTab({ expenses, loading }: Props) {
         progress={viewing ? progressOf(viewing, parts) : undefined}
         onPayPart={(amount) => (viewing ? payPart(viewing, amount) : Promise.resolve())}
         onPayAll={() => (viewing ? payAll(viewing) : Promise.resolve())}
+        onOpenPart={(part) => {
+          setEditing(part);
+          setViewingId(null);
+        }}
         onEdit={() => {
           if (viewing) setEditing(viewing);
           setViewingId(null);
@@ -180,7 +184,7 @@ export function UpcomingTab({ expenses, loading }: Props) {
         onClose={() => setEditing(undefined)}
         expense={editing ?? undefined}
         startUpcoming
-        paidSoFar={editing ? progressOf(editing, parts).paid : 0}
+        paidSoFar={editing && editing.status === "future" ? progressOf(editing, parts).paid : 0}
       />
     </div>
   );

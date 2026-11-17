@@ -148,3 +148,91 @@ export function reopenDebt(debt: Debt): DebtProgress {
   }
   return { paidAmount, payments, settled: false };
 }
+
+/** Rebuilds a debt's state from an edited list of payments: the running
+ * total follows, and so does whether it's settled — taking a payment out of
+ * a settled debt reopens it, raising one to cover the rest settles it. */
+function progressFrom(debt: Debt, payments: DebtPayment[]): DebtProgress {
+  const paidMinor = payments.reduce((sum, p) => sum + toMinorUnits(p.amount, debt.currency), 0);
+  const settled = paidMinor >= toMinorUnits(debt.amount, debt.currency);
+  return {
+    paidAmount: fromMinorUnits(paidMinor, debt.currency),
+    // "closing" marks the payment that settled it; once edited, none of
+    // them is that any more unless the debt is still fully paid.
+    payments: payments.map(({ closing, ...p }) => (settled && closing ? { ...p, closing } : p)),
+    settled,
+  };
+}
+
+/** Takes back a payment recorded by mistake (identified by when it was recorded). */
+export function removePayment(debt: Debt, at: number): DebtProgress {
+  return progressFrom(
+    debt,
+    paymentsOf(debt).filter((p) => p.at !== at)
+  );
+}
+
+/** The most a given payment could be changed to: the debt's total minus
+ * every other payment. */
+export function maxForPayment(debt: Debt, at: number): number {
+  const others = paymentsOf(debt)
+    .filter((p) => p.at !== at)
+    .reduce((sum, p) => sum + toMinorUnits(p.amount, debt.currency), 0);
+  return fromMinorUnits(Math.max(toMinorUnits(debt.amount, debt.currency) - others, 0), debt.currency);
+}
+
+/** Corrects a payment's amount (clamped to what the debt allows). */
+export function updatePayment(debt: Debt, at: number, amount: number): DebtProgress {
+  const capped = Math.min(Math.max(amount, 0), maxForPayment(debt, at));
+  return progressFrom(
+    debt,
+    paymentsOf(debt)
+      .map((p) => (p.at === at ? { ...p, amount: fromMinorUnits(toMinorUnits(capped, debt.currency), debt.currency) } : p))
+      .filter((p) => p.amount > 0)
+  );
+}
+
+export interface MonthDebtActivity {
+  /** Paid back to other people in the month. */
+  repaid: number;
+  /** Got back from other people in the month. */
+  collected: number;
+  byPerson: { name: string; repaid: number; collected: number }[];
+}
+
+/**
+ * Money that moved between the user and other people in `month`
+ * ("YYYY-MM"), from the payment logs of every debt, settled or not.
+ * Reported next to spending, never inside it: paying back a loan isn't a
+ * new expense.
+ */
+export function debtActivityInMonth(debts: Debt[], month: string, currency: string): MonthDebtActivity {
+  const people = new Map<string, { name: string; repaid: number; collected: number }>();
+  let repaid = 0;
+  let collected = 0;
+  for (const d of debts) {
+    if (d.kind === "reminder" || d.currency !== currency) continue;
+    for (const p of paymentsOf(d)) {
+      if (p.date.slice(0, 7) !== month) continue;
+      const minor = toMinorUnits(p.amount, currency);
+      const name = (d.person ?? "").trim() || "Sin nombre";
+      const key = name.toLowerCase();
+      const entry = people.get(key) ?? { name, repaid: 0, collected: 0 };
+      if (d.kind === "owe") {
+        repaid += minor;
+        entry.repaid += minor;
+      } else {
+        collected += minor;
+        entry.collected += minor;
+      }
+      people.set(key, entry);
+    }
+  }
+  return {
+    repaid: fromMinorUnits(repaid, currency),
+    collected: fromMinorUnits(collected, currency),
+    byPerson: [...people.values()]
+      .map((e) => ({ name: e.name, repaid: fromMinorUnits(e.repaid, currency), collected: fromMinorUnits(e.collected, currency) }))
+      .sort((a, b) => b.repaid + b.collected - (a.repaid + a.collected)),
+  };
+}

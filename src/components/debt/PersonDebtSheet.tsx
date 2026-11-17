@@ -6,8 +6,10 @@ import { Avatar } from "../ui/Avatar";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { usePartialPayment } from "../../hooks/usePartialPayment";
+import { usePaymentEditor } from "../../hooks/usePaymentEditor";
+import { PaymentList, type ListedPayment } from "./PaymentList";
 import { setDebtsProgress } from "../../services/debts.service";
-import { dueLabel, dueState, remainingAmount } from "../../domain/debts";
+import { dueLabel, dueState, maxForPayment, paymentsOf, remainingAmount, removePayment, updatePayment } from "../../domain/debts";
 import { payTowards, settleAllWith, type DebtUpdate, type PersonBalance } from "../../domain/debtPeople";
 import { todayISO } from "../../domain/date";
 import { formatCurrency, formatDate } from "../../lib/format";
@@ -50,10 +52,27 @@ export function PersonDebtSheet({ open, onClose, person, avatar, onOpenDebt, onA
     },
   });
 
+  // Correcting one payment touches just the entry it belongs to.
+  const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
+  const editingDebt = person?.debts.find((d) => d.id === editingDebtId);
+  const editor = usePaymentEditor({
+    currency: person?.currency ?? "EUR",
+    busy,
+    onBack: () => editor.close(),
+    maxFor: (payment) => (editingDebt ? maxForPayment(editingDebt, payment.at) : 0),
+    onSave: (payment, value) => {
+      if (editingDebt) void run([{ debt: editingDebt, progress: updatePayment(editingDebt, payment.at, value) }], "Pago corregido", false);
+    },
+    onDelete: (payment) => {
+      if (editingDebt) void run([{ debt: editingDebt, progress: removePayment(editingDebt, payment.at) }], "Pago quitado", false);
+    },
+  });
+
   useEffect(() => {
     if (open) {
       setPaying(false);
       pay.reset();
+      editor.close();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, person?.key]);
@@ -66,6 +85,7 @@ export function PersonDebtSheet({ open, onClose, person, avatar, onOpenDebt, onA
       show(message, "success");
       setPaying(false);
       pay.reset();
+      editor.close();
       if (closeAfter) onClose();
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo guardar.", "error");
@@ -75,6 +95,14 @@ export function PersonDebtSheet({ open, onClose, person, avatar, onOpenDebt, onA
   }
 
   if (!person) return <BottomSheet open={false} onClose={onClose} children={null} />;
+
+  if (editor.payment) {
+    return (
+      <BottomSheet open={open} onClose={onClose} title={editor.title} footer={editor.footer}>
+        {editor.children}
+      </BottomSheet>
+    );
+  }
 
   if (paying) {
     return (
@@ -87,6 +115,18 @@ export function PersonDebtSheet({ open, onClose, person, avatar, onOpenDebt, onA
   const money = (value: number) => formatCurrency(value, person.currency);
   const even = amount < 0.005;
   const bothWays = person.iOwe > 0 && person.owedToMe > 0;
+  // Progress on the side that's paying: how much of what was owed that
+  // way has already changed hands.
+  const paidSoFar = iPay ? person.repaid : person.collected;
+  const paidOf = iPay ? person.repaidOf : person.collectedOf;
+  const payments: ListedPayment[] = person.debts.flatMap((d) =>
+    paymentsOf(d).map((payment) => ({
+      key: `${d.id}:${payment.at}`,
+      payment,
+      context: d.concept || (d.kind === "owe" ? "Te prestó dinero" : "Le prestaste dinero"),
+      sign: bothWays ? (d.kind === "owe" ? "−" : "+") : undefined,
+    }))
+  );
   const settleAll = () => run(settleAllWith(person, today, Date.now()), "Cuenta saldada", true);
 
   return (
@@ -134,6 +174,20 @@ export function PersonDebtSheet({ open, onClose, person, avatar, onOpenDebt, onA
           )}
         </div>
 
+        {!even && paidSoFar > 0 && (
+          <div>
+            <div className="h-2 overflow-hidden rounded-full bg-black/[0.07] dark:bg-white/10" aria-hidden>
+              <div className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out" style={{ width: `${Math.min(paidSoFar / paidOf, 1) * 100}%` }} />
+            </div>
+            <div className="mt-2 flex justify-between text-[13px] text-neutral-500 dark:text-neutral-400">
+              <span>
+                <span className="font-semibold text-neutral-900 dark:text-neutral-50">{money(paidSoFar)}</span> {iPay ? "devuelto" : "cobrado"}
+              </span>
+              <span>de {money(paidOf)}</span>
+            </div>
+          </div>
+        )}
+
         <div>
           <h4 className="eyebrow mb-2 px-1">
             {person.debts.length} apunte{person.debts.length === 1 ? "" : "s"}
@@ -171,6 +225,16 @@ export function PersonDebtSheet({ open, onClose, person, avatar, onOpenDebt, onA
             Añadir otro apunte con {person.name}
           </button>
         </div>
+
+        <PaymentList
+          title="Pagos hechos"
+          currency={person.currency}
+          items={payments}
+          onEdit={(item) => {
+            setEditingDebtId(item.key.split(":")[0]);
+            editor.open(item.payment);
+          }}
+        />
       </div>
     </BottomSheet>
   );

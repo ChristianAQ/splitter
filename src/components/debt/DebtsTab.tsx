@@ -156,6 +156,7 @@ export function DebtsTab() {
                 const iPay = p.net < 0;
                 const even = Math.abs(p.net) < 0.005;
                 const avatar = avatarFor(p.name);
+                const paid = iPay ? p.repaid : p.collected;
                 const due = p.nextDue ? dueLabel({ ...p.debts[0], dueDate: p.nextDue }, today) ?? `Vence el ${formatDate(p.nextDue)}` : null;
                 return (
                   <button
@@ -180,6 +181,11 @@ export function DebtsTab() {
                       >
                         {formatCurrency(Math.abs(p.net), p.currency)}
                       </span>
+                      {!even && paid > 0 && (
+                        <span className="block text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                          {formatCurrency(paid, p.currency)} ya {iPay ? "devueltos" : "cobrados"}
+                        </span>
+                      )}
                     </span>
                     <ChevronRight size={16} strokeWidth={2.2} className="shrink-0 text-neutral-300 dark:text-neutral-600" aria-hidden />
                   </button>

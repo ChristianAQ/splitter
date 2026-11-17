@@ -13,6 +13,7 @@ import { SegmentedBar } from "../components/charts/SegmentedBar";
 import { useAuth } from "../context/AuthContext";
 import { useSpending } from "../hooks/useSpending";
 import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
+import { useDebts } from "../hooks/useDebts";
 import { useGroups } from "../hooks/useGroups";
 import { useGroupDetail } from "../hooks/useGroupDetail";
 import { GROUPS_CATEGORY, categoryById } from "../lib/categories";
@@ -20,6 +21,7 @@ import { groupIconComponent } from "../lib/groupIcons";
 import { formatCurrency, formatDate, formatMonth, formatSignedCurrency } from "../lib/format";
 import { shiftMonth, todayISO } from "../domain/date";
 import { summarizeRecurringBudget } from "../domain/budget";
+import { debtActivityInMonth } from "../domain/debts";
 import { changePercent, dailyAverage, projectedMonthEnd } from "../domain/spending";
 import type { Currency } from "../types";
 
@@ -86,6 +88,7 @@ function PersonalStats({ initialMonth }: { initialMonth?: string }) {
   // "previous month" to be compared with.
   const { summary, expenses, loading, currency, today, thisMonth } = useSpending(WINDOW + 1);
   const { items: recurring } = useRecurringExpenses();
+  const { debts } = useDebts();
   const months = summary.months.slice(1);
   const [picked, setPicked] = useState(initialMonth ?? thisMonth);
   const [allCategories, setAllCategories] = useState(false);
@@ -109,9 +112,10 @@ function PersonalStats({ initialMonth }: { initialMonth?: string }) {
   );
   const biggest = useMemo(() => [...monthExpenses].sort((a, b) => b.amount - a.amount).slice(0, 5), [monthExpenses]);
   const fixed = useMemo(() => summarizeRecurringBudget(recurring, thisMonth, 0), [recurring, thisMonth]);
+  const debtActivity = useMemo(() => debtActivityInMonth(debts, selected, currency), [debts, selected, currency]);
 
   if (loading) return <CardListSkeleton count={3} />;
-  if (months.every((m) => summary.byMonth[m].total === 0) && recurring.length === 0) {
+  if (months.every((m) => summary.byMonth[m].total === 0) && recurring.length === 0 && debts.length === 0) {
     return <EmptyState icon={BarChart3} title="Sin datos todavía" description="Cuando apuntes gastos verás aquí cuánto gastas, en qué y cómo cambia de un mes a otro." />;
   }
 
@@ -256,6 +260,46 @@ function PersonalStats({ initialMonth }: { initialMonth?: string }) {
           </div>
           <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
             {fixed.pending > 0 ? `Te quedan ${money(fixed.pending)} por pagar este mes.` : "Todos pagados este mes."}
+          </p>
+        </Panel>
+      )}
+
+      {/* ------------------------------------------------ Loans */}
+      {debtActivity.byPerson.length > 0 && (
+        <Panel title="Deudas con otras personas" link={{ to: "/gastos?tab=deudas", label: "Ver" }}>
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="well rounded-[16px] px-3 py-2.5">
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">Has devuelto</p>
+              <p className="mt-0.5 text-[16px] font-semibold tracking-tight">{money(debtActivity.repaid)}</p>
+            </div>
+            <div className="well rounded-[16px] px-3 py-2.5">
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400">Te han devuelto</p>
+              <p className="mt-0.5 text-[16px] font-semibold tracking-tight">{money(debtActivity.collected)}</p>
+            </div>
+          </div>
+          <ul className="mt-2 divide-y divide-black/[0.06] dark:divide-white/[0.08]">
+            {debtActivity.byPerson.map((p) => (
+              <li key={p.name} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                <span className="min-w-0 truncate font-medium">{p.name}</span>
+                <span className="flex shrink-0 flex-col items-end tabular-nums">
+                  {p.repaid > 0 && (
+                    <span>
+                      <span className="mr-1.5 text-xs text-neutral-500 dark:text-neutral-400">le devolviste</span>
+                      <span className="font-semibold">{money(p.repaid)}</span>
+                    </span>
+                  )}
+                  {p.collected > 0 && (
+                    <span>
+                      <span className="mr-1.5 text-xs text-neutral-500 dark:text-neutral-400">te devolvió</span>
+                      <span className="font-semibold">{money(p.collected)}</span>
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+            No entra en el total de arriba: devolver o cobrar un préstamo no es un gasto nuevo.
           </p>
         </Panel>
       )}

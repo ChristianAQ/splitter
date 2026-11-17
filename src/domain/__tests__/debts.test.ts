@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { dueLabel, dueState, recordPayment, remainingAmount, reopenDebt, settleDebt, sortDebts, summarizeDebts } from "../debts";
+import {
+  debtActivityInMonth,
+  dueLabel,
+  dueState,
+  maxForPayment,
+  recordPayment,
+  remainingAmount,
+  removePayment,
+  reopenDebt,
+  settleDebt,
+  sortDebts,
+  summarizeDebts,
+  updatePayment,
+} from "../debts";
 import { shiftMonth } from "../date";
 import { occurrencesInRange } from "../recurring";
 import type { Debt, RecurringExpense } from "../../types";
@@ -111,6 +124,56 @@ describe("recordPayment / settleDebt / reopenDebt", () => {
   });
   it("reopening a legacy fully-paid debt starts it over", () => {
     expect(reopenDebt(debt({ amount: 50, paidAmount: 50, settledAt: 1 }))).toEqual({ paidAmount: 0, payments: [], settled: false });
+  });
+});
+
+describe("correcting payments", () => {
+  const paid = debt({
+    amount: 300,
+    paidAmount: 180,
+    payments: [
+      { amount: 100, date: "2026-11-02", at: 1 },
+      { amount: 80, date: "2026-11-10", at: 2 },
+    ],
+  });
+
+  it("removing one gives its amount back", () => {
+    expect(removePayment(paid, 2)).toEqual({ paidAmount: 100, payments: [{ amount: 100, date: "2026-11-02", at: 1 }], settled: false });
+  });
+  it("changing one adjusts the total, capped at what the debt allows", () => {
+    expect(updatePayment(paid, 2, 50).paidAmount).toBe(150);
+    expect(maxForPayment(paid, 2)).toBe(200);
+    const capped = updatePayment(paid, 2, 999);
+    expect([capped.paidAmount, capped.settled]).toEqual([300, true]);
+  });
+  it("taking a payment out of a settled debt reopens it", () => {
+    const settled = { ...paid, ...settleDebt(paid, TODAY, 3), settledAt: 3 };
+    const next = removePayment(settled, 1);
+    expect([next.paidAmount, next.settled]).toEqual([200, false]);
+    expect(next.payments.some((p) => p.closing)).toBe(false);
+  });
+});
+
+describe("debtActivityInMonth", () => {
+  it("totals what was paid back and collected in the month, per person, settled debts included", () => {
+    const activity = debtActivityInMonth(
+      [
+        debt({ id: "a", person: "Marta", payments: [{ amount: 80, date: "2026-11-05", at: 1 }, { amount: 20, date: "2026-10-30", at: 0 }], paidAmount: 100, settledAt: 9 }),
+        debt({ id: "b", person: "marta", kind: "owed", payments: [{ amount: 30, date: "2026-11-09", at: 2 }], paidAmount: 30 }),
+        debt({ id: "c", person: "Jorge", kind: "owed", payments: [{ amount: 45, date: "2026-11-12", at: 3 }], paidAmount: 45 }),
+        debt({ id: "d", person: "Luis" }),
+      ],
+      "2026-11",
+      "EUR"
+    );
+    expect(activity).toEqual({
+      repaid: 80,
+      collected: 75,
+      byPerson: [
+        { name: "Marta", repaid: 80, collected: 30 },
+        { name: "Jorge", repaid: 0, collected: 45 },
+      ],
+    });
   });
 });
 

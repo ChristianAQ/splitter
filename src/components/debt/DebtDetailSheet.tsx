@@ -7,8 +7,22 @@ import { DetailHero, DetailRows, EditAction } from "../ui/Detail";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { usePartialPayment } from "../../hooks/usePartialPayment";
+import { usePaymentEditor } from "../../hooks/usePaymentEditor";
+import { PaymentList } from "./PaymentList";
 import { setDebtProgress } from "../../services/debts.service";
-import { dueLabel, dueState, isSettled, paymentsOf, recordPayment, remainingAmount, reopenDebt, settleDebt } from "../../domain/debts";
+import {
+  dueLabel,
+  dueState,
+  isSettled,
+  maxForPayment,
+  paymentsOf,
+  recordPayment,
+  remainingAmount,
+  removePayment,
+  reopenDebt,
+  settleDebt,
+  updatePayment,
+} from "../../domain/debts";
 import { localISO, todayISO } from "../../domain/date";
 import { DEBT_KIND_META } from "../../lib/debts";
 import { formatCurrency, formatDate, formatDateLong } from "../../lib/format";
@@ -117,10 +131,26 @@ export function DebtDetailSheet({ open, onClose, debt, onEdit }: Props) {
     },
   });
 
+  const editor = usePaymentEditor({
+    currency: debt?.currency ?? "EUR",
+    busy,
+    onBack: () => editor.close(),
+    maxFor: (payment) => (debt ? maxForPayment(debt, payment.at) : 0),
+    onSave: (payment, amount) => {
+      if (!debt) return;
+      const progress = updatePayment(debt, payment.at, amount);
+      void run(progress, progress.settled ? COPY[debt.kind].toastFull : "Pago corregido", false);
+    },
+    onDelete: (payment) => {
+      if (debt) void run(removePayment(debt, payment.at), "Pago quitado", false);
+    },
+  });
+
   useEffect(() => {
     if (open) {
       setPaying(false);
       pay.reset();
+      editor.close();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, debt?.id]);
@@ -133,6 +163,7 @@ export function DebtDetailSheet({ open, onClose, debt, onEdit }: Props) {
       show(message, "success");
       setPaying(false);
       pay.reset();
+      editor.close();
       if (closeAfter) onClose();
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo guardar.", "error");
@@ -156,6 +187,14 @@ export function DebtDetailSheet({ open, onClose, debt, onEdit }: Props) {
 
   const payAll = () => run(settleDebt(debt, today, Date.now()), copy.toastFull, true);
   const reopen = () => run(reopenDebt(debt), "Vuelve a estar pendiente", false);
+
+  if (editor.payment) {
+    return (
+      <BottomSheet open={open} onClose={onClose} title={editor.title} footer={editor.footer}>
+        {editor.children}
+      </BottomSheet>
+    );
+  }
 
   if (paying) {
     return (
@@ -244,19 +283,12 @@ export function DebtDetailSheet({ open, onClose, debt, onEdit }: Props) {
           ]}
         />
 
-        {payments.length > 0 && (
-          <div>
-            <h4 className="eyebrow mb-2 px-1">{copy.history}</h4>
-            <ul className="well divide-y divide-black/[0.06] rounded-[22px] px-4 dark:divide-white/[0.08]">
-              {[...payments].reverse().map((p) => (
-                <li key={p.at} className="flex items-center justify-between gap-4 py-3 text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">{formatDateLong(p.date)}</span>
-                  <span className="font-semibold tabular-nums">{formatCurrency(p.amount, debt.currency)}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        <PaymentList
+          title={copy.history}
+          currency={debt.currency}
+          items={payments.map((payment) => ({ key: String(payment.at), payment }))}
+          onEdit={(item) => editor.open(item.payment)}
+        />
       </div>
     </BottomSheet>
   );

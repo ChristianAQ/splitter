@@ -13,6 +13,12 @@ export interface PersonBalance {
   iOwe: number;
   /** What they owe me, in total. */
   owedToMe: number;
+  /** Already paid back to them / already collected from them, across the
+   * open entries, and what those entries added up to originally. */
+  repaid: number;
+  repaidOf: number;
+  collected: number;
+  collectedOf: number;
   /** owedToMe - iOwe: positive = they pay me, negative = I pay them. */
   net: number;
   /** The open debts behind it, most urgent first. */
@@ -73,10 +79,15 @@ export function balancesByPerson(debts: Debt[], today: ISODate): PersonBalance[]
   for (const [key, list] of groups) {
     let oweMinor = 0;
     let owedMinor = 0;
+    const paid = { owe: 0, owed: 0 };
+    const original = { owe: 0, owed: 0 };
     for (const d of list) {
       const minor = toMinorUnits(remainingAmount(d), d.currency);
-      if (d.kind === "owe") oweMinor += minor;
+      const side = d.kind === "owe" ? "owe" : "owed";
+      if (side === "owe") oweMinor += minor;
       else owedMinor += minor;
+      original[side] += toMinorUnits(d.amount, d.currency);
+      paid[side] += toMinorUnits(d.amount, d.currency) - minor;
     }
     const sorted = [...list].sort(byUrgency);
     const nextDue = sorted.find((d) => d.dueDate)?.dueDate;
@@ -86,6 +97,10 @@ export function balancesByPerson(debts: Debt[], today: ISODate): PersonBalance[]
       currency: list[0].currency,
       iOwe: oweMinor / 100,
       owedToMe: owedMinor / 100,
+      repaid: paid.owe / 100,
+      repaidOf: original.owe / 100,
+      collected: paid.owed / 100,
+      collectedOf: original.owed / 100,
       net: (owedMinor - oweMinor) / 100,
       debts: sorted,
       nextDue,
