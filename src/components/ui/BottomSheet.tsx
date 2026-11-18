@@ -126,9 +126,33 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
     // Where the page behind was scrolled to when the sheet opened — it
     // must still be there when the sheet closes.
     const pageY = window.scrollY;
-    const applied = { height: -1, top: -1, keyboard: false };
+    const applied = { key: "" };
     let raf = 0;
     let revealTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // How iOS tells a page about the keyboard varies — by version, and
+    // between Safari and an app added to the home screen:
+    //   - the visual viewport shrinks and window.innerHeight doesn't (what
+    //     Safari documents), or
+    //   - both shrink, or
+    //   - neither does, and the keyboard just covers the bottom of the page.
+    // The first was the only one handled, so in the others the sheet stayed
+    // on the bottom edge, under the keyboard. Now:
+    //   - "how tall was the visible area before the keyboard" is remembered
+    //     (the tallest seen), and the keyboard is whatever has gone missing
+    //     from it — which works whether or not innerHeight shrinks too;
+    //   - when nothing reports it at all, a text field focused right after a
+    //     touch is taken to mean the keyboard is up (it's the same rule iOS
+    //     uses to decide whether to show it), and the sheet is lifted above
+    //     the space a keyboard takes on this screen.
+    let tallest = 0;
+    let tallestWidth = window.innerWidth;
+    let expectKeyboard = false;
+    let lastTouchAt = 0;
+    // A phone keyboard with its suggestion bar takes up about 40% of the
+    // screen in portrait; a little more is allowed for so nothing ends up
+    // just under its top edge.
+    const KEYBOARD_SHARE = 0.42;
 
     function reveal(field: Element | null) {
       clearTimeout(revealTimer);
@@ -151,25 +175,40 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       // scrolled after the keyboard closed), put it back.
       if (IS_IOS && Math.abs(window.scrollY - pageY) > 0.5) window.scrollTo(0, pageY);
 
-      const height = viewport ? viewport.height : window.innerHeight;
-      const top = viewport ? viewport.offsetTop : 0;
-      if (Math.abs(height - applied.height) < 0.5 && Math.abs(top - applied.top) < 0.5) return;
+      const vvHeight = viewport ? viewport.height : window.innerHeight;
+      const vvTop = viewport ? viewport.offsetTop : 0;
+      const visibleBottom = vvTop + vvHeight;
+      // Rotating the phone changes what "full height" means.
+      if (window.innerWidth !== tallestWidth) {
+        tallestWidth = window.innerWidth;
+        tallest = 0;
+      }
+      tallest = Math.max(tallest, visibleBottom, window.innerHeight);
 
-      const keyboard = window.innerHeight - height > 120;
-      applied.height = height;
-      applied.top = top;
-      // Only while the keyboard is up. At rest the frame is simply the
-      // full fixed layer (CSS): the visual viewport's reported height
-      // isn't trustworthy enough to position by when nothing is covering
-      // the screen — as an installed app it can come back a status bar
-      // short, which would lift the whole sheet off the bottom edge.
-      frame!.style.height = keyboard ? `${height}px` : "";
-      frame!.style.transform = keyboard && top ? `translate3d(0, ${top}px, 0)` : "";
-      frame!.dataset.keyboard = String(keyboard);
-      // Keyboard just finished opening (or changed size): make sure the
-      // field being typed in is inside what's left of the sheet.
-      if (keyboard) reveal(document.activeElement);
-      applied.keyboard = keyboard;
+      const layerHeight = frame!.parentElement?.clientHeight ?? window.innerHeight;
+      const phone = window.innerWidth < 640;
+      let mode: "none" | "measured" | "estimated" = "none";
+      if (tallest - visibleBottom > 120) mode = "measured";
+      else if (IS_IOS && phone && expectKeyboard) mode = "estimated";
+
+      const height =
+        mode === "measured" ? vvHeight : mode === "estimated" ? Math.round(layerHeight - Math.max(window.screen.height, layerHeight) * KEYBOARD_SHARE) : 0;
+      const top = mode === "measured" ? vvTop : 0;
+      const key = `${mode}:${Math.round(height)}:${Math.round(top)}`;
+      if (key === applied.key) return;
+      applied.key = key;
+
+      // With no keyboard the frame is simply the full fixed layer (CSS): the
+      // visual viewport's height isn't trustworthy enough to position by
+      // when nothing is covering the screen — as an installed app it can
+      // come back a status bar short, which would lift the sheet off the
+      // bottom edge.
+      frame!.style.height = mode === "none" ? "" : `${height}px`;
+      frame!.style.transform = top ? `translate3d(0, ${top}px, 0)` : "";
+      frame!.dataset.keyboard = String(mode !== "none");
+      // Keyboard just opened (or changed size): make sure the field being
+      // typed in is inside what's left of the sheet.
+      if (mode !== "none") reveal(document.activeElement);
     }
     sync();
 
@@ -181,7 +220,11 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       (el instanceof HTMLInputElement && !NON_TEXT_INPUT_TYPES.has(el.type)) || el instanceof HTMLTextAreaElement;
 
     function onTouchEnd(e: TouchEvent) {
+      lastTouchAt = Date.now();
       const target = e.target;
+      // Tapping a text field — focused already or not — is what brings the
+      // keyboard up on a phone.
+      if (opensKeyboard(target) && !tapMoved) expectKeyboard = true;
       // Only a plain tap on a field that isn't focused yet; a tap inside
       // the focused one is the user placing the caret.
       if (!IS_IOS || !opensKeyboard(target) || target === document.activeElement || !e.cancelable || tapMoved) return;
@@ -199,8 +242,14 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
 
     // However the field got focus (a tap, autofocus, the keyboard's
     // next/previous arrows), make sure it ends up visible in the sheet.
+    // iOS only brings the keyboard up for a focus that follows a touch
+    // closely (it carries the touch over to timers of up to a second): the
+    // autofocus a moment after tapping "Una parte" counts, a focus out of
+    // nowhere doesn't.
     function onFocusIn(e: FocusEvent) {
-      if (opensKeyboard(e.target)) reveal(e.target);
+      if (!opensKeyboard(e.target)) return;
+      if (Date.now() - lastTouchAt < 1000 || expectKeyboard) expectKeyboard = true;
+      reveal(e.target);
     }
 
     // Keyboard gone and no other field took over: WebKit sometimes keeps
@@ -211,7 +260,8 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
     function onFocusOut() {
       setTimeout(() => {
         if (opensKeyboard(document.activeElement)) return;
-        applied.height = -1;
+        expectKeyboard = false;
+        applied.key = "";
         if (IS_IOS) {
           window.scrollTo(0, pageY + 1);
           window.scrollTo(0, pageY);
@@ -219,6 +269,10 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
       }, 60);
     }
 
+    const noteTouch = () => {
+      lastTouchAt = Date.now();
+    };
+    document.addEventListener("touchend", noteTouch, { passive: true, capture: true });
     sheet.addEventListener("touchstart", onTouchStart, { passive: true });
     sheet.addEventListener("touchmove", onTouchMove, { passive: true });
     sheet.addEventListener("touchend", onTouchEnd, { passive: false });
@@ -227,6 +281,7 @@ export function BottomSheet({ open, onClose, title, children, footer, headerActi
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(revealTimer);
+      document.removeEventListener("touchend", noteTouch, { capture: true });
       sheet.removeEventListener("touchstart", onTouchStart);
       sheet.removeEventListener("touchmove", onTouchMove);
       sheet.removeEventListener("touchend", onTouchEnd);
