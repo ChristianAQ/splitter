@@ -33,6 +33,9 @@ export function AddGroupFriendsSheet({ open, onClose, groupId, existingMemberIds
   const [saving, setSaving] = useState(false);
   const [ghostName, setGhostName] = useState("");
   const [addingGhost, setAddingGhost] = useState(false);
+  // Who was added in this sitting: the sheet stays open so several people
+  // can be added in a row, and this says it worked.
+  const [justAdded, setJustAdded] = useState<string[]>([]);
 
   const available = friends.filter((f) => !existingMemberIds.includes(f.uid));
 
@@ -49,6 +52,7 @@ export function AddGroupFriendsSheet({ open, onClose, groupId, existingMemberIds
     setMode("friends");
     setSelected(new Set());
     setGhostName("");
+    setJustAdded([]);
     onClose();
   }
 
@@ -73,6 +77,7 @@ export function AddGroupFriendsSheet({ open, onClose, groupId, existingMemberIds
     try {
       await addGhostMember(groupId, user.uid, profile.name, ghostName);
       show(`${ghostName.trim()} añadido al grupo`, "success");
+      setJustAdded((list) => [...list, ghostName.trim()]);
       setGhostName("");
     } catch (err) {
       show(err instanceof Error ? err.message : "No se pudo añadir.", "error");
@@ -82,13 +87,28 @@ export function AddGroupFriendsSheet({ open, onClose, groupId, existingMemberIds
   }
 
   return (
-    <BottomSheet open={open} onClose={handleClose} title={mode === "friends" ? "Añadir amigos al grupo" : "Añadir sin cuenta"}>
+    <BottomSheet
+      open={open}
+      onClose={handleClose}
+      title={mode === "friends" ? "Añadir al grupo" : "Añadir sin cuenta"}
+      footer={
+        mode === "ghost" ? (
+          <Button onClick={handleAddGhost} loading={addingGhost} disabled={!ghostName.trim()} className="w-full">
+            Añadir{ghostName.trim() ? ` a ${ghostName.trim()}` : ""}
+          </Button>
+        ) : available.length > 0 ? (
+          <Button onClick={handleAdd} loading={saving} disabled={selected.size === 0} className="w-full">
+            {selected.size > 0 ? `Añadir ${selected.size} amigo${selected.size > 1 ? "s" : ""}` : "Elige a quién añadir"}
+          </Button>
+        ) : undefined
+      }
+    >
       <div className="flex flex-col gap-4 pb-2 pt-1">
         {mode === "ghost" ? (
           <>
             <button
               onClick={() => setMode("friends")}
-              className="flex items-center gap-1.5 self-start text-sm font-medium text-neutral-500 dark:text-neutral-400"
+              className="pressable -ml-1 flex items-center gap-1.5 self-start rounded-full px-1 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400"
             >
               <ArrowLeft size={15} strokeWidth={2.2} />
               Volver
@@ -105,9 +125,16 @@ export function AddGroupFriendsSheet({ open, onClose, groupId, existingMemberIds
               onKeyDown={(e) => e.key === "Enter" && handleAddGhost()}
               autoFocus
             />
-            <Button onClick={handleAddGhost} loading={addingGhost} disabled={!ghostName.trim()} size="lg">
-              Añadir al grupo
-            </Button>
+            {justAdded.length > 0 && (
+              <p className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+                Añadidos:
+                {justAdded.map((n, i) => (
+                  <span key={`${n}-${i}`} className="rounded-full bg-positive/10 px-2 py-0.5 font-semibold text-positive dark:bg-positive/20 dark:text-positive-dark">
+                    {n}
+                  </span>
+                ))}
+              </p>
+            )}
           </>
         ) : available.length === 0 ? (
           <EmptyState
@@ -127,16 +154,13 @@ export function AddGroupFriendsSheet({ open, onClose, groupId, existingMemberIds
         ) : (
           <>
             <FriendPickerList friends={available} selected={selected} onToggle={toggle} />
-            <Button onClick={handleAdd} loading={saving} disabled={selected.size === 0} size="lg">
-              Añadir al grupo
-            </Button>
           </>
         )}
 
         {mode === "friends" && (
           <button
             onClick={() => setMode("ghost")}
-            className="flex items-center justify-center gap-1.5 rounded-2xl border border-dashed border-neutral-300 py-3 text-sm font-medium text-neutral-500 active:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:active:bg-neutral-800/60"
+            className="pressable flex items-center justify-center gap-1.5 rounded-[22px] border border-dashed border-neutral-300 py-3.5 text-sm font-semibold text-neutral-500 dark:border-neutral-600 dark:text-neutral-400"
           >
             <UserRound size={15} strokeWidth={2.1} />
             Añadir a alguien sin cuenta

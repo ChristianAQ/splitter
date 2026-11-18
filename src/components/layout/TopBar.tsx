@@ -8,13 +8,16 @@ interface Props {
   title: ReactNode;
   subtitle?: string;
   onBack?: boolean;
+  /** Where "back" goes when there's no earlier page in this visit (opened
+   * from a link, or after a reload) — otherwise it would leave the app. */
+  backTo?: string;
   right?: ReactNode;
 }
 
 const ROW_CLASSNAME = "mx-auto flex max-w-lg items-center gap-3 px-4 pb-3";
 const ROW_STYLE = { paddingTop: "calc(env(safe-area-inset-top) + 14px)" };
 
-export function TopBar({ title, subtitle, onBack, right }: Props) {
+export function TopBar({ title, subtitle, onBack, backTo = "/", right }: Props) {
   const navigate = useNavigate();
   const online = useOnlineStatus();
   const [scrolled, setScrolled] = useState(() => window.scrollY > 4);
@@ -32,7 +35,7 @@ export function TopBar({ title, subtitle, onBack, right }: Props) {
       <div className={ROW_CLASSNAME} style={ROW_STYLE}>
         {onBack && (
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate(backTo, { replace: true }))}
             aria-label="Volver"
             className="well well-press pressable flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-700 dark:text-neutral-200"
           >

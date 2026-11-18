@@ -10,7 +10,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const location = useLocation();
   useLegacyMigrations();
-  const hideFab = location.pathname.startsWith("/perfil") || location.pathname === "/grupos";
+  // Perfil has nothing to add. In Grupos the + is the group's own: the list
+  // has its own "+" in the header, and a group adds straight to itself
+  // (GroupDetail renders that button).
+  const hideFab = location.pathname.startsWith("/perfil") || location.pathname.startsWith("/grupos");
 
   // HashRouter navigation never triggers a real page load, so the browser
   // never resets scroll on its own the way it would between two server-

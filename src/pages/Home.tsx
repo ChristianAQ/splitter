@@ -4,7 +4,7 @@ import { CalendarClock, ChevronRight, HandCoins, Repeat, TrendingDown, TrendingU
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Avatar } from "../components/ui/Avatar";
-import { GroupCard } from "../components/group/GroupCard";
+import { GroupList } from "../components/group/GroupList";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { useAuth } from "../context/AuthContext";
 import { useSpending } from "../hooks/useSpending";
@@ -342,19 +342,7 @@ export function Home() {
                 <ChevronRight size={18} strokeWidth={2} className="shrink-0 text-accent/50" aria-hidden />
               </Link>
             ) : (
-              <div className="flex flex-col gap-2.5">
-                {groups.slice(0, 3).map((g) => (
-                  <GroupCard
-                    key={g.id}
-                    groupId={g.id}
-                    name={g.name}
-                    icon={g.icon}
-                    color={g.color}
-                    balance={summaries[g.id]?.balance ?? 0}
-                    currency={g.currency}
-                  />
-                ))}
-              </div>
+              <GroupList groups={groups.slice(0, 3)} balances={summaries} />
             )}
           </Section>
 

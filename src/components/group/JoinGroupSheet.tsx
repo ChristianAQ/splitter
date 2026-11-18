@@ -73,6 +73,17 @@ export function JoinGroupSheet({ open, onClose }: Props) {
         onClose();
       }}
       title="Unirse a un grupo"
+      footer={
+        preview ? (
+          <Button onClick={handleJoin} loading={joining} className="w-full">
+            Unirme a «{preview.groupName}»
+          </Button>
+        ) : (
+          <Button onClick={handleCheck} loading={checking} disabled={!code.trim()} className="w-full">
+            Comprobar código
+          </Button>
+        )
+      }
     >
       <div className="flex flex-col gap-4 pb-2 pt-1">
         <Input
@@ -89,9 +100,9 @@ export function JoinGroupSheet({ open, onClose }: Props) {
         {error && <p className="text-sm font-medium text-negative">{error}</p>}
 
         {preview && (
-          <div className="flex items-center gap-3 rounded-2xl bg-accent/10 p-3.5 dark:bg-accent/20">
+          <div className="well flex animate-rise items-center gap-3 rounded-[18px] p-3.5">
             <div
-              className="flex h-11 w-11 items-center justify-center rounded-2xl"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px]"
               style={{ backgroundColor: `${preview.color}33`, color: preview.color }}
             >
               <PreviewIcon size={20} strokeWidth={1.8} />
@@ -102,15 +113,6 @@ export function JoinGroupSheet({ open, onClose }: Props) {
           </div>
         )}
 
-        {preview ? (
-          <Button onClick={handleJoin} loading={joining} size="lg">
-            Confirmar y unirme
-          </Button>
-        ) : (
-          <Button onClick={handleCheck} loading={checking} disabled={!code.trim()} size="lg">
-            Comprobar código
-          </Button>
-        )}
       </div>
     </BottomSheet>
   );

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { BottomSheet } from "../ui/BottomSheet";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
+import { Segmented } from "../ui/Segmented";
 import { ColorPicker } from "../ui/ColorPicker";
 import { FriendPickerList } from "./FriendPickerList";
 import { useAuth } from "../../context/AuthContext";
@@ -82,7 +83,7 @@ export function CreateGroupSheet({ open, onClose }: Props) {
       <div className="flex flex-col gap-5 pb-2 pt-1">
         <div className="flex justify-center">
           <div
-            className="flex h-16 w-16 items-center justify-center rounded-3xl"
+            className="flex h-16 w-16 items-center justify-center rounded-[20px] transition-colors duration-200"
             style={{ backgroundColor: `${color}22`, color }}
           >
             <PreviewIcon size={28} strokeWidth={1.8} />
@@ -104,11 +105,11 @@ export function CreateGroupSheet({ open, onClose }: Props) {
                 key={key}
                 type="button"
                 onClick={() => setIcon(key)}
-                className={`flex h-11 w-11 items-center justify-center rounded-2xl border-2 ${
-                  icon === key
-                    ? "border-accent text-accent"
-                    : "border-transparent well text-neutral-500 dark:text-neutral-400"
+                aria-pressed={icon === key}
+                className={`pressable flex h-11 w-11 items-center justify-center rounded-[14px] border-2 ${
+                  icon === key ? "" : "border-transparent well text-neutral-500 dark:text-neutral-400"
                 }`}
+                style={icon === key ? { borderColor: color, backgroundColor: `${color}1f`, color } : undefined}
               >
                 <Icon size={20} strokeWidth={1.8} />
               </button>
@@ -123,20 +124,12 @@ export function CreateGroupSheet({ open, onClose }: Props) {
 
         <div>
           <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Moneda principal</p>
-          <div className="flex gap-2">
-            {(["EUR", "USD", "GBP"] as Currency[]).map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCurrency(c)}
-                className={`flex-1 rounded-2xl border py-2.5 text-sm font-semibold ${
-                  currency === c ? "border-accent bg-accent/10 text-accent-700 dark:bg-accent/20 dark:text-accent-300" : "border-neutral-200 text-neutral-500 dark:border-neutral-700"
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            options={(["EUR", "USD", "GBP"] as Currency[]).map((c) => [c, c] as const)}
+            value={currency}
+            onChange={setCurrency}
+            label="Moneda principal"
+          />
         </div>
 
         <div>

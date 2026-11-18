@@ -34,10 +34,10 @@ export function GroupExpenseCard({ expense, members, currentUid, onClick, onDele
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">{expense.description}</p>
-        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
-          <span>{formatDate(expense.date)}</span>
+        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400">
+          <span className="shrink-0">{formatDate(expense.date)}</span>
           <span aria-hidden>·</span>
-          <span>Pagó {payer?.name ?? "—"}</span>
+          <span className="truncate">{expense.paidBy === currentUid ? "Pagaste tú" : `Pagó ${payer?.name ?? "alguien"}`}</span>
           {!isCreator && (
             <>
               <span aria-hidden>·</span>
@@ -46,9 +46,11 @@ export function GroupExpenseCard({ expense, members, currentUid, onClick, onDele
           )}
         </div>
       </div>
-      <div className="flex flex-col items-end gap-0.5">
+      <div className="flex shrink-0 flex-col items-end gap-0.5">
         <span className="font-semibold tabular-nums">{formatCurrency(expense.amount, expense.currency)}</span>
-        <span className="text-xs text-neutral-500 dark:text-neutral-400">tu parte {formatCurrency(myShare, expense.currency)}</span>
+        <span className="text-xs text-neutral-500 dark:text-neutral-400">
+          {myShare > 0 ? `tu parte ${formatCurrency(myShare, expense.currency)}` : "no participas"}
+        </span>
       </div>
     </button>
   );
