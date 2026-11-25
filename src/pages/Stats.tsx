@@ -10,6 +10,9 @@ import { CardListSkeleton } from "../components/ui/Skeleton";
 import { MonthColumns } from "../components/charts/MonthColumns";
 import { RankedBars } from "../components/charts/RankedBars";
 import { SegmentedBar } from "../components/charts/SegmentedBar";
+import { StackedColumns } from "../components/charts/StackedColumns";
+import { PaceLine } from "../components/charts/PaceLine";
+import { FixedCommitmentsCard } from "../components/expense/FixedCommitmentsCard";
 import { useAuth } from "../context/AuthContext";
 import { useSpending } from "../hooks/useSpending";
 import { useRecurringExpenses } from "../hooks/useRecurringExpenses";
@@ -22,7 +25,8 @@ import { formatCurrency, formatDate, formatMonth, formatSignedCurrency } from ".
 import { shiftMonth, todayISO } from "../domain/date";
 import { summarizeRecurringBudget } from "../domain/budget";
 import { debtActivityInMonth } from "../domain/debts";
-import { changePercent, dailyAverage, projectedMonthEnd } from "../domain/spending";
+import { changePercent, cumulativeByDay, dailyAverage, projectedMonthEnd } from "../domain/spending";
+import { daysInMonth } from "../domain/date";
 import type { Currency } from "../types";
 
 type Scope = "personal" | string;
@@ -86,7 +90,7 @@ export function Stats() {
 function PersonalStats({ initialMonth }: { initialMonth?: string }) {
   // One month more than is drawn, so the oldest column still has a
   // "previous month" to be compared with.
-  const { summary, expenses, loading, currency, today, thisMonth } = useSpending(WINDOW + 1);
+  const { summary, expenses, groupShareByDay, loading, currency, today, thisMonth } = useSpending(WINDOW + 1);
   const { items: recurring } = useRecurringExpenses();
   const { debts } = useDebts();
   const months = summary.months.slice(1);
@@ -113,6 +117,16 @@ function PersonalStats({ initialMonth }: { initialMonth?: string }) {
   const biggest = useMemo(() => [...monthExpenses].sort((a, b) => b.amount - a.amount).slice(0, 5), [monthExpenses]);
   const fixed = useMemo(() => summarizeRecurringBudget(recurring, thisMonth, 0), [recurring, thisMonth]);
   const debtActivity = useMemo(() => debtActivityInMonth(debts, selected, currency), [debts, selected, currency]);
+  // Day by day through the month picked, against the month before.
+  const pace = useMemo(() => {
+    const [y, m] = selected.split("-").map(Number);
+    const [py, pm] = previous.split("-").map(Number);
+    return {
+      current: cumulativeByDay(expenses, groupShareByDay, selected, today),
+      previous: cumulativeByDay(expenses, groupShareByDay, previous),
+      days: Math.max(daysInMonth(y, m - 1), daysInMonth(py, pm - 1)),
+    };
+  }, [expenses, groupShareByDay, selected, previous, today]);
 
   if (loading) return <CardListSkeleton count={3} />;
   if (months.every((m) => summary.byMonth[m].total === 0) && recurring.length === 0 && debts.length === 0) {
@@ -204,6 +218,28 @@ function PersonalStats({ initialMonth }: { initialMonth?: string }) {
         <Figure label="Movimientos" value={String(month.count)} />
       </div>
 
+      {/* ------------------------------------------------ Pace */}
+      {(month.total > 0 || summary.byMonth[previous]?.total > 0) && (
+        <Panel title={isCurrent ? "Cómo vas este mes" : "Cómo fue el mes"}>
+          <p className="-mt-1 mb-3 text-xs text-neutral-500 dark:text-neutral-400">
+            Lo gastado acumulado, día a día, frente a {MONTH_LONG.format(monthDate(previous))}. Desliza el dedo por la gráfica para ver cada día.
+          </p>
+          <PaceLine
+            caption={`Gasto acumulado por día en ${formatMonth(`${selected}-01`)} y ${formatMonth(`${previous}-01`)}`}
+            monthName={MONTH_LONG.format(monthDate(selected))}
+            days={pace.days}
+            formatValue={money}
+            series={[
+              { key: "current", label: capitalize(MONTH_LONG.format(monthDate(selected))), color: "rgb(var(--accent-500))", values: pace.current },
+              { key: "previous", label: capitalize(MONTH_LONG.format(monthDate(previous))), color: "var(--series-muted)", dashed: true, values: pace.previous },
+            ]}
+          />
+          {isCurrent && pace.current.length > 0 && pace.previous.length >= pace.current.length && (
+            <PaceVerdict now={pace.current[pace.current.length - 1]} then={pace.previous[pace.current.length - 1]} money={money} previousName={MONTH_LONG.format(monthDate(previous))} />
+          )}
+        </Panel>
+      )}
+
       {month.total > 0 ? (
         <>
           {/* ---------------------------------------------- Where from */}
@@ -215,6 +251,24 @@ function PersonalStats({ initialMonth }: { initialMonth?: string }) {
                 { key: "fixed", label: "Fijos", detail: "Los que has marcado como pagados", value: month.fixed, color: "var(--series-2)" },
                 { key: "groups", label: "Grupos", detail: "Tu parte de los gastos compartidos", value: month.groups, color: "var(--series-3)" },
               ]}
+            />
+            <p className="mb-2 mt-5 text-[13px] font-semibold">Mes a mes</p>
+            <StackedColumns
+              caption={`Variables, fijos y grupos en los últimos ${WINDOW} meses`}
+              formatValue={money}
+              selectedKey={selected}
+              onSelect={setPicked}
+              series={[
+                { key: "variable", label: "Variables", color: "var(--series-1)" },
+                { key: "fixed", label: "Fijos", color: "var(--series-2)" },
+                { key: "groups", label: "Grupos", color: "var(--series-3)" },
+              ]}
+              columns={months.map((m) => ({
+                key: m,
+                label: shortLabel(m),
+                name: capitalize(formatMonth(`${m}-01`)),
+                values: { variable: summary.byMonth[m].variable, fixed: summary.byMonth[m].fixed, groups: summary.byMonth[m].groups },
+              }))}
             />
           </Panel>
 
@@ -261,6 +315,13 @@ function PersonalStats({ initialMonth }: { initialMonth?: string }) {
           <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
             {fixed.pending > 0 ? `Te quedan ${money(fixed.pending)} por pagar este mes.` : "Todos pagados este mes."}
           </p>
+        </Panel>
+      )}
+
+      {/* ------------------------------------------------ How long they last */}
+      {isCurrent && recurring.some((r) => r.active && r.currency === currency) && (
+        <Panel title="Hasta cuándo pagas tus fijos" link={{ to: "/gastos?tab=recurrentes", label: "Ver" }}>
+          <FixedCommitmentsCard recurring={recurring} currency={currency} today={today} bare />
         </Panel>
       )}
 
@@ -548,5 +609,22 @@ function StepButton({ label, disabled, onClick, children }: { label: string; dis
     >
       {children}
     </button>
+  );
+}
+
+/** One line under the pace chart: ahead of last month at this point, or behind. */
+function PaceVerdict({ now, then, money, previousName }: { now: number; then: number; money: (v: number) => string; previousName: string }) {
+  const diff = now - then;
+  if (Math.abs(diff) < 1) {
+    return <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">Vas igual que en {previousName} a estas alturas.</p>;
+  }
+  const less = diff < 0;
+  return (
+    <p className="mt-2 flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-300">
+      {less ? <TrendingDown size={14} strokeWidth={2.2} className="shrink-0 text-positive dark:text-positive-dark" /> : <TrendingUp size={14} strokeWidth={2.2} className="shrink-0 text-negative dark:text-negative-dark" />}
+      <span>
+        Llevas <span className="font-semibold text-neutral-900 dark:text-neutral-50">{money(Math.abs(diff))}</span> {less ? "menos" : "más"} que en {previousName} a estas alturas.
+      </span>
+    </p>
   );
 }

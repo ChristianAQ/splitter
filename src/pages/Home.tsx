@@ -5,6 +5,7 @@ import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Avatar } from "../components/ui/Avatar";
 import { GroupList } from "../components/group/GroupList";
+import { FixedCommitmentsCard } from "../components/expense/FixedCommitmentsCard";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { useAuth } from "../context/AuthContext";
 import { useSpending } from "../hooks/useSpending";
@@ -221,6 +222,13 @@ export function Home() {
               </AccountRow>
             </div>
           </Section>
+
+          {/* ------------------------------------------------ How long the fixed costs last */}
+          {recurring.some((r) => r.active && r.currency === currency) && (
+            <Section title="Gastos fijos: lo que te queda" to="/gastos?tab=recurrentes" linkLabel="Ver fijos">
+              <FixedCommitmentsCard recurring={recurring} currency={currency} today={today} />
+            </Section>
+          )}
 
           {/* ------------------------------------------------ What's coming */}
           {upcoming.length > 0 && (

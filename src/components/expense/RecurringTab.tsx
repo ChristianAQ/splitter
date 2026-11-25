@@ -20,6 +20,7 @@ import {
 import { saveBanks } from "../../services/users.service";
 import { totalsByBank } from "../../domain/banks";
 import { todayISO } from "../../domain/date";
+import { commitmentOf } from "../../domain/commitments";
 import { bankById } from "../../lib/banks";
 import { formatCurrency } from "../../lib/format";
 import type { Bank, RecurringExpense } from "../../types";
@@ -192,6 +193,7 @@ export function RecurringTab() {
                         {PERIODICITY_LABEL[r.periodicity]}
                         {r.periodicity === "monthly" && ` · día ${r.dayOfMonth}`}
                       </span>
+                      {r.endDate && <PaymentsLeft recurring={r} />}
                     </span>
                   </span>
                   <span className="shrink-0 text-right">
@@ -224,5 +226,15 @@ export function RecurringTab() {
       <RecurringExpenseSheet open={editing !== undefined} onClose={() => setEditing(undefined)} recurring={editing ?? undefined} />
       <BanksSheet open={managingBanks} onClose={() => setManagingBanks(false)} banks={banks} usage={usage} onSave={handleSaveBanks} />
     </div>
+  );
+}
+
+/** "quedan 2 de 3" on a fixed expense with an end date. */
+function PaymentsLeft({ recurring }: { recurring: RecurringExpense }) {
+  const c = commitmentOf(recurring, todayISO());
+  return (
+    <span className="shrink-0 font-medium text-accent-700 dark:text-accent-300">
+      · {c.remainingPayments === 0 ? "terminado" : `quedan ${c.remainingPayments} de ${c.totalPayments}`}
+    </span>
   );
 }

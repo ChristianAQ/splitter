@@ -26,7 +26,7 @@ export function useSpending(monthCount = 6) {
   // An archived group's past expenses still happened: they keep counting
   // in the month they occurred.
   const allGroups = useMemo(() => [...groups, ...archivedGroups], [groups, archivedGroups]);
-  const groupsByMonth = useGroupsMonthlySpend(allGroups, profile?.uid, months);
+  const { byMonth: groupsByMonth, byDay: groupsByDay } = useGroupsMonthlySpend(allGroups, profile?.uid, months);
 
   const summary = useMemo(() => {
     const share: Record<string, number> = {};
@@ -34,5 +34,12 @@ export function useSpending(monthCount = 6) {
     return summarizeSpending(expenses, share, months, GROUPS_CATEGORY.id);
   }, [expenses, groupsByMonth, months, currency]);
 
-  return { summary, expenses, loading, currency, today, thisMonth };
+  // The user's share of group expenses, day by day, in their own currency.
+  const groupShareByDay = useMemo(() => {
+    const share: Record<string, number> = {};
+    for (const [day, byCurrency] of Object.entries(groupsByDay)) if (byCurrency[currency]) share[day] = byCurrency[currency];
+    return share;
+  }, [groupsByDay, currency]);
+
+  return { summary, expenses, groupShareByDay, loading, currency, today, thisMonth };
 }

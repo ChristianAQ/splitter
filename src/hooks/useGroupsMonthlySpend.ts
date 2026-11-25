@@ -9,6 +9,9 @@ import type { Group, GroupExpense } from "../types";
  * has no exchange-rate conversion anywhere, so callers pick the currency
  * bucket matching whatever they're already displaying.
  *
+ * Also returns the same shares by day ("YYYY-MM-DD" -> currency -> amount),
+ * for the charts that follow a month day by day.
+ *
  * Subscribes once per group (unfiltered — there's no date range in the
  * query) and refilters client-side per `months`, so changing which months a
  * caller cares about is a plain recompute, not new listeners.
@@ -37,6 +40,7 @@ export function useGroupsMonthlySpend(groups: Group[], uid: string | undefined, 
   return useMemo(() => {
     const monthSet = new Set(months);
     const byMonth: Record<string, Record<string, number>> = {};
+    const byDay: Record<string, Record<string, number>> = {};
     for (const group of groups) {
       for (const e of expensesByGroup[group.id] ?? []) {
         const key = e.date.slice(0, 7);
@@ -44,9 +48,11 @@ export function useGroupsMonthlySpend(groups: Group[], uid: string | undefined, 
         const share = e.splits.find((s) => s.uid === uid)?.amount ?? 0;
         const forMonth = (byMonth[key] ??= {});
         forMonth[group.currency] = (forMonth[group.currency] ?? 0) + share;
+        const forDay = (byDay[e.date] ??= {});
+        forDay[group.currency] = (forDay[group.currency] ?? 0) + share;
       }
     }
-    return byMonth;
+    return { byMonth, byDay };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups, expensesByGroup, uid, monthsKey]);
 }
