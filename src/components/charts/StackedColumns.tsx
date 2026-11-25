@@ -51,7 +51,7 @@ export function StackedColumns({ columns, series, formatValue, selectedKey, onSe
   const shown = active !== null ? columns[active] : null;
 
   return (
-    <figure>
+    <figure className="relative">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <ChartLegend items={series.map((s) => ({ key: s.key, label: s.label, color: s.color }))} />
         {markerLabel && (
@@ -142,31 +142,36 @@ export function StackedColumns({ columns, series, formatValue, selectedKey, onSe
         </div>
         {columns.some((c) => c.marked) && <div className="h-2" />}
       </div>
-      <table className="sr-only">
-        <caption>{caption}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Periodo</th>
-            {series.map((s) => (
-              <th key={s.key} scope="col">
-                {s.label}
-              </th>
-            ))}
-            <th scope="col">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {columns.map((c, i) => (
-            <tr key={c.key}>
-              <th scope="row">{c.name}</th>
+      {/* The sr-only box is a div, not the table itself: a table can't be
+       * squeezed to 1px, so an sr-only <table> keeps its full width and
+       * makes the page wider than the screen (pannable sideways on iOS). */}
+      <div className="sr-only">
+        <table>
+          <caption>{caption}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Periodo</th>
               {series.map((s) => (
-                <td key={s.key}>{formatValue(c.values[s.key] ?? 0)}</td>
+                <th key={s.key} scope="col">
+                  {s.label}
+                </th>
               ))}
-              <td>{formatValue(totals[i])}</td>
+              <th scope="col">Total</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {columns.map((c, i) => (
+              <tr key={c.key}>
+                <th scope="row">{c.name}</th>
+                {series.map((s) => (
+                  <td key={s.key}>{formatValue(c.values[s.key] ?? 0)}</td>
+                ))}
+                <td>{formatValue(totals[i])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

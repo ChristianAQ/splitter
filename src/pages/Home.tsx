@@ -120,7 +120,7 @@ export function Home() {
         right={
           profile && (
             <Link to="/perfil" aria-label="Ir a mi perfil" className="pressable shrink-0 rounded-full">
-              <Avatar name={profile.name} color={profile.color} photoUrl={profile.photoUrl} size="lg" />
+              <Avatar name={profile.name} color={profile.color} photoUrl={profile.photoUrl} size="md" />
             </Link>
           )
         }

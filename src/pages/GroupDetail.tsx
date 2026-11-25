@@ -26,6 +26,7 @@ import {
 import { groupIconComponent } from "../lib/groupIcons";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
+import { StickySubnav } from "../components/layout/StickySubnav";
 import { Avatar } from "../components/ui/Avatar";
 import { FAB } from "../components/layout/FAB";
 import { Button } from "../components/ui/Button";
@@ -468,7 +469,9 @@ export function GroupDetail() {
           </dl>
         </section>
 
-        <Segmented options={TABS} value={tab} onChange={setTab} className="mb-5" label="Secciones del grupo" />
+        <StickySubnav className="mb-3">
+          <Segmented options={TABS} value={tab} onChange={setTab} label="Secciones del grupo" />
+        </StickySubnav>
 
         {tab === "resumen" && (
           <div className="flex flex-col gap-6">

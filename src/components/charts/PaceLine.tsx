@@ -64,7 +64,7 @@ export function PaceLine({ series, days, formatValue, monthName, caption, height
   const lead = series[0];
 
   return (
-    <figure>
+    <figure className="relative">
       <div className="mb-3">
         <ChartLegend items={series.map((s) => ({ key: s.key, label: s.label, color: s.color, shape: "line", dashed: s.dashed }))} />
       </div>
@@ -145,29 +145,34 @@ export function PaceLine({ series, days, formatValue, monthName, caption, height
           )}
         </svg>
       </div>
-      <table className="sr-only">
-        <caption>{caption}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Día</th>
-            {series.map((s) => (
-              <th key={s.key} scope="col">
-                {s.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: days }, (_, i) => (
-            <tr key={i}>
-              <th scope="row">{i + 1}</th>
+      {/* The sr-only box is a div, not the table itself: a table can't be
+       * squeezed to 1px, so an sr-only <table> keeps its full width and
+       * makes the page wider than the screen (pannable sideways on iOS). */}
+      <div className="sr-only">
+        <table>
+          <caption>{caption}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Día</th>
               {series.map((s) => (
-                <td key={s.key}>{i < s.values.length ? formatValue(s.values[i]) : "—"}</td>
+                <th key={s.key} scope="col">
+                  {s.label}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {Array.from({ length: days }, (_, i) => (
+              <tr key={i}>
+                <th scope="row">{i + 1}</th>
+                {series.map((s) => (
+                  <td key={s.key}>{i < s.values.length ? formatValue(s.values[i]) : "—"}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { RefreshCw, Wallet } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
+import { StickySubnav } from "../components/layout/StickySubnav";
 import { PersonalExpenseCard } from "../components/expense/ExpenseCard";
 import { PersonalExpenseSheet } from "../components/expense/PersonalExpenseSheet";
 import { ExpenseDetailSheet } from "../components/expense/ExpenseDetailSheet";
@@ -54,6 +55,7 @@ export function Expenses() {
     writeLast("gastos-tab", next);
     // In the URL too, so reopening the app lands on it as well.
     setSearchParams({ tab: next }, { replace: true });
+    window.scrollTo({ top: 0 });
   };
   useEffect(() => {
     if (isTab(requestedTab) && requestedTab !== tab) {
@@ -111,7 +113,9 @@ export function Expenses() {
         }
       />
       <PageContainer>
-        <Segmented options={TAB_OPTIONS} value={tab} onChange={setTab} className="mb-5" label="Secciones de gastos" />
+        <StickySubnav className="mb-3">
+          <Segmented options={TAB_OPTIONS} value={tab} onChange={setTab} label="Secciones de gastos" />
+        </StickySubnav>
 
         {tab === "pasados" &&
           (loading ? (

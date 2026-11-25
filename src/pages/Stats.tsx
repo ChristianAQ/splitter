@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { BarChart3, ChevronLeft, ChevronRight, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
+import { StickySubnav } from "../components/layout/StickySubnav";
 import { Avatar } from "../components/ui/Avatar";
 import { BottomSheet } from "../components/ui/BottomSheet";
 import { EmptyState } from "../components/ui/EmptyState";
@@ -66,20 +67,22 @@ export function Stats() {
       <PageContainer>
         {/* What everything below is about: my own spending, or one group's. */}
         {groups.length > 0 && (
-          <div className="well no-scrollbar mb-5 flex gap-1 overflow-x-auto rounded-full p-1" role="tablist" aria-label="De quién son las estadísticas">
-            <button role="tab" aria-selected={active === "personal"} onClick={() => setScope("personal")} className={chip(active === "personal")}>
-              Tus gastos
-            </button>
-            {groups.map((g) => {
-              const GroupIcon = groupIconComponent(g.icon);
-              return (
-                <button key={g.id} role="tab" aria-selected={active === g.id} onClick={() => setScope(g.id)} className={chip(active === g.id)}>
-                  <GroupIcon size={15} strokeWidth={2} />
-                  {g.name}
-                </button>
-              );
-            })}
-          </div>
+          <StickySubnav className="mb-3">
+            <div className="well no-scrollbar flex gap-1 overflow-x-auto rounded-full p-1" role="tablist" aria-label="De quién son las estadísticas">
+              <button role="tab" aria-selected={active === "personal"} onClick={() => setScope("personal")} className={chip(active === "personal")}>
+                Tus gastos
+              </button>
+              {groups.map((g) => {
+                const GroupIcon = groupIconComponent(g.icon);
+                return (
+                  <button key={g.id} role="tab" aria-selected={active === g.id} onClick={() => setScope(g.id)} className={chip(active === g.id)}>
+                    <GroupIcon size={15} strokeWidth={2} />
+                    {g.name}
+                  </button>
+                );
+              })}
+            </div>
+          </StickySubnav>
         )}
 
         {active === "personal" ? <PersonalStats initialMonth={searchParams.get("month") ?? undefined} /> : <GroupStats key={active} groupId={active} />}

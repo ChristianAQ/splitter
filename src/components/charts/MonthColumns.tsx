@@ -33,7 +33,7 @@ export function MonthColumns({ columns, formatValue, average, selectedKey, onSel
   const averageY = average && average > 0 ? (average / max) * PLOT_HEIGHT : null;
 
   return (
-    <figure>
+    <figure className="relative">
       <div className="relative" aria-hidden={onSelect ? undefined : true}>
         {averageY !== null && (
           // Label on the left: the right-hand end is where the current
@@ -93,23 +93,28 @@ export function MonthColumns({ columns, formatValue, average, selectedKey, onSel
       </div>
       {/* The same numbers as a table: every value is readable without
        * tapping through the columns one by one. */}
-      <table className="sr-only">
-        <caption>{caption}</caption>
-        <tbody>
-          {columns.map((c) => (
-            <tr key={c.key}>
-              <th scope="row">{c.name}</th>
-              <td>{formatValue(c.value)}</td>
-            </tr>
-          ))}
-          {average !== undefined && average > 0 && (
-            <tr>
-              <th scope="row">Media</th>
-              <td>{formatValue(average)}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {/* The sr-only box is a div, not the table itself: a table can't be
+       * squeezed to 1px, so an sr-only <table> keeps its full width and
+       * makes the page wider than the screen (pannable sideways on iOS). */}
+      <div className="sr-only">
+        <table>
+          <caption>{caption}</caption>
+          <tbody>
+            {columns.map((c) => (
+              <tr key={c.key}>
+                <th scope="row">{c.name}</th>
+                <td>{formatValue(c.value)}</td>
+              </tr>
+            ))}
+            {average !== undefined && average > 0 && (
+              <tr>
+                <th scope="row">Media</th>
+                <td>{formatValue(average)}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }
