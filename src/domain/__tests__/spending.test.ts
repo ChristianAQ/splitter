@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageMonthlySpend, changePercent, dailyAverage, projectedMonthEnd, summarizeSpending } from "../spending";
+import { averageMonthlySpend, changePercent, cumulativeByDay, dailyAverage, projectedMonthEnd, summarizeSpending } from "../spending";
 import type { PersonalExpense } from "../../types";
 
 const e = (o: Partial<PersonalExpense>): PersonalExpense => ({
@@ -52,5 +52,26 @@ describe("month figures", () => {
   });
   it("projects the rest of the month from the pace so far, keeping fixed costs as paid", () => {
     expect(projectedMonthEnd({ variable: 150, fixed: 650, groups: 10, total: 810, count: 4 }, "2026-11-16")).toBe(950);
+  });
+});
+
+describe("cumulativeByDay", () => {
+  const expenses = [
+    e({ amount: 10, date: "2026-11-02" }),
+    e({ amount: 5.5, date: "2026-11-02" }),
+    e({ amount: 20, date: "2026-11-04" }),
+    e({ amount: 99, date: "2026-11-04", status: "future" }),
+    e({ amount: 7, date: "2026-10-30" }),
+  ];
+
+  it("adds up day by day, groups' share included, and stops at today", () => {
+    expect(cumulativeByDay(expenses, { "2026-11-03": 4 }, "2026-11", "2026-11-05")).toEqual([0, 15.5, 19.5, 39.5, 39.5]);
+  });
+
+  it("runs the whole month for a past one", () => {
+    const series = cumulativeByDay(expenses, {}, "2026-10", "2026-11-05");
+    expect(series).toHaveLength(31);
+    expect(series[28]).toBe(0);
+    expect(series[30]).toBe(7);
   });
 });

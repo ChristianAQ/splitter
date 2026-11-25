@@ -111,3 +111,35 @@ export function projectedMonthEnd(spending: MonthSpending, today: string): numbe
   const paced = ((spending.variable + spending.groups) / elapsed) * daysInMonth(y, m - 1);
   return cents(spending.fixed + paced) / 100;
 }
+
+/**
+ * Running total of what was spent in `month`, one entry per day (index 0 is
+ * the 1st) — by the same definition as summarizeSpending, so the last
+ * entry is that month's total. For the current month, pass `today` and the
+ * series stops there instead of running flat into days that haven't
+ * happened yet.
+ */
+export function cumulativeByDay(
+  expenses: PersonalExpense[],
+  groupShareByDay: Record<string, number>,
+  month: string,
+  today?: string
+): number[] {
+  const [y, m] = month.split("-").map(Number);
+  const length = today && today.slice(0, 7) === month ? Number(today.slice(8)) : daysInMonth(y, m - 1);
+  const daily = new Array<number>(daysInMonth(y, m - 1)).fill(0);
+  for (const e of expenses) {
+    if (e.status === "future" || e.date.slice(0, 7) !== month) continue;
+    daily[Number(e.date.slice(8)) - 1] += cents(e.amount);
+  }
+  for (const [day, share] of Object.entries(groupShareByDay)) {
+    if (day.slice(0, 7) === month) daily[Number(day.slice(8)) - 1] += cents(share);
+  }
+  const running: number[] = [];
+  let sum = 0;
+  for (let i = 0; i < length; i++) {
+    sum += daily[i];
+    running.push(sum / 100);
+  }
+  return running;
+}

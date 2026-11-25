@@ -48,6 +48,16 @@ sensible vive en `firestore.rules`; ver §4.
   Estadísticas comparten una única definición de «gastado»
   (`domain/spending.ts`); marcar un gasto fijo como pagado lo registra
   como gasto real, así que entra en el historial.
+- Gráficas interactivas (deslizar el dedo o pasar el ratón muestra el
+  detalle; con teclado, las flechas): ritmo de gasto acumulado día a día
+  frente al mes anterior (`charts/PaceLine.tsx`) y variables / fijos /
+  grupos mes a mes (`charts/StackedColumns.tsx`).
+- «Lo que te queda» de los gastos fijos, en Inicio y Estadísticas: un gasto
+  fijo sin fecha de fin (alquiler) no termina nunca; uno con fecha de fin
+  (un pago aplazado en 3 meses) cuenta los pagos que le quedan, cuánto
+  dinero suman y cuándo es el último. Incluye la cuota fija de los próximos
+  12 meses, donde cada plazo que termina se ve como un escalón
+  (`domain/commitments.ts`).
 - Dashboard con resumen personal + tarjetas de grupo.
 - Cambiar nombre/color en Ajustes se propaga automáticamente a tu ficha en
   todos los grupos donde estás (`services/profileSync.service.ts`).
@@ -116,7 +126,7 @@ La lógica financiera (`src/domain/`) es la parte más importante de la
 aplicación y **no importa nada de Firebase ni de React** — son funciones
 puras (`splitEqual`, `computeBalances`, `optimizeSettlement`,
 `occurrencesInRange`...) que reciben datos y devuelven datos. Esto permite:
-1. Testearla exhaustivamente sin mocks (`npm run test`, 92 tests).
+1. Testearla exhaustivamente sin mocks (`npm run test`, 104 tests).
 2. Reutilizarla igual en cualquier punto de la app sin duplicar la lógica
    de reparto o de balances.
 3. Que un cliente manipulado nunca sea la fuente de verdad: el cliente
@@ -241,7 +251,7 @@ cambiar.
 
 ## 5. Lógica financiera (`src/domain/`)
 
-Todo cubierto por tests (`npm run test`, 92 tests, 10 ficheros):
+Todo cubierto por tests (`npm run test`, 104 tests, 11 ficheros):
 
 - **`split.ts`** — reparto igual (con reparto exacto del céntimo sobrante,
   nunca se "pierde" un céntimo) y reparto por importe exacto (valida que
