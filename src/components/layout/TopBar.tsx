@@ -66,7 +66,11 @@ export function TopBar({ title, subtitle, onBack, backTo = "/", right }: Props) 
        * this same fixed stack (rather than as a separate sticky sibling in
        * AppLayout, as it used to be) so the two can never overlap: both
        * stack tops are always in sync since they share one spacer. */}
-      <header className="fixed inset-x-0 top-0 z-30">
+      <header
+        className="fixed inset-x-0 top-0 z-30"
+        // Fades while the page is swiped back from the edge (useEdgeSwipeBack).
+        style={{ opacity: "calc(1 - var(--edge-swipe-progress, 0) * 1.4)", transition: "var(--edge-swipe-transition, none)" }}
+      >
         {/* Frosted backing, only once something has scrolled underneath:
          * at the top of the page the header is just part of the page (the
          * ambient backdrop runs through it uninterrupted); scrolled, it

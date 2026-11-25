@@ -1,5 +1,6 @@
 import type { RecurringExpense } from "../types";
 import { fromMinorUnits, toMinorUnits } from "./money";
+import { chargeDateInMonth } from "./recurring";
 
 export interface BankTotal {
   /** null gathers everything with no bank, or a bank that no longer exists. */
@@ -25,7 +26,8 @@ export function totalsByBank(recurring: RecurringExpense[], month: string, known
     const minor = toMinorUnits(r.amount, currency);
     entry.count += 1;
     entry.total += minor;
-    if (r.lastCompletedMonth !== month) entry.pending += minor;
+    // Pending: due this month (see budget.dueInMonth) and not ticked off.
+    if (r.lastCompletedMonth !== month && r.active && chargeDateInMonth(r, month) !== null) entry.pending += minor;
     byBank.set(key, entry);
   }
   return [...byBank.entries()]

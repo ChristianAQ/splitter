@@ -5,7 +5,8 @@ import { TopBar } from "../components/layout/TopBar";
 import { PageContainer } from "../components/layout/PageContainer";
 import { Avatar } from "../components/ui/Avatar";
 import { GroupList } from "../components/group/GroupList";
-import { FixedCommitmentsCard } from "../components/expense/FixedCommitmentsCard";
+import { EndingSoonCard } from "../components/expense/EndingSoonCard";
+import { summarizeCommitments } from "../domain/commitments";
 import { CardListSkeleton } from "../components/ui/Skeleton";
 import { useAuth } from "../context/AuthContext";
 import { useSpending } from "../hooks/useSpending";
@@ -18,7 +19,7 @@ import { categoryById } from "../lib/categories";
 import { shiftMonth, todayISO } from "../domain/date";
 import { summarizeDebts } from "../domain/debts";
 import { balancesByPerson, netTotals } from "../domain/debtPeople";
-import { summarizeRecurringBudget } from "../domain/budget";
+import { dueInMonth, summarizeRecurringBudget } from "../domain/budget";
 import { changePercent, dailyAverage } from "../domain/spending";
 import { upcomingPayments, type UpcomingKind } from "../domain/upcoming";
 import type { Currency } from "../types";
@@ -89,7 +90,9 @@ export function Home() {
     [debts, currency, today]
   );
   const fixed = useMemo(() => summarizeRecurringBudget(recurring, thisMonth, 0), [recurring, thisMonth]);
-  const fixedPaid = recurring.filter((r) => r.lastCompletedMonth === thisMonth).length;
+  const fixedDue = useMemo(() => dueInMonth(recurring, thisMonth), [recurring, thisMonth]);
+  const fixedPaid = fixedDue.filter((r) => r.lastCompletedMonth === thisMonth).length;
+  const hasPlans = useMemo(() => summarizeCommitments(recurring, currency, today).finite.length > 0, [recurring, currency, today]);
 
   // What the groups add up to for me. Only groups in my own currency — there
   // are no exchange rates anywhere in the app to add the others with.
@@ -206,8 +209,8 @@ export function Home() {
                 to="/gastos?tab=recurrentes"
                 icon={Repeat}
                 label="Gastos fijos"
-                caption={recurring.length === 0 ? "Sin configurar" : `${fixedPaid} de ${recurring.length} pagados este mes`}
-                progress={recurring.length > 0 ? fixedPaid / recurring.length : undefined}
+                caption={recurring.length === 0 ? "Sin configurar" : `${fixedPaid} de ${fixedDue.length} pagados este mes`}
+                progress={fixedDue.length > 0 ? fixedPaid / fixedDue.length : undefined}
               >
                 {recurring.length === 0 ? (
                   <span className="text-neutral-400">—</span>
@@ -224,9 +227,9 @@ export function Home() {
           </Section>
 
           {/* ------------------------------------------------ How long the fixed costs last */}
-          {recurring.some((r) => r.active && r.currency === currency) && (
-            <Section title="Gastos fijos: lo que te queda" to="/gastos?tab=recurrentes" linkLabel="Ver fijos">
-              <FixedCommitmentsCard recurring={recurring} currency={currency} today={today} />
+          {hasPlans && (
+            <Section title="Plazos en curso" to="/estadisticas" linkLabel="Ver detalle">
+              <EndingSoonCard recurring={recurring} currency={currency} today={today} />
             </Section>
           )}
 

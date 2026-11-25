@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RefreshCw, Wallet } from "lucide-react";
 import { TopBar } from "../components/layout/TopBar";
@@ -21,6 +21,7 @@ import { deletePersonalExpense, restorePersonalExpense } from "../services/perso
 import { syncRecurringTick } from "../services/recurringExpenses.service";
 import { formatCurrency, formatMonth } from "../lib/format";
 import { todayISO } from "../domain/date";
+import { readLast, writeLast } from "../lib/lastPlace";
 import type { PersonalExpense } from "../types";
 
 type Tab = "pasados" | "proximos" | "recurrentes" | "deudas";
@@ -43,9 +44,24 @@ export function Expenses() {
   const { user } = useAuth();
   const { show } = useToast();
   const { expenses, loading } = usePersonalExpenses();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get("tab");
-  const [tab, setTab] = useState<Tab>(TABS.includes(requestedTab as Tab) ? (requestedTab as Tab) : "pasados");
+  // A link can ask for a tab (?tab=); otherwise it opens on the one used last.
+  const isTab = (t: string | null): t is Tab => TABS.includes(t as Tab);
+  const [tab, setTabState] = useState<Tab>(() => (isTab(requestedTab) ? requestedTab : isTab(readLast("gastos-tab")) ? (readLast("gastos-tab") as Tab) : "pasados"));
+  const setTab = (next: Tab) => {
+    setTabState(next);
+    writeLast("gastos-tab", next);
+    // In the URL too, so reopening the app lands on it as well.
+    setSearchParams({ tab: next }, { replace: true });
+  };
+  useEffect(() => {
+    if (isTab(requestedTab) && requestedTab !== tab) {
+      setTabState(requestedTab);
+      writeLast("gastos-tab", requestedTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedTab]);
   // Tapping a row opens it read-only (by id, looked up live); the edit form
   // is only reached from there.
   const [viewingId, setViewingId] = useState<string | null>(null);

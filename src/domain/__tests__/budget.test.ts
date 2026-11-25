@@ -21,6 +21,17 @@ function mk(partial: Partial<RecurringExpense>): RecurringExpense {
 }
 
 describe("summarizeRecurringBudget", () => {
+  it("leaves out what doesn't charge that month: a yearly one elsewhere, one that has ended", () => {
+    const items = [
+      mk({ id: "a", amount: 15 }),
+      mk({ id: "insurance", amount: 400, periodicity: "yearly", startDate: "2026-06-10" }),
+      mk({ id: "ended", amount: 30, endDate: "2026-02-28" }),
+    ];
+    expect(summarizeRecurringBudget(items, "2026-03", 0).totalRecurring).toBe(15);
+    expect(summarizeRecurringBudget(items, "2026-06", 0).totalRecurring).toBe(415);
+    expect(pendingRecurringCount(items, "2026-03")).toBe(1);
+  });
+
   it("sums every recurring expense regardless of checked state", () => {
     const items = [mk({ id: "a", amount: 15 }), mk({ id: "b", amount: 40 })];
     const summary = summarizeRecurringBudget(items, "2026-03", 0);

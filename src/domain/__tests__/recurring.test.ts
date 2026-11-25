@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { occurrencesInRange, nextOccurrence } from "../recurring";
+import { chargeDateInMonth, occurrencesInRange, nextOccurrence } from "../recurring";
 import type { RecurringExpense } from "../../types";
 
 function mk(partial: Partial<RecurringExpense>): RecurringExpense {
@@ -89,5 +89,13 @@ describe("nextOccurrence", () => {
   it("returns null once the recurring expense has ended", () => {
     const r = mk({ dayOfMonth: 1, startDate: "2026-01-01", endDate: "2026-02-01" });
     expect(nextOccurrence(r, "2026-06-01")).toBeNull();
+  });
+});
+
+describe("chargeDateInMonth", () => {
+  it("finds this month's charge, or none for a yearly one in another month", () => {
+    expect(chargeDateInMonth(mk({ dayOfMonth: 31 }), "2026-02")).toBe("2026-02-28");
+    expect(chargeDateInMonth(mk({ periodicity: "yearly", startDate: "2026-03-10" }), "2026-11")).toBeNull();
+    expect(chargeDateInMonth(mk({ endDate: "2026-05-31" }), "2026-06")).toBeNull();
   });
 });

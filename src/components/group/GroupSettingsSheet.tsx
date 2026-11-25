@@ -168,7 +168,7 @@ export function GroupSettingsSheet({ open, onClose, group, members, archivedForM
           <section>
             <p className="mb-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300">Código de invitación</p>
             <div className="flex items-center gap-2 well rounded-[18px] p-3.5">
-              <span className="flex-1 text-xl font-semibold tracking-[0.2em]">{group.inviteCode}</span>
+              <span className="selectable flex-1 text-xl font-semibold tracking-[0.2em]">{group.inviteCode}</span>
               <Button size="icon" variant="secondary" onClick={handleCopyCode} aria-label="Copiar código">
                 <Copy size={17} strokeWidth={2.1} />
               </Button>

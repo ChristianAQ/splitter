@@ -68,6 +68,26 @@
     letter-spacing: -0.006em;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
     -webkit-tap-highlight-color: transparent;
+    /* No double-tap-to-zoom (and no 300ms tap delay waiting for one). */
+    touch-action: manipulation;
+    /* Long-pressing a button or a row shouldn't select its text or pop up
+     * the "Copy / Look Up" callout, the way it would on a web page — app
+     * UI doesn't. Text you type, and text meant to be copied, still can. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  input,
+  textarea,
+  [contenteditable],
+  .selectable {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+  /* Images aren't something to drag around or save from the UI. */
+  img {
+    -webkit-user-drag: none;
   }
 
   /* Ambient backdrop: three very soft pools of the user's accent color,

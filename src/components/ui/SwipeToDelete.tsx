@@ -1,5 +1,6 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Trash2 } from "lucide-react";
+import { haptic } from "../../lib/haptics";
 
 interface Props {
   /** Runs once the row has been dragged past the threshold and released.
@@ -197,7 +198,10 @@ export function SwipeToDelete({ onDelete, children, leading, disabled }: Props) 
   function onPointerUp(e: ReactPointerEvent<HTMLDivElement>) {
     const g = gesture.current;
     if (e.pointerId !== g.pointerId) return;
-    if (g.axis === "x" && g.armed) commit();
+    if (g.axis === "x" && g.armed) {
+      haptic();
+      commit();
+    }
     else reset(g.axis === "x");
   }
 

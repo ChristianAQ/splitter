@@ -1,15 +1,47 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { useLocation } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { BottomNav } from "./components/layout/BottomNav";
 import { FAB } from "./components/layout/FAB";
 import { QuickAddSheet } from "./components/expense/QuickAddSheet";
 import { useLegacyMigrations } from "./hooks/useLegacyMigrations";
 import { SwipeableTabTransition } from "./components/layout/SwipeableTabTransition";
+import { useEdgeSwipeBack } from "./components/layout/useEdgeSwipeBack";
+import { isRestorableRoute, readLast, writeLast } from "./lib/lastPlace";
+
+const TAB_PATHS = ["/", "/gastos", "/grupos", "/estadisticas", "/perfil"];
+// Once per launch: reopening the app goes back to where it was left.
+let restoredThisLaunch = false;
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const mainRef = useRef<HTMLElement>(null);
   useLegacyMigrations();
+
+  // Like a native app, open on the screen that was open last time — only
+  // when launched onto Inicio (a link into a specific screen wins).
+  useEffect(() => {
+    if (restoredThisLaunch) return;
+    restoredThisLaunch = true;
+    const last = readLast("route");
+    if (location.pathname === "/" && !location.search && last && last !== "/" && isRestorableRoute(last.split("?")[0])) {
+      navigate(last, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (restoredThisLaunch && isRestorableRoute(location.pathname)) writeLast("route", location.pathname + location.search);
+  }, [location.pathname, location.search]);
+
+  // Screens under a tab (a group, Amigos) go back with a swipe from the
+  // left edge, as on iOS.
+  const isTab = TAB_PATHS.includes(location.pathname);
+  const goBack = useCallback(() => {
+    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+    else navigate("/grupos", { replace: true });
+  }, [navigate]);
+  useEdgeSwipeBack(mainRef, !isTab, goBack);
   // Perfil has nothing to add. In Grupos the + is the group's own: the list
   // has its own "+" in the header, and a group adds straight to itself
   // (GroupDetail renders that button).
@@ -32,7 +64,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-app overflow-x-clip">
       <SwipeableTabTransition>
-        <main className="pb-24">{children}</main>
+        <main ref={mainRef} className="pb-24">
+          {children}
+        </main>
       </SwipeableTabTransition>
       {!hideFab && <FAB onClick={() => setQuickAddOpen(true)} />}
       <BottomNav />

@@ -98,7 +98,7 @@ export function BankSummaryCard({ banks, totals, currency, selected, onSelect, o
                 ) : (
                   <span className="inline-flex items-center gap-0.5 text-xs font-medium text-positive dark:text-positive-dark">
                     <Check size={12} strokeWidth={3} />
-                    pagado
+                    al día
                   </span>
                 )}
               </span>

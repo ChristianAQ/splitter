@@ -90,3 +90,12 @@ export function nextOccurrence(recurring: RecurringExpense, fromDate: string): s
   const found = occurrencesInRange(recurring, fromDate, formatISO(horizon));
   return found[0] ?? null;
 }
+
+/** When `recurring` charges in `month` ("YYYY-MM") — its first occurrence
+ * that month — or null if it doesn't charge that month at all (a yearly
+ * one in another month, one that hasn't started or has ended). */
+export function chargeDateInMonth(recurring: RecurringExpense, month: string): string | null {
+  const [y, m] = month.split("-").map(Number);
+  const end = `${month}-${String(daysInMonth(y, m - 1)).padStart(2, "0")}`;
+  return occurrencesInRange({ ...recurring, active: true }, `${month}-01`, end)[0] ?? null;
+}

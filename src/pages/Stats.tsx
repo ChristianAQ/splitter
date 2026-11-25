@@ -28,6 +28,7 @@ import { debtActivityInMonth } from "../domain/debts";
 import { changePercent, cumulativeByDay, dailyAverage, projectedMonthEnd } from "../domain/spending";
 import { daysInMonth } from "../domain/date";
 import type { Currency } from "../types";
+import { readLast, writeLast } from "../lib/lastPlace";
 
 type Scope = "personal" | string;
 
@@ -44,7 +45,11 @@ const CATEGORY_LIMIT = 6;
 
 export function Stats() {
   const { groups } = useGroups();
-  const [scope, setScope] = useState<Scope>("personal");
+  const [scope, setScopeState] = useState<Scope>(() => readLast("stats-scope") ?? "personal");
+  const setScope = (next: Scope) => {
+    setScopeState(next);
+    writeLast("stats-scope", next);
+  };
   const [searchParams] = useSearchParams();
   const active = scope === "personal" || groups.some((g) => g.id === scope) ? scope : "personal";
 

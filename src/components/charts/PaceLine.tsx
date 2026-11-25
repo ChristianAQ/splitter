@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useId, useLayoutEffect, useState } from "react";
 import { ChartLegend, ChartTooltip } from "./ChartTooltip";
 import { useScrub } from "./useScrub";
 
@@ -43,9 +43,12 @@ export function PaceLine({ series, days, formatValue, monthName, caption, height
   const [width, setWidth] = useState(320);
   const gradientId = `pace-fill-${useId().replace(/:/g, "")}`;
 
-  useEffect(() => {
+  // Measured before the first paint: drawn at a guessed width first, the
+  // chart could stick out past a narrow screen for a frame.
+  useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    setWidth(Math.max(el.clientWidth, 120));
     const observer = new ResizeObserver(([entry]) => setWidth(Math.max(entry.contentRect.width, 120)));
     observer.observe(el);
     return () => observer.disconnect();

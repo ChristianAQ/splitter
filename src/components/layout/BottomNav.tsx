@@ -1,4 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
+import { haptic } from "../../lib/haptics";
 import { Home, WalletMinimal, Users, ChartColumn, Settings, type LucideIcon } from "lucide-react";
 
 const ITEMS: { to: string; label: string; icon: LucideIcon; also?: string[] }[] = [
@@ -15,7 +16,7 @@ function matches(pathname: string, item: (typeof ITEMS)[number]) {
   return [item.to, ...(item.also ?? [])].some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-/** Floating glass tab bar. One shared highlight glides between tabs; which
+/** Floating glass tab bar. Tapping the current tab scrolls it to the top. One shared highlight glides between tabs; which
  * tab is "active" is computed here once (not per-NavLink) so the highlight
  * and the icon it sits behind can never disagree — they used to on
  * /amigos, where the pill fell back to Inicio while no tab was lit. */
@@ -53,6 +54,16 @@ export function BottomNav() {
               key={item.to}
               to={item.to}
               aria-current={active ? "page" : undefined}
+              onClick={(e) => {
+                haptic();
+                // Tapping the tab you're already on takes you back to the
+                // top of it, as in any iPhone app — or, from a screen
+                // under it (a group), back to the tab itself.
+                if (active && pathname === item.to) {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }
+              }}
               className={`relative z-10 flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-[24px] py-2 text-[10.5px] font-medium transition-colors duration-200 active:opacity-70 ${
                 active ? "text-accent-700 dark:text-accent-200" : "text-neutral-500 dark:text-neutral-400"
               }`}

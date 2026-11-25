@@ -42,6 +42,26 @@ document.addEventListener("focusout", () => {
   }, 80);
 });
 
+// The page only ever scrolls up and down. If anything — a card mid-swipe,
+// a sheet sliding in, a chart's readout — briefly reaches past the right
+// edge, iOS lets the whole page be dragged sideways and leaves it there,
+// out of frame. Put it straight back.
+window.addEventListener(
+  "scroll",
+  () => {
+    if (window.scrollX !== 0) window.scrollTo(0, window.scrollY);
+  },
+  { passive: true }
+);
+
+// Pinch-to-zoom: iOS ignores `user-scalable=no` in the viewport tag, so a
+// pinch that lands on the app zooms the whole UI and leaves it off-frame.
+// Native apps don't zoom; neither does this one. (Double-tap zoom is off
+// through `touch-action: manipulation` in index.css.)
+for (const type of ["gesturestart", "gesturechange", "gestureend"]) {
+  document.addEventListener(type, (e) => e.preventDefault(), { passive: false });
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />

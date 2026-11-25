@@ -5,6 +5,7 @@ import { Expenses } from "../../pages/Expenses";
 import { Groups } from "../../pages/Groups";
 import { Stats } from "../../pages/Stats";
 import { Settings } from "../../pages/Settings";
+import { haptic } from "../../lib/haptics";
 
 const TABS: { path: string; Component: ComponentType }[] = [
   { path: "/", Component: Home },
@@ -136,6 +137,7 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
         const targetIndex = committed ? prev.targetIndex : null;
         const finalDx = committed ? (prev.dx < 0 ? -width : width) : 0;
 
+        if (targetIndex !== null) haptic();
         settleTimeoutRef.current = setTimeout(() => {
           if (targetIndex === null) {
             settleTimeoutRef.current = null;
@@ -155,11 +157,32 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
       });
     }
 
+    // iOS can take the touch away mid-drag without a touchend (a system
+    // gesture, a call, the app going to the background). Never leave the
+    // page stranded half off the screen when that happens.
+    function abandon() {
+      if (!gesture.active && !gesture.recognized) return;
+      gesture.active = false;
+      gesture.recognized = false;
+      if (settleTimeoutRef.current) {
+        clearTimeout(settleTimeoutRef.current);
+        settleTimeoutRef.current = null;
+      }
+      setDrag(null);
+    }
+    function onVisibility() {
+      if (document.visibilityState === "hidden") abandon();
+    }
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", abandon);
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchmove", onTouchMove, { passive: false });
     document.addEventListener("touchend", finishGesture, { passive: true });
     document.addEventListener("touchcancel", finishGesture, { passive: true });
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", abandon);
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", finishGesture);
@@ -172,6 +195,13 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
       if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
     };
   }, []);
+
+  // Navigated some other way (a tab tapped mid-settle): drop any leftover
+  // offset rather than show the new page shifted sideways.
+  useEffect(() => {
+    if (settleTimeoutRef.current) return;
+    setDrag(null);
+  }, [location.pathname]);
 
   const previewTarget = drag && drag.targetIndex !== null ? TABS[drag.targetIndex] : null;
   const width = typeof window !== "undefined" ? window.innerWidth : 0;
@@ -195,20 +225,22 @@ export function SwipeableTabTransition({ children }: { children: ReactNode }) {
         {children}
       </div>
       {previewTarget && (
-        <div
-          aria-hidden
-          className={SLIDE_BG}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 5,
-            overflow: "hidden",
-            pointerEvents: "none",
-            transform: `translateX(${previewX}px)`,
-            transition: drag?.settling ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : "none",
-          }}
-        >
-          <previewTarget.Component />
+        // A viewport-sized frame that clips the sliding preview. Without it
+        // the preview hangs off the side of the screen while it slides in,
+        // and iOS answers anything wider than the screen by letting the
+        // whole page be panned sideways — out of frame.
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-[5] overflow-hidden">
+          <div
+            className={SLIDE_BG}
+            style={{
+              position: "absolute",
+              inset: 0,
+              transform: `translateX(${previewX}px)`,
+              transition: drag?.settling ? `transform ${SETTLE_MS}ms ${SETTLE_EASE}` : "none",
+            }}
+          >
+            <previewTarget.Component />
+          </div>
         </div>
       )}
     </>
